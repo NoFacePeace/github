@@ -31,7 +31,7 @@ func main() {
 		slog.Error(err.Error())
 	}
 	fs := &webdav.Handler{
-		FileSystem: webdav.Dir("."),
+		FileSystem: webdav.Dir(d),
 		LockSystem: webdav.NewMemLS(),
 	}
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
