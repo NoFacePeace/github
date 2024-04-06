@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/NoFacePeace/github/repositories/go-bookkeeper/common/component"
-	embeddedserver "github.com/NoFacePeace/github/repositories/go-bookkeeper/embeddedServer"
+	"github.com/NoFacePeace/github/repositories/go/bookkeeper/common/component"
+	embeddedserver "github.com/NoFacePeace/github/repositories/go/bookkeeper/embeddedServer"
 )
 
 func main() {
