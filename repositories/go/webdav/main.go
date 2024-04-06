@@ -1,37 +1,53 @@
 package main
 
 import (
-	"flag"
 	"log"
 	"log/slog"
 	"net/http"
+	"os/exec"
 
 	"github.com/NoFacePeace/github/repositories/go/util/config"
+	"github.com/robfig/cron/v3"
 	"golang.org/x/net/webdav"
 )
 
 type Config struct {
-	Port string
+	Port     string
+	User     string
+	Password string
+	Backup   []string
+	Path     string
 }
 
-var (
-	// flags
-	u string
-	p string
-	d string
-)
-
 func main() {
-	initFlags()
 	initLog()
 
 	// init config
 	cfg := &Config{}
 	if err := config.ReadYamlFile("config.yaml", cfg); err != nil {
 		slog.Error(err.Error())
+		return
 	}
+
+	// 同步
+	c := cron.New()
+	c.AddFunc("@every 60s", func() {
+		slog.Info("Starting rsync")
+		for _, v := range cfg.Backup {
+			cmd := exec.Command("rsync", "-av", cfg.Path+"/", "root@"+v+":"+cfg.Path)
+			slog.Info("Starting rsync " + v)
+			if err := cmd.Run(); err != nil {
+				slog.Error(err.Error())
+			}
+			slog.Info("Finish rsync " + v)
+		}
+		slog.Info("Finish rsync")
+	})
+	c.Start()
+
+	// webdav
 	fs := &webdav.Handler{
-		FileSystem: webdav.Dir(d),
+		FileSystem: webdav.Dir(cfg.Path),
 		LockSystem: webdav.NewMemLS(),
 	}
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -42,7 +58,7 @@ func main() {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
-		if user != u && password != p {
+		if user != cfg.User && password != cfg.Password {
 			slog.Warn("Basic Auth Failed")
 			w.WriteHeader(http.StatusUnauthorized)
 		}
@@ -56,11 +72,4 @@ func main() {
 
 func initLog() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
-}
-
-func initFlags() {
-	flag.StringVar(&u, "u", "user", "user name")
-	flag.StringVar(&p, "p", "password", "password")
-	flag.StringVar(&d, "d", ".", "data")
-	flag.Parse()
 }

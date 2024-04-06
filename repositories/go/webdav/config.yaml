@@ -1,1 +1,6 @@
 port: 21
+user: user
+password: password
+path: .
+backup:
+  - 127.0.0.1
