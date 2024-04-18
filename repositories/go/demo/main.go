@@ -2,17 +2,16 @@ package main
 
 import (
 	"fmt"
-	"html"
-	"log"
-	"net/http"
+	"os"
+
+	"github.com/pkg/errors"
 )
 
 func main() {
-	http.HandleFunc("/bar", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "Hello, %q", html.EscapeString(r.URL.Path))
-	})
-	http.HandleFunc("/panic", func(w http.ResponseWriter, r *http.Request) {
-		panic("hh")
-	})
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	_, err := os.ReadFile("hhh")
+	if err != nil {
+		fmt.Printf("%+v\n", err)
+		err = errors.Wrap(err, "hhhh")
+		fmt.Printf("%+v\n", err)
+	}
 }

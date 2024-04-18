@@ -62,7 +62,6 @@ func (j *Journal) Run() {
 }
 
 func (j *Journal) LogAddEntry() {
-	j.Queue.
 }
 
 type Config struct {

@@ -1,0 +1,37 @@
+CREATE TABLE default.boards
+(
+    `code` String,
+    `name` String,
+    `zxj` Float64 COMMENT '最新价',
+    `zdf` Float64 COMMENT '涨跌幅',
+    `zd` Float64 COMMENT '涨跌',
+    `hsl` Float64 COMMENT '换手率',
+    `lb` Float64 COMMENT '量比',
+    `volume` Float64 COMMENT '成交量，单位万',
+    `turnover` Float64 COMMENT '成交额，单位万',
+    `zsz` Float64 COMMENT '总市值，单位万',
+    `ltsz` Float64 COMMENT '流通市值，单位万',
+    `speed` Float64 COMMENT '5 分钟涨速',
+    `zdf_d5` Float64 COMMENT '5 日涨跌幅',
+    `zdf_d20` Float64 COMMENT '20 日涨跌幅',
+    `zdf_d60` Float64 COMMENT '60 日 涨跌幅',
+    `zdf_y` Float64 COMMENT '年涨跌幅',
+    `zdf_w52` Float64 COMMENT '52 周涨跌幅',
+    `zllr` Float64 COMMENT '主力流入',
+    `zllc` Float64 COMMENT '主力流出',
+    `zljlr` Float64 COMMENT '主力净流入',
+    `zljlr_d5` Float64 COMMENT '5 日主力净流入',
+    `zljlr_d20` Float64 COMMENT '20 日主力净流入',
+    `zgb` String,
+    `lzg_code` String,
+    `lzg_name` String,
+    `lzg_zxj` Float64 COMMENT '最新价',
+    `lzg_zdf` Float64 COMMENT '涨跌幅',
+    `lzg_zd` Float64 COMMENT '涨幅',
+    `stock_type` String COMMENT '类型',
+    `md5` String,
+    `date` Date,
+)
+ENGINE = ReplacingMergeTree
+PRIMARY KEY (name, date)
+ORDER BY (name, date) 
