@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/NoFacePeace/github/repositories/go/util/datetime"
 	"github.com/pkg/errors"
 	"gorm.io/gorm"
 )
@@ -49,6 +50,24 @@ func New(db *gorm.DB) *Tencent {
 }
 
 func (t *Tencent) Daily() {
+	slog.Info("start to scrape daily")
+	today := time.Now().Local()
+	slog.Info(today.GoString())
+	// check is weekend
+	if datetime.IsWeekend(today) {
+		slog.Info("today is weekend")
+		return
+	}
+	// check is holiday
+	ok, err := datetime.IsHoliday(today)
+	if err != nil {
+		slog.Error(err.Error())
+		return
+	}
+	if ok {
+		slog.Info("today is holiday")
+		return
+	}
 	slog.Info("start to scrape plate board")
 	arr, err := t.ScrapePlateBoard(BoardType2)
 	if err != nil {
@@ -59,7 +78,7 @@ func (t *Tencent) Daily() {
 	for _, v := range arr {
 		time.Sleep(1 * time.Second)
 		slog.Info(fmt.Sprintf("start to scrape to plate kline: %v", v.Name))
-		err := t.ScrapeKline(v.Code, v.Name)
+		err := t.ScrapeKline(v.Code)
 		if err != nil {
 			slog.Error(fmt.Sprintf("%+v", err))
 			continue
@@ -74,13 +93,15 @@ func (t *Tencent) Daily() {
 	}
 	slog.Info("ending scrape stock board...")
 	for _, v := range stock {
+		time.Sleep(1 * time.Second)
 		slog.Info(fmt.Sprintf("starting scrape stock kline: %v", v.Name))
-		if err := t.ScrapeKline(v.Code, v.Name); err != nil {
+		if err := t.ScrapeKline(v.Code); err != nil {
 			slog.Error(fmt.Sprintf("%+v", err))
 			return
 		}
 		slog.Info(fmt.Sprintf("ending scrape stock kline: %v", v.Name))
 	}
+	slog.Info("end to scrape daily")
 }
 
 func (t *Tencent) Weekly() {
@@ -90,6 +111,7 @@ func (t *Tencent) Weekly() {
 		return
 	}
 	for _, v := range stocks {
+		time.Sleep(1 * time.Second)
 		st, err := getPlate(v.Code)
 		if err != nil {
 			slog.Error(fmt.Sprintf("%+v", err))
@@ -107,17 +129,21 @@ func (t *Tencent) Weekly() {
 }
 
 func (t *Tencent) History() {
+	slog.Info("start to scape history")
 	plates, err := getFullRank(BoardType2)
 	if err != nil {
 		slog.Error(fmt.Sprintf("%+v", err))
 		return
 	}
 	for _, v := range plates {
-		err := t.ScrapeKlineHistory(v.Code, v.Name)
+		time.Sleep(1 * time.Second)
+		slog.Info(fmt.Sprintf("start to scrape plate history kline: %v", v.Name))
+		err := t.ScrapeKlineHistory(v.Code)
 		if err != nil {
 			slog.Error(fmt.Sprintf("%+v", err))
-			return
+			continue
 		}
+		slog.Info(fmt.Sprintf("end to scrape plate history kline: %v", v.Name))
 	}
 	stocks, err := getFullBoardRankList(BoardCode1)
 	if err != nil {
@@ -125,11 +151,15 @@ func (t *Tencent) History() {
 		return
 	}
 	for _, v := range stocks {
-		if err := t.ScrapeKlineHistory(v.Code, v.Name); err != nil {
+		time.Sleep(1 * time.Second)
+		slog.Info(fmt.Sprintf("start to scrape stock history kline: %v", v.Name))
+		if err := t.ScrapeKlineHistory(v.Code); err != nil {
 			slog.Error(fmt.Sprintf("%+v", err))
-			return
+			continue
 		}
+		slog.Info(fmt.Sprintf("end to scrape stock history kline: %v", v.Name))
 	}
+	slog.Info("end to scape history")
 }
 
 func (t *Tencent) ScrapePlateBoard(board string) ([]Plate, error) {
@@ -137,43 +167,32 @@ func (t *Tencent) ScrapePlateBoard(board string) ([]Plate, error) {
 	if err != nil {
 		return nil, err
 	}
-	for _, v := range arr {
-		v.Date = time.Now().Local()
-		tx := t.db.Create(&v)
-		if tx.Error != nil {
-			return nil, errors.New(tx.Error.Error())
-		}
+	tx := t.db.Create(arr)
+	if tx.Error != nil {
+		return nil, errors.New(tx.Error.Error())
 	}
 	return arr, nil
 }
 func (t *Tencent) ScrapeStockBoard(code string) ([]Stock, error) {
 	arr, err := getFullBoardRankList(code)
-	for _, v := range arr {
-		v.Date = time.Now().Local()
-		tx := t.db.Create(&v)
-		if tx.Error != nil {
-			return nil, errors.New(tx.Error.Error())
-		}
+	if tx := t.db.Create(arr); tx.Error != nil {
+		return nil, errors.New(tx.Error.Error())
 	}
 	return arr, err
 }
-func (t *Tencent) ScrapeKline(code string, name string) error {
+func (t *Tencent) ScrapeKline(code string) error {
 	arr, err := getKline(code, 10, "day", "")
 	if err != nil {
 		return err
 	}
-	for _, v := range arr {
-		v.Code = code
-		v.Name = name
-		tx := t.db.Create(&v)
-		if tx.Error != nil {
-			return errors.New(tx.Error.Error())
-		}
+	tx := t.db.Create(arr)
+	if tx.Error != nil {
+		return errors.New(tx.Error.Error())
 	}
 	return nil
 }
 
-func (t *Tencent) ScrapeKlineHistory(code, name string) error {
+func (t *Tencent) ScrapeKlineHistory(code string) error {
 	limit := 670
 	toDate := ""
 	for {
@@ -181,18 +200,14 @@ func (t *Tencent) ScrapeKlineHistory(code, name string) error {
 		if err != nil {
 			return err
 		}
-		for _, v := range arr {
-			v.Code = code
-			v.Name = name
-			tx := t.db.Create(&v)
-			if tx.Error != nil {
-				return errors.New(tx.Error.Error())
-			}
+		if tx := t.db.Create(arr); tx.Error != nil {
+			return errors.New(tx.Error.Error())
 		}
 		if len(arr) < limit {
 			break
 		}
 		toDate = arr[0].Date.Format(LayoutDateWithLine)
+		slog.Info(toDate)
 	}
 	return nil
 }
@@ -257,6 +272,7 @@ func getRank(boardType string, offset int, count int) ([]Plate, error) {
 		b.Lzg.Zdf, _ = strconv.ParseFloat(v.Lzg.Zdf, 64)
 		b.Lzg.Zd, _ = strconv.ParseFloat(v.Lzg.Zd, 64)
 		b.StockType = v.StockType
+		b.Date = time.Now().Local()
 		arr = append(arr, b)
 	}
 	return arr, nil
@@ -374,6 +390,7 @@ func getBoardRankList(code string, offset, count int) ([]Stock, error) {
 	for _, v := range resp.Data.RankList {
 		s := Stock{}
 		s.InStock = v.InStock
+		s.Date = time.Now().Local()
 		arr = append(arr, s)
 	}
 	return arr, nil
@@ -432,7 +449,7 @@ type InStock struct {
 }
 
 func getKline(code string, limit int, ktype string, toDate string) ([]Kline, error) {
-	url := fmt.Sprintf("https://proxy.finance.qq.com/cgi/cgi-bin/stockinfoquery/kline/app/get?ktype=%v&limit=%v&code=%v&todate=%v", ktype, limit, code, toDate)
+	url := fmt.Sprintf("https://proxy.finance.qq.com/cgi/cgi-bin/stockinfoquery/kline/app/get?ktype=%v&limit=%v&code=%v&toDate=%v", ktype, limit, code, toDate)
 	var resp GetKlineResp
 	err := getBody(url, &resp)
 	if err != nil {
@@ -457,6 +474,8 @@ func getKline(code string, limit int, ktype string, toDate string) ([]Kline, err
 		line.Dividend = v.Dividend
 		line.AddZdf = v.AddZdf
 		line.Date, _ = time.Parse(LayoutDateWithLine, v.Date)
+		line.Code = code
+		line.Name = resp.Data.Qt.Fields[1]
 		arr = append(arr, line)
 	}
 	return arr, nil
