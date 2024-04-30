@@ -39,10 +39,13 @@ func main() {
 
 	// tencent
 	tc := tencent.New(db)
-	tc.GetBoard(tencent.BoardType2)
+	go tc.Daily()
+	// go tc.Weekly()
+	// go tc.History()
 	// cron start
 	slog.InfoContext(ctx, "cron starting...")
 	c := cron.New()
+	c.AddFunc("0 18 * * *", tc.Daily)
 	c.Start()
 	slog.InfoContext(ctx, "cron started")
 
