@@ -18,40 +18,29 @@ func main() {
 	log.Init()
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
-	slog.InfoContext(ctx, "process starting...")
 	// config
-
-	slog.InfoContext(ctx, "config loading...")
 	var cfg Config
 	if err := config.ReadYamlFile("config.yaml", &cfg); err != nil {
 		slog.ErrorContext(ctx, err.Error())
 		return
 	}
 	slog.InfoContext(ctx, "config loaded")
-
 	// db
-	slog.InfoContext(ctx, "db connecting...")
 	db, err := gorm.Open(clickhouse.Open(cfg.ClickHouse.DSN), &gorm.Config{})
 	if err != nil {
 		slog.ErrorContext(ctx, err.Error())
 	}
 	slog.InfoContext(ctx, "db connected")
-
 	// tencent
 	tc := tencent.New(db)
 	go func() {
-		tc.Daily()
 		tc.History()
-		tc.Weekly()
 	}()
-	slog.InfoContext(ctx, "cron starting...")
 	c := cron.New()
 	c.AddFunc("0 18 * * *", tc.Daily)
 	c.Start()
 	slog.InfoContext(ctx, "cron started")
-
 	slog.InfoContext(ctx, "process started")
-
 	// process stop
 	<-ctx.Done()
 	stop()

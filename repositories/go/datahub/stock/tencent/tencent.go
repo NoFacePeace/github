@@ -28,19 +28,19 @@ type Tencent struct {
 }
 
 func New(db *gorm.DB) *Tencent {
-	err := db.Set("gorm:table_options", "ENGINE=ReplacingMergeTree PRIMARY KEY (name,date,code)").AutoMigrate(&Kline{})
+	err := db.Set("gorm:table_options", "ENGINE=MergeTree PRIMARY KEY (name,date,code)").AutoMigrate(&Kline{})
 	if err != nil {
 		slog.Error(err.Error())
 	}
-	err = db.Set("gorm:table_options", "ENGINE=ReplacingMergeTree PRIMARY KEY (name,date, code)").AutoMigrate(&Plate{})
+	err = db.Set("gorm:table_options", "ENGINE=MergeTree PRIMARY KEY (name,date, code)").AutoMigrate(&Plate{})
 	if err != nil {
 		slog.Error(err.Error())
 	}
-	err = db.Set("gorm:table_options", "ENGINE=ReplacingMergeTree PRIMARY KEY (name, date, code)").AutoMigrate(&Stock{})
+	err = db.Set("gorm:table_options", "ENGINE=MergeTree PRIMARY KEY (name, date, code)").AutoMigrate(&Stock{})
 	if err != nil {
 		slog.Error(err.Error())
 	}
-	err = db.Set("gorm:table_options", "ENGINE=ReplacingMergeTree PRIMARY KEY (plate_name, stock_name, plate_code,  stock_code)").AutoMigrate(&StockPlate{})
+	err = db.Set("gorm:table_options", "ENGINE=MergeTree PRIMARY KEY (plate_name, stock_name, plate_code,  stock_code)").AutoMigrate(&StockPlate{})
 	if err != nil {
 		slog.Error(err.Error())
 	}
@@ -181,7 +181,7 @@ func (t *Tencent) ScrapeStockBoard(code string) ([]Stock, error) {
 	return arr, err
 }
 func (t *Tencent) ScrapeKline(code string) error {
-	arr, err := getKline(code, 10, "day", "")
+	arr, err := getKline(code, 1, "day", "")
 	if err != nil {
 		return err
 	}
@@ -194,7 +194,7 @@ func (t *Tencent) ScrapeKline(code string) error {
 
 func (t *Tencent) ScrapeKlineHistory(code string) error {
 	limit := 670
-	toDate := ""
+	toDate := datetime.Yesterday().Format(datetime.LayoutDateWithLine)
 	for {
 		arr, err := getKline(code, limit, "day", toDate)
 		if err != nil {
@@ -207,7 +207,7 @@ func (t *Tencent) ScrapeKlineHistory(code string) error {
 			break
 		}
 		toDate = arr[0].Date.Format(LayoutDateWithLine)
-		slog.Info(toDate)
+		slog.Info(code + ": " + toDate)
 	}
 	return nil
 }
