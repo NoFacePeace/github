@@ -1,6 +1,7 @@
 package datetime
 
 import (
+	"reflect"
 	"testing"
 	"time"
 )
@@ -43,6 +44,35 @@ func TestIsWeekend(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := IsWeekend(tt.args.t); got != tt.want {
 				t.Errorf("IsWeekend() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestYesterday(t *testing.T) {
+	type args struct {
+		ts []time.Time
+	}
+	now := time.Now()
+	tests := []struct {
+		name string
+		args args
+		want time.Time
+	}{
+		{
+			name: "test",
+			args: args{
+				[]time.Time{
+					now,
+				},
+			},
+			want: now.AddDate(0, 0, -1),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := Yesterday(tt.args.ts...); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Yesterday() = %v, want %v", got, tt.want)
 			}
 		})
 	}

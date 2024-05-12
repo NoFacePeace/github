@@ -17,3 +17,10 @@ func EqualDate(t1, t2 time.Time) bool {
 	d1, d2 := t1.Day(), t2.Day()
 	return y1 == y2 && m1 == m2 && d1 == d2
 }
+
+func Yesterday(ts ...time.Time) time.Time {
+	if len(ts) != 0 {
+		return ts[0].AddDate(0, 0, -1)
+	}
+	return time.Now().AddDate(0, 0, -1)
+}
