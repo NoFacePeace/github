@@ -1,2 +1,6 @@
-clickhouse:
-  dsn: "tcp://127.0.0.1:9000"
+# db:
+#   type: clickhouse
+#   dsn: "tcp://127.0.0.1:9000"
+db:
+  type: sqlite
+  dsn: gorm.db

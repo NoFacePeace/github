@@ -1,17 +1,13 @@
 package main
 
-import (
-	"fmt"
-	"os"
+import "fmt"
 
-	"github.com/pkg/errors"
-)
+type Test struct {
+	m map[string]string
+}
 
 func main() {
-	_, err := os.ReadFile("hhh")
-	if err != nil {
-		fmt.Printf("%+v\n", err)
-		err = errors.Wrap(err, "hhhh")
-		fmt.Printf("%+v\n", err)
-	}
+	t := Test{}
+	t.m["test"] = "test"
+	fmt.Println(t)
 }

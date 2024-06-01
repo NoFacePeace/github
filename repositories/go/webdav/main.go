@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"os/exec"
 
-	"github.com/NoFacePeace/github/repositories/go/util/config"
+	"github.com/NoFacePeace/github/repositories/go/utils/config"
 	"github.com/robfig/cron/v3"
 	"golang.org/x/net/webdav"
 )

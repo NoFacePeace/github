@@ -7,11 +7,9 @@ import (
 	"syscall"
 
 	"github.com/NoFacePeace/github/repositories/go/datahub/stock/tencent"
-	"github.com/NoFacePeace/github/repositories/go/util/config"
-	"github.com/NoFacePeace/github/repositories/go/util/log"
+	"github.com/NoFacePeace/github/repositories/go/utils/config"
+	"github.com/NoFacePeace/github/repositories/go/utils/log"
 	"github.com/robfig/cron/v3"
-	"gorm.io/driver/clickhouse"
-	"gorm.io/gorm"
 )
 
 func main() {
@@ -25,19 +23,15 @@ func main() {
 		return
 	}
 	slog.InfoContext(ctx, "config loaded")
-	// db
-	db, err := gorm.Open(clickhouse.Open(cfg.ClickHouse.DSN), &gorm.Config{})
-	if err != nil {
-		slog.ErrorContext(ctx, err.Error())
-	}
-	slog.InfoContext(ctx, "db connected")
+	address := "http://localhost:8428/api/v1/import"
+	vm := tencent.NewVictoriaMetrics(address)
 	// tencent
-	tc := tencent.New(db)
+	tc := tencent.New(vm)
 	go func() {
 		tc.History()
+		// tc.Daily()
 	}()
 	c := cron.New()
-	c.AddFunc("0 18 * * *", tc.Daily)
 	c.Start()
 	slog.InfoContext(ctx, "cron started")
 	slog.InfoContext(ctx, "process started")
@@ -50,7 +44,8 @@ func main() {
 }
 
 type Config struct {
-	ClickHouse struct {
-		DSN string
+	DB struct {
+		DSN  string
+		Type string
 	}
 }
