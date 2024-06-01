@@ -32,6 +32,7 @@ func main() {
 		// tc.Daily()
 	}()
 	c := cron.New()
+	c.AddFunc("0 16 * * *", tc.Daily)
 	c.Start()
 	slog.InfoContext(ctx, "cron started")
 	slog.InfoContext(ctx, "process started")
