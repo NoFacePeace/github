@@ -9,6 +9,7 @@ import (
 
 	"github.com/NoFacePeace/github/repositories/go/utils/datetime"
 	"github.com/pkg/errors"
+	"gorm.io/gorm"
 )
 
 var (
@@ -39,7 +40,8 @@ func getFullKline(code string) ([]Kline, error) {
 		if len(tmp) < limit {
 			break
 		}
-		toDate = tmp[0].Date.Format(datetime.LayoutDateWithLine)
+		yesterday := datetime.Yesterday(tmp[0].Date)
+		toDate = yesterday.Format(datetime.LayoutDateWithLine)
 	}
 	return arr, nil
 }
@@ -106,8 +108,9 @@ func getBoardRankList(code string, offset, count int) ([]Stock, int, error) {
 }
 
 type Stock struct {
+	gorm.Model
 	InStock
-	Date time.Time `gorm:"type:date"`
+	Date time.Time `gorm:"type:date;index:idx_date;uniqueIndex:udx_stock;index"`
 }
 type GetBoardRankListResp struct {
 	Code int `json:"code"`
@@ -127,8 +130,8 @@ type GetBoardRankListResp struct {
 }
 
 type InStock struct {
-	Code      string  `json:"code"`
-	Name      string  `json:"name"`
+	Code      string  `json:"code" gorm:"type:varchar(16);uniqueIndex:udx_stock"`
+	Name      string  `json:"name" gorm:"type:varchar(32);index:idx_date"`
 	Zxj       float64 `json:"zxj,string" gorm:"comment:最新价"`
 	Zdf       float64 `json:"zdf,string" gorm:"comment:涨跌幅"`
 	Zd        float64 `json:"zd,string" gorm:"comment:涨跌额"`
@@ -141,7 +144,7 @@ type InStock struct {
 	Pn        float64 `json:"pn,string" gorm:"comment:市净率"`
 	Zsz       float64 `json:"zsz,string" gorm:"comment:总市值"`
 	Ltsz      float64 `json:"ltsz,string" gorm:"comment:流通市值"`
-	State     string  `json:"state"`
+	State     string  `json:"state" gorm:"varchar(255)"`
 	Speed     float64 `json:"speed,string" gorm:"comment:5分钟涨速"`
 	ZdfY      float64 `json:"zdf_y,string" gorm:"comment:年初至今涨跌幅"`
 	ZdfD5     float64 `json:"zdf_d5,string" gorm:"comment:5日涨跌幅"`
@@ -154,7 +157,7 @@ type InStock struct {
 	Zllc      float64 `json:"zllc,string" gorm:"comment:主力流出"`
 	ZllrD5    float64 `json:"zllr_d5,string" gorm:"coment:5日主力流入"`
 	ZllcD5    float64 `json:"zllc_d5,string" gorm:"coment:5日主力流出"`
-	StockType string  `json:"stock_type" gorm:"股票类型"`
+	StockType string  `json:"stock_type" gorm:"type:varchar(16)"`
 }
 
 func getRank(boardType string, offset int, count int) ([]Plate, int, error) {
@@ -177,13 +180,14 @@ func getRank(boardType string, offset int, count int) ([]Plate, int, error) {
 }
 
 type Plate struct {
+	gorm.Model
 	InnerPlate
-	Date time.Time `gorm:"type:date"`
+	Date time.Time `gorm:"type:date;uniqueIndex:udx_plate;index:idx_date;index"`
 }
 
 type InnerPlate struct {
-	Code     string  `json:"code"`
-	Name     string  `json:"name"`
+	Code     string  `gorm:"type:varchar(16);uniqueIndex:udx_plate" json:"code"`
+	Name     string  `gorm:"type:varchar(32);index:idx_date" json:"name"`
 	Zxj      float64 `gorm:"comment:最新价" json:"zxj,string"`
 	Zdf      float64 `gorm:"comment:涨跌幅" json:"zdf,string"`
 	Zd       float64 `gorm:"comment:涨跌" json:"zd,string"`
@@ -206,8 +210,8 @@ type InnerPlate struct {
 	ZljlrD20 float64 `gorm:"comment:20 日主力净流入" json:"zljlr_d20,string"`
 	Zgb      string  `json:"zgb"`
 	Lzg      struct {
-		Code string  `json:"code"`
-		Name string  `json:"name"`
+		Code string  `gorm:"type:varchar(16)" json:"code"`
+		Name string  `gorm:"type:varchar(32)" json:"name"`
 		Zxj  float64 `gorm:"comment:最新价" json:"zxj,string"`
 		Zdf  float64 `gorm:"comment:涨跌幅" json:"zdf,string"`
 		Zd   float64 `gorm:"comment:涨幅" json:"zxd,string"`
@@ -280,10 +284,10 @@ type GetKlineResp struct {
 }
 
 type Kline struct {
-	Code string
-	Name string
+	Code string `gorm:"type:varchar(16);uniqueIndex:udx_kline"`
+	Name string `gorm:"type:varchar(32);index:idx_date"`
 	InnerKine
-	Date time.Time `gorm:"type:date;comment:日期"`
+	Date time.Time `gorm:"type:date;comment:日期;uniqueIndex:udx_kline;index:idx_date;index"`
 }
 
 type InnerKine struct {
@@ -297,8 +301,8 @@ type InnerKine struct {
 	ExchangeRaw float64 `json:"exchangeRaw,string"`
 	Oi          float64 `json:"oi,string"`
 	TradeDays   float64 `json:"traceDays,string"`
-	Dividend    string  `json:"dividend"`
-	AddZdf      string  `json:"addZdf"`
+	Dividend    string  `json:"dividend" gorm:"type:varchar(255)"`
+	AddZdf      string  `json:"addZdf" gorm:"type:varchar(255)"`
 }
 
 func getPlate(code string) ([]StockPlate, error) {

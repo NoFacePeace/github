@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	path = "https://raw.githubusercontent.com/NoFacePeace/github/master/repositories/go/util/datetime/"
+	path = "https://raw.githubusercontent.com/NoFacePeace/github/master/repositories/go/utils/datetime/"
 )
 
 func IsHoliday(t time.Time) (bool, error) {
