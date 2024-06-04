@@ -70,10 +70,13 @@ func (t *Tencent) ScrapePlateToday(typ string) {
 		if err != nil {
 			slog.Error(fmt.Sprintf("%+v", err))
 		} else {
-			t.Store.SaveKline(line, map[string]string{
+			if err := t.Store.SaveKline(line, map[string]string{
 				"type":  typ,
 				"class": KlineTypeDay,
-			})
+			}); err != nil {
+				slog.Error(fmt.Sprintf("%+v", err))
+				return
+			}
 		}
 		slog.Info("end to scrape plate kline today: " + p.Name)
 	}
@@ -96,10 +99,13 @@ func (t *Tencent) ScrapeStockToday(typ string) {
 		if err != nil {
 			slog.Error(fmt.Sprintf("%+v", err))
 		} else {
-			t.Store.SaveKline(line, map[string]string{
+			if err := t.Store.SaveKline(line, map[string]string{
 				"type":  typ,
 				"class": KlineTypeDay,
-			})
+			}); err != nil {
+				slog.Error(fmt.Sprintf("%+v", err))
+				return
+			}
 		}
 		slog.Info("end to scrape stock kline today: " + stock.Name)
 	}
@@ -116,11 +122,15 @@ func (t *Tencent) ScrapePlateHistory(typ string) {
 		line, err := getFullKline(p.Code)
 		if err != nil {
 			slog.Error(fmt.Sprintf("%+v", err))
+			return
 		} else {
-			t.Store.SaveKline(line, map[string]string{
+			if err := t.Store.SaveKline(line, map[string]string{
 				"type":  typ,
 				"class": KlineTypeDay,
-			})
+			}); err != nil {
+				slog.Error(fmt.Sprintf("%+v", err))
+				return
+			}
 		}
 		slog.Info("end to scrape plate kline history: " + p.Name)
 	}
@@ -137,11 +147,15 @@ func (t *Tencent) ScrapeStockHistory(typ string) {
 		line, err := getFullKline(stock.Code)
 		if err != nil {
 			slog.Error(fmt.Sprintf("%+v", err))
+			return
 		} else {
-			t.Store.SaveKline(line, map[string]string{
+			if err := t.Store.SaveKline(line, map[string]string{
 				"type":  typ,
 				"class": KlineTypeDay,
-			})
+			}); err != nil {
+				slog.Error(fmt.Sprintf("%+v", err))
+				return
+			}
 		}
 		slog.Info("end to scrape stock kline history: " + stock.Name)
 	}

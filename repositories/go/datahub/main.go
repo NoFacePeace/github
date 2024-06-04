@@ -7,9 +7,11 @@ import (
 	"syscall"
 
 	"github.com/NoFacePeace/github/repositories/go/datahub/stock/tencent"
-	"github.com/NoFacePeace/github/repositories/go/utils/config"
 	"github.com/NoFacePeace/github/repositories/go/utils/log"
+
 	"github.com/robfig/cron/v3"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
 )
 
 func main() {
@@ -17,19 +19,23 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 	// config
-	var cfg Config
-	if err := config.ReadYamlFile("config.yaml", &cfg); err != nil {
+	// var cfg Config
+	// if err := config.ReadYamlFile("config.yaml", &cfg); err != nil {
+	// 	slog.ErrorContext(ctx, err.Error())
+	// 	return
+	// }
+	slog.InfoContext(ctx, "config loaded")
+	db, err := gorm.Open(mysql.Open("root:@tcp(127.0.0.1:3306)/db_stock?charset=utf8mb4&parseTime=True&loc=Local"), &gorm.Config{})
+	if err != nil {
 		slog.ErrorContext(ctx, err.Error())
 		return
 	}
-	slog.InfoContext(ctx, "config loaded")
-	address := "http://localhost:8428/api/v1/import"
-	vm := tencent.NewVictoriaMetrics(address)
+	mysql := tencent.NewMySQL(db)
 	// tencent
-	tc := tencent.New(vm)
+	tc := tencent.New(mysql)
 	go func() {
-		tc.History()
-		// tc.Daily()
+		// tc.History()
+		tc.Daily()
 	}()
 	c := cron.New()
 	c.AddFunc("0 16 * * *", tc.Daily)
@@ -45,8 +51,7 @@ func main() {
 }
 
 type Config struct {
-	DB struct {
-		DSN  string
-		Type string
-	}
+	MySQL struct {
+		DSN string `yaml:"dsn"`
+	} `yaml:"mysql"`
 }

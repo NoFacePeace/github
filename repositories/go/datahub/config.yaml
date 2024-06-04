@@ -1,6 +1,10 @@
-# db:
-#   type: clickhouse
-#   dsn: "tcp://127.0.0.1:9000"
-db:
+clickhouse:
+  type: clickhouse
+  dsn: "tcp://127.0.0.1:9000"
+sqlite:
   type: sqlite
   dsn: gorm.db
+mysql:
+  dsn: "root:@tcp(127.0.0.1:3306)/db_stock?charset=utf8mb4&parseTime=True&loc=Local"
+victoriametrics:
+  address: http://localhost:8428/api/v1/import
