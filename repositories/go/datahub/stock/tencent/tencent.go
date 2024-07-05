@@ -66,7 +66,7 @@ func (t *Tencent) ScrapePlateToday(typ string) {
 	slog.Info("end to scrape plate board today: " + typ)
 	for _, p := range plates {
 		slog.Info("start to scrape plate kline today: " + p.Name)
-		line, err := getKline(p.Code, 1, KlineTypeDay, "")
+		line, err := getKline(p.Code, 5, KlineTypeDay, "")
 		if err != nil {
 			slog.Error(fmt.Sprintf("%+v", err))
 		} else {
@@ -95,7 +95,7 @@ func (t *Tencent) ScrapeStockToday(typ string) {
 	slog.Info("end to scrape stock board today: " + typ)
 	for _, stock := range stocks {
 		slog.Info("start to scrape stock kline today: " + stock.Name)
-		line, err := getKline(stock.Code, 1, KlineTypeDay, "")
+		line, err := getKline(stock.Code, 5, KlineTypeDay, "")
 		if err != nil {
 			slog.Error(fmt.Sprintf("%+v", err))
 		} else {

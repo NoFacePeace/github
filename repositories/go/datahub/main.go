@@ -34,7 +34,7 @@ func main() {
 	// tencent
 	tc := tencent.New(mysql)
 	go func() {
-		// tc.History()
+		tc.History()
 		tc.Daily()
 	}()
 	c := cron.New()
