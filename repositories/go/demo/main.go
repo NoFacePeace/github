@@ -1,13 +1,17 @@
 package main
 
-import "fmt"
-
-type Test struct {
-	m map[string]string
-}
+import (
+	"fmt"
+)
 
 func main() {
-	t := Test{}
-	t.m["test"] = "test"
-	fmt.Println(t)
+	arr := []int{1}
+	fmt.Println(arr)
+	addInt(1, arr)
+	fmt.Println(arr)
+}
+
+func addInt(num int, arr []int) {
+	arr = append(arr, num)
+	fmt.Println(arr)
 }
