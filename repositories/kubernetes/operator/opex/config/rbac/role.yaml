@@ -1,0 +1,32 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: manager-role
+rules:
+- apiGroups:
+  - example.linkinstars.com
+  resources:
+  - examplea
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - example.linkinstars.com
+  resources:
+  - examplea/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - example.linkinstars.com
+  resources:
+  - examplea/status
+  verbs:
+  - get
+  - patch
+  - update

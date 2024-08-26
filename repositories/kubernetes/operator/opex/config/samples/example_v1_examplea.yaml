@@ -1,0 +1,10 @@
+apiVersion: example.linkinstars.com/v1
+kind: ExampleA
+metadata:
+  labels:
+    app.kubernetes.io/name: opex
+    app.kubernetes.io/managed-by: kustomize
+  name: examplea-sample
+spec:
+  # TODO(user): Add fields here
+  groupName: business
