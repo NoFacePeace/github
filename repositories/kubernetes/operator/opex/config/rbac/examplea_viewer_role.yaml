@@ -1,0 +1,23 @@
+# permissions for end users to view examplea.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: opex
+    app.kubernetes.io/managed-by: kustomize
+  name: examplea-viewer-role
+rules:
+- apiGroups:
+  - example.linkinstars.com
+  resources:
+  - examplea
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - example.linkinstars.com
+  resources:
+  - examplea/status
+  verbs:
+  - get
