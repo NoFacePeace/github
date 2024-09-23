@@ -5,6 +5,7 @@ import "time"
 var (
 	LayoutDateWithLine = "2006-01-02"
 	LayoutDate         = "20060102"
+	LayoutDateWithDash = "2006-01-02"
 )
 
 func IsWeekend(t time.Time) bool {
