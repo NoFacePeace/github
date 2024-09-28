@@ -92,6 +92,30 @@ func Cross(ps, short, long []Point) []Point {
 	return ret
 }
 
+func CrossMax(ps, short, long []Point) []Point {
+	n := len(short)
+	ret := []Point{}
+	mx := 0.0
+	for i := 0; i < n-1; i++ {
+		if short[i].Price == 0 || long[i].Price == 0 {
+			continue
+		}
+		if short[i].Price < long[i].Price && short[i+1].Price >= long[i+1].Price {
+			ret = append(ret, ps[i+1])
+			mx = 0.0
+			continue
+		}
+		mx = max(mx, ps[i].Price)
+		if len(ret) > 0 && short[i].Price >= long[i].Price && short[i+1].Price < long[i+1].Price {
+			ret = append(ret, Point{
+				Price: max(mx, ps[i+1].Price),
+				Date:  ps[i+1].Date,
+			})
+		}
+	}
+	return ret
+}
+
 func Win(ps []Point) float64 {
 	win := 0.0
 	lose := 0.0
@@ -131,6 +155,28 @@ func SMABestCross(ps []Point, mn, mx int) (int, int, float64, []Point) {
 			short := SMA(ps, i)
 			long := SMA(ps, j)
 			cross := Cross(ps, short, long)
+			win := Win(cross)
+			if win > bestWin {
+				bestWin = win
+				bestPs = cross
+				bestShort = i
+				bestLong = j
+			}
+		}
+	}
+	return bestShort, bestLong, bestWin, bestPs
+}
+
+func SMABestCrossMax(ps []Point, mn, mx int) (int, int, float64, []Point) {
+	bestWin := 0.0
+	bestPs := []Point{}
+	bestShort := 0
+	bestLong := 0
+	for i := mn; i <= mx; i++ {
+		for j := i + 1; j <= mx; j++ {
+			short := SMA(ps, i)
+			long := SMA(ps, j)
+			cross := CrossMax(ps, short, long)
 			win := Win(cross)
 			if win > bestWin {
 				bestWin = win

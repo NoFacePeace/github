@@ -79,11 +79,21 @@ func (g *Grafana) GetSMACross(c *gin.Context) {
 	short := indicator.SMA(ps, s)
 	long := indicator.SMA(ps, l)
 	cross := indicator.Cross(ps, short, long)
+	buy := []indicator.Point{}
+	sell := []indicator.Point{}
+	for i := 0; i < len(cross); i++ {
+		if i%2 == 0 {
+			buy = append(buy, cross[i])
+		} else {
+			sell = append(sell, cross[i])
+		}
+	}
 	c.JSON(http.StatusOK, gin.H{
 		"price": ps,
 		"short": short,
 		"long":  long,
-		"cross": cross,
+		"buy":   buy,
+		"sell":  sell,
 	})
 }
 
