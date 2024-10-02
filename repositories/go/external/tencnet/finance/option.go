@@ -26,6 +26,18 @@ func WithAdjuct(ad AdjustType) Option {
 	}
 }
 
+func WithCount(count int) Option {
+	return &countOption{
+		count: count,
+	}
+}
+
+func WithOffset(offset int) Option {
+	return &offsetOption{
+		offset: offset,
+	}
+}
+
 func (ad AdjustType) String() string {
 	return string(ad)
 }
@@ -52,16 +64,18 @@ func (o *dateOption) apply(params *url.Values) {
 	params.Set("toDate", o.date.Format(datetime.LayoutDateWithDash))
 }
 
-func WithCount(count int) Option {
-	return &countOption{
-		count: count,
-	}
-}
-
 type countOption struct {
 	count int
 }
 
 func (o *countOption) apply(params *url.Values) {
 	params.Set("count", strconv.Itoa(o.count))
+}
+
+type offsetOption struct {
+	offset int
+}
+
+func (o *offsetOption) apply(params *url.Values) {
+	params.Set("offset", strconv.Itoa(o.offset))
 }
