@@ -128,6 +128,18 @@ func Win(ps []Point) float64 {
 	}
 	return win / (win + lose) * 100
 }
+func WinPercent(ps []Point, percent float64) float64 {
+	win := 0.0
+	lose := 0.0
+	for i := 0; i < len(ps)-1; i += 2 {
+		if ps[i].Price*(1+percent/100) <= ps[i+1].Price {
+			win += 1
+		} else {
+			lose += 1
+		}
+	}
+	return win / (win + lose) * 100
+}
 
 func Earn(ps []Point) float64 {
 	sum := 0.0
@@ -178,6 +190,28 @@ func SMABestCrossMax(ps []Point, mn, mx int) (int, int, float64, []Point) {
 			long := SMA(ps, j)
 			cross := CrossMax(ps, short, long)
 			win := Win(cross)
+			if win > bestWin {
+				bestWin = win
+				bestPs = cross
+				bestShort = i
+				bestLong = j
+			}
+		}
+	}
+	return bestShort, bestLong, bestWin, bestPs
+}
+
+func SMABestCrossPercent(ps []Point, mn, mx int, percent float64) (int, int, float64, []Point) {
+	bestWin := 0.0
+	bestPs := []Point{}
+	bestShort := 0
+	bestLong := 0
+	for i := mn; i <= mx; i++ {
+		for j := i + 1; j <= mx; j++ {
+			short := SMA(ps, i)
+			long := SMA(ps, j)
+			cross := CrossMax(ps, short, long)
+			win := WinPercent(cross, percent)
 			if win > bestWin {
 				bestWin = win
 				bestPs = cross

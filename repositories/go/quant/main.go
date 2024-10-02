@@ -15,59 +15,58 @@ import (
 )
 
 var (
-	cmd string
+	cmd  string
+	code string
 )
 
 func init() {
 	flag.StringVar(&cmd, "cmd", "web", "command")
+	flag.StringVar(&code, "code", "sh600188", "code")
 }
 
 func main() {
-
-	// test1()
-	// single("sh600941")
+	// switch cmd {
+	// case "multiple":
+	// 	multiple()
+	// case "single":
+	// 	single(code)
+	// }
 	multiple()
-	// web()
 }
 
-func test() {
-	code := "sh600941"
-	ps, err := indicator.AllPrice(code)
+func multiple() {
+	stocks, err := finance.ListStocks(finance.WithListStocksCount(500))
 	if err != nil {
 		log.Fatal(err)
 	}
-	ps = indicator.CrossMax(ps, indicator.SMA(ps, 18), indicator.SMA(ps, 27))
-	for i := 0; i < len(ps)-1; i += 2 {
-		fmt.Println(ps[i], ps[i+1], (ps[i+1].Price-ps[i].Price)/ps[i].Price*100)
+	for _, v := range stocks {
+		single(v.Name, v.Code)
 	}
-	fmt.Println(indicator.Win(ps), indicator.Earn(ps), indicator.Money(ps))
 }
 
-func single(code string) {
+func single(name, code string) {
 	ps, err := indicator.AllPrice(code)
 	if err != nil {
 		log.Fatal(err)
 	}
 	mn := 1
 	mx := 30
-	s, l, win, ps := indicator.SMABestCrossMax(ps, mn, mx)
+	s, l, win, ps := indicator.SMABestCrossPercent(ps, mn, mx, 3)
 	cnt := len(ps) / 2
+	if cnt == 0 {
+		return
+	}
 	if len(ps)%2 == 0 {
-		fmt.Println("sell: ", code, s, l, win, cnt, ps[len(ps)-1])
-	} else {
-		fmt.Println("buy:", code, s, l, win, cnt, ps[len(ps)-1])
+		return
 	}
-}
-
-func multiple() {
-	stocks, err := finance.ListStocks(finance.AStock, finance.WithCount(100))
-	if err != nil {
-		log.Fatal(err)
+	date := ps[len(ps)-1].Date.Format(datetime.LayoutDateWithDash)
+	if date != "2024-09-30" {
+		return
 	}
-	for _, v := range stocks {
-		fmt.Print(v.Name)
-		single(v.Code)
+	if win < 70 {
+		return
 	}
+	fmt.Println(name, " ", date, " buy:", code, s, l, cnt, win)
 }
 
 func web() {
@@ -82,16 +81,21 @@ func web() {
 	log.Println("stop")
 }
 
-func test1() {
-	code := "sh600941"
+func SMACrossDetail(code string, s, l int) {
 	ps, err := indicator.AllPrice(code)
 	if err != nil {
 		log.Fatal(err)
 	}
-	ps = indicator.CrossMax(ps, indicator.SMA(ps, 18), indicator.SMA(ps, 27))
+	ps = indicator.Cross(ps, indicator.SMA(ps, s), indicator.SMA(ps, l))
 	for i := 0; i < len(ps)-1; i += 2 {
-		fmt.Println(ps[i], ps[i+1], (ps[i+1].Price-ps[i].Price)/ps[i].Price*100)
-		fmt.Println(ps[i].Date.Format(datetime.LayoutDateWithLine))
+		fmt.Println(
+			ps[i].Date.Format(datetime.LayoutDateWithLine),
+			ps[i].Price,
+			ps[i+1].Date.Format(datetime.LayoutDateWithLine),
+			ps[i+1].Price,
+			ps[i+1].Price-ps[i].Price,
+			(ps[i+1].Price-ps[i].Price)/ps[i].Price*100,
+		)
 	}
-	fmt.Println(indicator.Win(ps), indicator.Earn(ps), indicator.Money(ps))
+	fmt.Println("count: ", len(ps)/2, "win: ", indicator.Win(ps))
 }
