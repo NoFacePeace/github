@@ -116,6 +116,61 @@ func CrossMax(ps, short, long []Point) []Point {
 	return ret
 }
 
+func GoldenCrossLast(ps, short, long []Point, last int) []Point {
+	n := len(short)
+	ret := []Point{}
+	for i := 0; i < n-1; i++ {
+		if short[i].Price == 0 || long[i].Price == 0 {
+			continue
+		}
+		if short[i].Price >= long[i].Price {
+			continue
+		}
+		if short[i+1].Price < long[i+1].Price {
+			continue
+		}
+		ret = append(ret, ps[i+1])
+		if i+1+last >= n {
+			continue
+		}
+		mx := ps[i+2]
+		for j := i + 2; j <= i+1+last; j++ {
+			if ps[j].Price > mx.Price {
+				mx = ps[j]
+			}
+		}
+		ret = append(ret, mx)
+	}
+	return ret
+}
+func DeadCrossLast(ps, short, long []Point, last int) []Point {
+	n := len(short)
+	ret := []Point{}
+	for i := 0; i < n-1; i++ {
+		if short[i].Price == 0 || long[i].Price == 0 {
+			continue
+		}
+		if short[i].Price <= long[i].Price {
+			continue
+		}
+		if short[i+1].Price > long[i+1].Price {
+			continue
+		}
+		ret = append(ret, ps[i+1])
+		if i+1+last >= n {
+			continue
+		}
+		mx := ps[i+2]
+		for j := i + 2; j <= i+1+last; j++ {
+			if ps[j].Price > mx.Price {
+				mx = ps[j]
+			}
+		}
+		ret = append(ret, mx)
+	}
+	return ret
+}
+
 func Win(ps []Point) float64 {
 	win := 0.0
 	lose := 0.0
@@ -201,7 +256,7 @@ func SMABestCrossMax(ps []Point, mn, mx int) (int, int, float64, []Point) {
 	return bestShort, bestLong, bestWin, bestPs
 }
 
-func SMABestCrossPercent(ps []Point, mn, mx int, percent float64) (int, int, float64, []Point) {
+func SMABestCrossMaxPercent(ps []Point, mn, mx int, percent float64) (int, int, float64, []Point) {
 	bestWin := 0.0
 	bestPs := []Point{}
 	bestShort := 0
@@ -211,6 +266,50 @@ func SMABestCrossPercent(ps []Point, mn, mx int, percent float64) (int, int, flo
 			short := SMA(ps, i)
 			long := SMA(ps, j)
 			cross := CrossMax(ps, short, long)
+			win := WinPercent(cross, percent)
+			if win > bestWin {
+				bestWin = win
+				bestPs = cross
+				bestShort = i
+				bestLong = j
+			}
+		}
+	}
+	return bestShort, bestLong, bestWin, bestPs
+}
+
+func SMAGoldenCrossLastPercent(ps []Point, mn, mx, last int, percent float64) (int, int, float64, []Point) {
+	bestWin := 0.0
+	bestPs := []Point{}
+	bestShort := 0
+	bestLong := 0
+	for i := mn; i <= mx; i++ {
+		for j := i + 1; j <= mx; j++ {
+			short := SMA(ps, i)
+			long := SMA(ps, j)
+			cross := GoldenCrossLast(ps, short, long, last)
+			win := WinPercent(cross, percent)
+			if win > bestWin {
+				bestWin = win
+				bestPs = cross
+				bestShort = i
+				bestLong = j
+			}
+		}
+	}
+	return bestShort, bestLong, bestWin, bestPs
+}
+
+func SMADeadCrossLastPercent(ps []Point, mn, mx, last int, percent float64) (int, int, float64, []Point) {
+	bestWin := 0.0
+	bestPs := []Point{}
+	bestShort := 0
+	bestLong := 0
+	for i := mn; i <= mx; i++ {
+		for j := i + 1; j <= mx; j++ {
+			short := SMA(ps, i)
+			long := SMA(ps, j)
+			cross := DeadCrossLast(ps, short, long, last)
 			win := WinPercent(cross, percent)
 			if win > bestWin {
 				bestWin = win

@@ -1,6 +1,8 @@
 package indicator
 
 import (
+	"fmt"
+	"log"
 	"testing"
 )
 
@@ -94,9 +96,57 @@ func TestCrossMax(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := CrossMax(tt.args.ps, tt.args.short, tt.args.long); len(got) != 0 {
+			if got := CrossMax(tt.args.ps, tt.args.short, tt.args.long); len(got) == 0 {
 				t.Errorf("CrossMax() = %v, want %v", got, tt.want)
 			}
 		})
 	}
+}
+
+func TestCrossLast(t *testing.T) {
+	ps, err := AllPrice("sh600941")
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	type args struct {
+		ps    []Point
+		short []Point
+		long  []Point
+		last  int
+	}
+	tests := []struct {
+		name string
+		args args
+		want []Point
+	}{
+		{
+			name: "test",
+			args: args{
+				ps:    ps,
+				short: SMA(ps, 5),
+				long:  SMA(ps, 20),
+				last:  1,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := GoldenCrossLast(tt.args.ps, tt.args.short, tt.args.long, tt.args.last); len(got) == 0 {
+				t.Errorf("CrossLast() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestSMABestCrossLastPercent(t *testing.T) {
+	ps, err := AllPrice("sh600941")
+	if err != nil {
+		log.Fatal(err)
+	}
+	short := SMA(ps, 5)
+	long := SMA(ps, 20)
+	cross := GoldenCrossLast(ps, short, long, 1)
+	win := WinPercent(cross, 0)
+	fmt.Println(win)
 }
