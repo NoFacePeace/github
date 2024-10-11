@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os/signal"
+	"sync"
 	"syscall"
 
 	"github.com/NoFacePeace/github/repositories/go/external/tencnet/finance"
@@ -39,34 +40,37 @@ func multiple() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	var wg sync.WaitGroup
 	for _, v := range stocks {
-		single(v.Name, v.Code)
+		wg.Add(1)
+		go func(s finance.Stock) {
+			single(s.Name, s.Code)
+			wg.Done()
+		}(v)
 	}
+	wg.Wait()
 }
 
 func single(name, code string) {
-	ps, err := indicator.AllPrice(code)
+	points, err := indicator.AllPrice(code)
 	if err != nil {
 		log.Fatal(err)
 	}
 	mn := 1
 	mx := 30
-	s, l, win, ps := indicator.SMABestCrossPercent(ps, mn, mx, 3)
+	// s, l, win, ps := indicator.SMABestCrossMaxPercent(ps, mn, mx, 3)
+	s, l, win, ps := indicator.SMAGoldenCrossLastPercent(points, mn, mx, 7, 2)
 	cnt := len(ps) / 2
-	if cnt == 0 {
-		return
+	if win >= 85 && len(ps)%2 > 0 {
+		date := ps[len(ps)-1].Date.Format(datetime.LayoutDateWithDash)
+		fmt.Println(name, code, date, "golden", s, l, cnt, win)
 	}
-	if len(ps)%2 == 0 {
-		return
+	s, l, win, ps = indicator.SMADeadCrossLastPercent(points, mn, mx, 7, 2)
+	cnt = len(ps) / 2
+	if win >= 85 && len(ps) > 0 {
+		date := ps[len(ps)-1].Date.Format(datetime.LayoutDateWithDash)
+		fmt.Println(name, code, date, "dead", s, l, cnt, win)
 	}
-	date := ps[len(ps)-1].Date.Format(datetime.LayoutDateWithDash)
-	if date != "2024-09-30" {
-		return
-	}
-	if win < 70 {
-		return
-	}
-	fmt.Println(name, " ", date, " buy:", code, s, l, cnt, win)
 }
 
 func web() {
