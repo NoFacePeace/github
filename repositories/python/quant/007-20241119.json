@@ -1,0 +1,2981 @@
+[
+    {
+        "time": 1731979800,
+        "price": 406600,
+        "cc_price": 406.6,
+        "volume": 398900,
+        "turnover": 162192740,
+        "ratio": "0.59",
+        "change_price": 2.4
+    },
+    {
+        "time": 1731979860,
+        "price": 408200,
+        "cc_price": 408.2,
+        "volume": 204300,
+        "turnover": 83364320,
+        "ratio": "0.99",
+        "change_price": 4
+    },
+    {
+        "time": 1731979920,
+        "price": 407000,
+        "cc_price": 407,
+        "volume": 141900,
+        "turnover": 57862664.5,
+        "ratio": "0.69",
+        "change_price": 2.8
+    },
+    {
+        "time": 1731979980,
+        "price": 407000,
+        "cc_price": 407,
+        "volume": 110300,
+        "turnover": 44861450,
+        "ratio": "0.69",
+        "change_price": 2.8
+    },
+    {
+        "time": 1731980040,
+        "price": 407400,
+        "cc_price": 407.4,
+        "volume": 61200,
+        "turnover": 24912370,
+        "ratio": "0.79",
+        "change_price": 3.2
+    },
+    {
+        "time": 1731980100,
+        "price": 407200,
+        "cc_price": 407.2,
+        "volume": 93400,
+        "turnover": 38039120,
+        "ratio": "0.74",
+        "change_price": 3
+    },
+    {
+        "time": 1731980160,
+        "price": 406600,
+        "cc_price": 406.6,
+        "volume": 99500,
+        "turnover": 40485940,
+        "ratio": "0.59",
+        "change_price": 2.4
+    },
+    {
+        "time": 1731980220,
+        "price": 405800,
+        "cc_price": 405.8,
+        "volume": 65600,
+        "turnover": 26642900,
+        "ratio": "0.40",
+        "change_price": 1.6
+    },
+    {
+        "time": 1731980280,
+        "price": 405800,
+        "cc_price": 405.8,
+        "volume": 131500,
+        "turnover": 53312420,
+        "ratio": "0.40",
+        "change_price": 1.6
+    },
+    {
+        "time": 1731980340,
+        "price": 406800,
+        "cc_price": 406.8,
+        "volume": 53700,
+        "turnover": 21830680,
+        "ratio": "0.64",
+        "change_price": 2.6
+    },
+    {
+        "time": 1731980400,
+        "price": 407000,
+        "cc_price": 407,
+        "volume": 65700,
+        "turnover": 26719170,
+        "ratio": "0.69",
+        "change_price": 2.8
+    },
+    {
+        "time": 1731980460,
+        "price": 407400,
+        "cc_price": 407.4,
+        "volume": 74600,
+        "turnover": 30396220,
+        "ratio": "0.79",
+        "change_price": 3.2
+    },
+    {
+        "time": 1731980520,
+        "price": 407800,
+        "cc_price": 407.8,
+        "volume": 52700,
+        "turnover": 21481078.5,
+        "ratio": "0.89",
+        "change_price": 3.6
+    },
+    {
+        "time": 1731980580,
+        "price": 408000,
+        "cc_price": 408,
+        "volume": 81300,
+        "turnover": 33172500,
+        "ratio": "0.94",
+        "change_price": 3.8
+    },
+    {
+        "time": 1731980640,
+        "price": 407800,
+        "cc_price": 407.8,
+        "volume": 82000,
+        "turnover": 33450570,
+        "ratio": "0.89",
+        "change_price": 3.6
+    },
+    {
+        "time": 1731980700,
+        "price": 408200,
+        "cc_price": 408.2,
+        "volume": 73200,
+        "turnover": 29834580,
+        "ratio": "0.99",
+        "change_price": 4
+    },
+    {
+        "time": 1731980760,
+        "price": 407600,
+        "cc_price": 407.6,
+        "volume": 60100,
+        "turnover": 24503380,
+        "ratio": "0.84",
+        "change_price": 3.4
+    },
+    {
+        "time": 1731980820,
+        "price": 407800,
+        "cc_price": 407.8,
+        "volume": 47300,
+        "turnover": 19278310,
+        "ratio": "0.89",
+        "change_price": 3.6
+    },
+    {
+        "time": 1731980880,
+        "price": 408600,
+        "cc_price": 408.6,
+        "volume": 56100,
+        "turnover": 22891260,
+        "ratio": "1.09",
+        "change_price": 4.4
+    },
+    {
+        "time": 1731980940,
+        "price": 408000,
+        "cc_price": 408,
+        "volume": 82200,
+        "turnover": 33533590,
+        "ratio": "0.94",
+        "change_price": 3.8
+    },
+    {
+        "time": 1731981000,
+        "price": 408800,
+        "cc_price": 408.8,
+        "volume": 76400,
+        "turnover": 31212380,
+        "ratio": "1.14",
+        "change_price": 4.6
+    },
+    {
+        "time": 1731981060,
+        "price": 408800,
+        "cc_price": 408.8,
+        "volume": 75800,
+        "turnover": 30988860,
+        "ratio": "1.14",
+        "change_price": 4.6
+    },
+    {
+        "time": 1731981120,
+        "price": 407400,
+        "cc_price": 407.4,
+        "volume": 84100,
+        "turnover": 34315904.5,
+        "ratio": "0.79",
+        "change_price": 3.2
+    },
+    {
+        "time": 1731981180,
+        "price": 407400,
+        "cc_price": 407.4,
+        "volume": 57800,
+        "turnover": 23558604.4,
+        "ratio": "0.79",
+        "change_price": 3.2
+    },
+    {
+        "time": 1731981240,
+        "price": 408000,
+        "cc_price": 408,
+        "volume": 55000,
+        "turnover": 22436450,
+        "ratio": "0.94",
+        "change_price": 3.8
+    },
+    {
+        "time": 1731981300,
+        "price": 408200,
+        "cc_price": 408.2,
+        "volume": 31500,
+        "turnover": 12856599.8,
+        "ratio": "0.99",
+        "change_price": 4
+    },
+    {
+        "time": 1731981360,
+        "price": 408600,
+        "cc_price": 408.6,
+        "volume": 46300,
+        "turnover": 18909720,
+        "ratio": "1.09",
+        "change_price": 4.4
+    },
+    {
+        "time": 1731981420,
+        "price": 408800,
+        "cc_price": 408.8,
+        "volume": 59000,
+        "turnover": 24123910,
+        "ratio": "1.14",
+        "change_price": 4.6
+    },
+    {
+        "time": 1731981480,
+        "price": 408400,
+        "cc_price": 408.4,
+        "volume": 19300,
+        "turnover": 7887150,
+        "ratio": "1.04",
+        "change_price": 4.2
+    },
+    {
+        "time": 1731981540,
+        "price": 407200,
+        "cc_price": 407.2,
+        "volume": 92300,
+        "turnover": 37644370,
+        "ratio": "0.74",
+        "change_price": 3
+    },
+    {
+        "time": 1731981600,
+        "price": 406800,
+        "cc_price": 406.8,
+        "volume": 82200,
+        "turnover": 33443320,
+        "ratio": "0.64",
+        "change_price": 2.6
+    },
+    {
+        "time": 1731981660,
+        "price": 407600,
+        "cc_price": 407.6,
+        "volume": 61300,
+        "turnover": 24980782,
+        "ratio": "0.84",
+        "change_price": 3.4
+    },
+    {
+        "time": 1731981720,
+        "price": 406600,
+        "cc_price": 406.6,
+        "volume": 43900,
+        "turnover": 17865320,
+        "ratio": "0.59",
+        "change_price": 2.4
+    },
+    {
+        "time": 1731981780,
+        "price": 406200,
+        "cc_price": 406.2,
+        "volume": 40500,
+        "turnover": 16456950,
+        "ratio": "0.49",
+        "change_price": 2
+    },
+    {
+        "time": 1731981840,
+        "price": 406400,
+        "cc_price": 406.4,
+        "volume": 43700,
+        "turnover": 17757510,
+        "ratio": "0.54",
+        "change_price": 2.2
+    },
+    {
+        "time": 1731981900,
+        "price": 406400,
+        "cc_price": 406.4,
+        "volume": 25400,
+        "turnover": 10321950,
+        "ratio": "0.54",
+        "change_price": 2.2
+    },
+    {
+        "time": 1731981960,
+        "price": 406200,
+        "cc_price": 406.2,
+        "volume": 23200,
+        "turnover": 9429650,
+        "ratio": "0.49",
+        "change_price": 2
+    },
+    {
+        "time": 1731982020,
+        "price": 406200,
+        "cc_price": 406.2,
+        "volume": 63900,
+        "turnover": 25957241.2,
+        "ratio": "0.49",
+        "change_price": 2
+    },
+    {
+        "time": 1731982080,
+        "price": 405800,
+        "cc_price": 405.8,
+        "volume": 75000,
+        "turnover": 30450639.6,
+        "ratio": "0.40",
+        "change_price": 1.6
+    },
+    {
+        "time": 1731982140,
+        "price": 405600,
+        "cc_price": 405.6,
+        "volume": 17900,
+        "turnover": 7262340,
+        "ratio": "0.35",
+        "change_price": 1.4
+    },
+    {
+        "time": 1731982200,
+        "price": 406000,
+        "cc_price": 406,
+        "volume": 79100,
+        "turnover": 32108930,
+        "ratio": "0.45",
+        "change_price": 1.8
+    },
+    {
+        "time": 1731982260,
+        "price": 406400,
+        "cc_price": 406.4,
+        "volume": 30900,
+        "turnover": 12556510,
+        "ratio": "0.54",
+        "change_price": 2.2
+    },
+    {
+        "time": 1731982320,
+        "price": 406800,
+        "cc_price": 406.8,
+        "volume": 19300,
+        "turnover": 7846440,
+        "ratio": "0.64",
+        "change_price": 2.6
+    },
+    {
+        "time": 1731982380,
+        "price": 407000,
+        "cc_price": 407,
+        "volume": 23200,
+        "turnover": 9439706.5,
+        "ratio": "0.69",
+        "change_price": 2.8
+    },
+    {
+        "time": 1731982440,
+        "price": 406400,
+        "cc_price": 406.4,
+        "volume": 38800,
+        "turnover": 15773920,
+        "ratio": "0.54",
+        "change_price": 2.2
+    },
+    {
+        "time": 1731982500,
+        "price": 407200,
+        "cc_price": 407.2,
+        "volume": 36600,
+        "turnover": 14892180,
+        "ratio": "0.74",
+        "change_price": 3
+    },
+    {
+        "time": 1731982560,
+        "price": 407000,
+        "cc_price": 407,
+        "volume": 21600,
+        "turnover": 8792720,
+        "ratio": "0.69",
+        "change_price": 2.8
+    },
+    {
+        "time": 1731982620,
+        "price": 406600,
+        "cc_price": 406.6,
+        "volume": 28100,
+        "turnover": 11427590,
+        "ratio": "0.59",
+        "change_price": 2.4
+    },
+    {
+        "time": 1731982680,
+        "price": 406000,
+        "cc_price": 406,
+        "volume": 22300,
+        "turnover": 9059400,
+        "ratio": "0.45",
+        "change_price": 1.8
+    },
+    {
+        "time": 1731982740,
+        "price": 405800,
+        "cc_price": 405.8,
+        "volume": 31100,
+        "turnover": 12625760,
+        "ratio": "0.40",
+        "change_price": 1.6
+    },
+    {
+        "time": 1731982800,
+        "price": 405800,
+        "cc_price": 405.8,
+        "volume": 21700,
+        "turnover": 8802030,
+        "ratio": "0.40",
+        "change_price": 1.6
+    },
+    {
+        "time": 1731982860,
+        "price": 405200,
+        "cc_price": 405.2,
+        "volume": 88600,
+        "turnover": 35923820,
+        "ratio": "0.25",
+        "change_price": 1
+    },
+    {
+        "time": 1731982920,
+        "price": 405000,
+        "cc_price": 405,
+        "volume": 61800,
+        "turnover": 25022710,
+        "ratio": "0.20",
+        "change_price": 0.8
+    },
+    {
+        "time": 1731982980,
+        "price": 404800,
+        "cc_price": 404.8,
+        "volume": 16100,
+        "turnover": 6517108.6,
+        "ratio": "0.15",
+        "change_price": 0.6
+    },
+    {
+        "time": 1731983040,
+        "price": 404600,
+        "cc_price": 404.6,
+        "volume": 30200,
+        "turnover": 12222660,
+        "ratio": "0.10",
+        "change_price": 0.4
+    },
+    {
+        "time": 1731983100,
+        "price": 405400,
+        "cc_price": 405.4,
+        "volume": 71600,
+        "turnover": 28995997.4,
+        "ratio": "0.30",
+        "change_price": 1.2
+    },
+    {
+        "time": 1731983160,
+        "price": 405200,
+        "cc_price": 405.2,
+        "volume": 34200,
+        "turnover": 13857716.8,
+        "ratio": "0.25",
+        "change_price": 1
+    },
+    {
+        "time": 1731983220,
+        "price": 405400,
+        "cc_price": 405.4,
+        "volume": 17200,
+        "turnover": 6971593,
+        "ratio": "0.30",
+        "change_price": 1.2
+    },
+    {
+        "time": 1731983280,
+        "price": 405800,
+        "cc_price": 405.8,
+        "volume": 47300,
+        "turnover": 19197640,
+        "ratio": "0.40",
+        "change_price": 1.6
+    },
+    {
+        "time": 1731983340,
+        "price": 405600,
+        "cc_price": 405.6,
+        "volume": 14100,
+        "turnover": 5719300,
+        "ratio": "0.35",
+        "change_price": 1.4
+    },
+    {
+        "time": 1731983400,
+        "price": 406000,
+        "cc_price": 406,
+        "volume": 68500,
+        "turnover": 27828440,
+        "ratio": "0.45",
+        "change_price": 1.8
+    },
+    {
+        "time": 1731983460,
+        "price": 405800,
+        "cc_price": 405.8,
+        "volume": 20700,
+        "turnover": 8400250,
+        "ratio": "0.40",
+        "change_price": 1.6
+    },
+    {
+        "time": 1731983520,
+        "price": 405200,
+        "cc_price": 405.2,
+        "volume": 54800,
+        "turnover": 22216920,
+        "ratio": "0.25",
+        "change_price": 1
+    },
+    {
+        "time": 1731983580,
+        "price": 405400,
+        "cc_price": 405.4,
+        "volume": 22000,
+        "turnover": 8914890,
+        "ratio": "0.30",
+        "change_price": 1.2
+    },
+    {
+        "time": 1731983640,
+        "price": 405400,
+        "cc_price": 405.4,
+        "volume": 14000,
+        "turnover": 5673860,
+        "ratio": "0.30",
+        "change_price": 1.2
+    },
+    {
+        "time": 1731983700,
+        "price": 405000,
+        "cc_price": 405,
+        "volume": 28800,
+        "turnover": 11666030,
+        "ratio": "0.20",
+        "change_price": 0.8
+    },
+    {
+        "time": 1731983760,
+        "price": 404600,
+        "cc_price": 404.6,
+        "volume": 30800,
+        "turnover": 12462020,
+        "ratio": "0.10",
+        "change_price": 0.4
+    },
+    {
+        "time": 1731983820,
+        "price": 405000,
+        "cc_price": 405,
+        "volume": 29900,
+        "turnover": 12104500,
+        "ratio": "0.20",
+        "change_price": 0.8
+    },
+    {
+        "time": 1731983880,
+        "price": 404800,
+        "cc_price": 404.8,
+        "volume": 28000,
+        "turnover": 11340720,
+        "ratio": "0.15",
+        "change_price": 0.6
+    },
+    {
+        "time": 1731983940,
+        "price": 404400,
+        "cc_price": 404.4,
+        "volume": 18600,
+        "turnover": 7528484.6,
+        "ratio": "0.05",
+        "change_price": 0.2
+    },
+    {
+        "time": 1731984000,
+        "price": 404400,
+        "cc_price": 404.4,
+        "volume": 17500,
+        "turnover": 7079460,
+        "ratio": "0.05",
+        "change_price": 0.2
+    },
+    {
+        "time": 1731984060,
+        "price": 404400,
+        "cc_price": 404.4,
+        "volume": 30300,
+        "turnover": 12254600,
+        "ratio": "0.05",
+        "change_price": 0.2
+    },
+    {
+        "time": 1731984120,
+        "price": 404000,
+        "cc_price": 404,
+        "volume": 58400,
+        "turnover": 23598940,
+        "ratio": "-0.05",
+        "change_price": -0.2
+    },
+    {
+        "time": 1731984180,
+        "price": 404000,
+        "cc_price": 404,
+        "volume": 61900,
+        "turnover": 24994780,
+        "ratio": "-0.05",
+        "change_price": -0.2
+    },
+    {
+        "time": 1731984240,
+        "price": 403600,
+        "cc_price": 403.6,
+        "volume": 21500,
+        "turnover": 8678840,
+        "ratio": "-0.15",
+        "change_price": -0.6
+    },
+    {
+        "time": 1731984300,
+        "price": 403400,
+        "cc_price": 403.4,
+        "volume": 79800,
+        "turnover": 32207380,
+        "ratio": "-0.20",
+        "change_price": -0.8
+    },
+    {
+        "time": 1731984360,
+        "price": 404200,
+        "cc_price": 404.2,
+        "volume": 55500,
+        "turnover": 22409740,
+        "ratio": "0.00",
+        "change_price": 0
+    },
+    {
+        "time": 1731984420,
+        "price": 404000,
+        "cc_price": 404,
+        "volume": 39000,
+        "turnover": 15754780,
+        "ratio": "-0.05",
+        "change_price": -0.2
+    },
+    {
+        "time": 1731984480,
+        "price": 404000,
+        "cc_price": 404,
+        "volume": 83800,
+        "turnover": 33853780,
+        "ratio": "-0.05",
+        "change_price": -0.2
+    },
+    {
+        "time": 1731984540,
+        "price": 404000,
+        "cc_price": 404,
+        "volume": 29900,
+        "turnover": 12075091.8,
+        "ratio": "-0.05",
+        "change_price": -0.2
+    },
+    {
+        "time": 1731984600,
+        "price": 404200,
+        "cc_price": 404.2,
+        "volume": 17600,
+        "turnover": 7112500,
+        "ratio": "0.00",
+        "change_price": 0
+    },
+    {
+        "time": 1731984660,
+        "price": 404400,
+        "cc_price": 404.4,
+        "volume": 18700,
+        "turnover": 7561985.6,
+        "ratio": "0.05",
+        "change_price": 0.2
+    },
+    {
+        "time": 1731984720,
+        "price": 404600,
+        "cc_price": 404.6,
+        "volume": 14800,
+        "turnover": 5986120,
+        "ratio": "0.10",
+        "change_price": 0.4
+    },
+    {
+        "time": 1731984780,
+        "price": 404600,
+        "cc_price": 404.6,
+        "volume": 36800,
+        "turnover": 14890960,
+        "ratio": "0.10",
+        "change_price": 0.4
+    },
+    {
+        "time": 1731984840,
+        "price": 404800,
+        "cc_price": 404.8,
+        "volume": 19800,
+        "turnover": 8014290,
+        "ratio": "0.15",
+        "change_price": 0.6
+    },
+    {
+        "time": 1731984900,
+        "price": 404600,
+        "cc_price": 404.6,
+        "volume": 9700,
+        "turnover": 3926240,
+        "ratio": "0.10",
+        "change_price": 0.4
+    },
+    {
+        "time": 1731984960,
+        "price": 404600,
+        "cc_price": 404.6,
+        "volume": 21200,
+        "turnover": 8576901.4,
+        "ratio": "0.10",
+        "change_price": 0.4
+    },
+    {
+        "time": 1731985020,
+        "price": 404600,
+        "cc_price": 404.6,
+        "volume": 13300,
+        "turnover": 5381940,
+        "ratio": "0.10",
+        "change_price": 0.4
+    },
+    {
+        "time": 1731985080,
+        "price": 405000,
+        "cc_price": 405,
+        "volume": 17400,
+        "turnover": 7043680,
+        "ratio": "0.20",
+        "change_price": 0.8
+    },
+    {
+        "time": 1731985140,
+        "price": 405200,
+        "cc_price": 405.2,
+        "volume": 22800,
+        "turnover": 9234320,
+        "ratio": "0.25",
+        "change_price": 1
+    },
+    {
+        "time": 1731985200,
+        "price": 405000,
+        "cc_price": 405,
+        "volume": 26600,
+        "turnover": 10773200,
+        "ratio": "0.20",
+        "change_price": 0.8
+    },
+    {
+        "time": 1731985260,
+        "price": 405000,
+        "cc_price": 405,
+        "volume": 11800,
+        "turnover": 4780630,
+        "ratio": "0.20",
+        "change_price": 0.8
+    },
+    {
+        "time": 1731985320,
+        "price": 405000,
+        "cc_price": 405,
+        "volume": 48200,
+        "turnover": 19520760,
+        "ratio": "0.20",
+        "change_price": 0.8
+    },
+    {
+        "time": 1731985380,
+        "price": 405200,
+        "cc_price": 405.2,
+        "volume": 53900,
+        "turnover": 21829320,
+        "ratio": "0.25",
+        "change_price": 1
+    },
+    {
+        "time": 1731985440,
+        "price": 405800,
+        "cc_price": 405.8,
+        "volume": 35900,
+        "turnover": 14551150,
+        "ratio": "0.40",
+        "change_price": 1.6
+    },
+    {
+        "time": 1731985500,
+        "price": 405200,
+        "cc_price": 405.2,
+        "volume": 13500,
+        "turnover": 5473040,
+        "ratio": "0.25",
+        "change_price": 1
+    },
+    {
+        "time": 1731985560,
+        "price": 405400,
+        "cc_price": 405.4,
+        "volume": 30700,
+        "turnover": 12442972.4,
+        "ratio": "0.30",
+        "change_price": 1.2
+    },
+    {
+        "time": 1731985620,
+        "price": 404800,
+        "cc_price": 404.8,
+        "volume": 24100,
+        "turnover": 9762140,
+        "ratio": "0.15",
+        "change_price": 0.6
+    },
+    {
+        "time": 1731985680,
+        "price": 405000,
+        "cc_price": 405,
+        "volume": 15900,
+        "turnover": 6437480,
+        "ratio": "0.20",
+        "change_price": 0.8
+    },
+    {
+        "time": 1731985740,
+        "price": 404400,
+        "cc_price": 404.4,
+        "volume": 20500,
+        "turnover": 8295930,
+        "ratio": "0.05",
+        "change_price": 0.2
+    },
+    {
+        "time": 1731985800,
+        "price": 404400,
+        "cc_price": 404.4,
+        "volume": 9200,
+        "turnover": 3721790,
+        "ratio": "0.05",
+        "change_price": 0.2
+    },
+    {
+        "time": 1731985860,
+        "price": 404600,
+        "cc_price": 404.6,
+        "volume": 12000,
+        "turnover": 4854270,
+        "ratio": "0.10",
+        "change_price": 0.4
+    },
+    {
+        "time": 1731985920,
+        "price": 405000,
+        "cc_price": 405,
+        "volume": 26600,
+        "turnover": 10766560,
+        "ratio": "0.20",
+        "change_price": 0.8
+    },
+    {
+        "time": 1731985980,
+        "price": 404800,
+        "cc_price": 404.8,
+        "volume": 21700,
+        "turnover": 8787710,
+        "ratio": "0.15",
+        "change_price": 0.6
+    },
+    {
+        "time": 1731986040,
+        "price": 404600,
+        "cc_price": 404.6,
+        "volume": 31400,
+        "turnover": 12711200,
+        "ratio": "0.10",
+        "change_price": 0.4
+    },
+    {
+        "time": 1731986100,
+        "price": 404600,
+        "cc_price": 404.6,
+        "volume": 17900,
+        "turnover": 7245190,
+        "ratio": "0.10",
+        "change_price": 0.4
+    },
+    {
+        "time": 1731986160,
+        "price": 405000,
+        "cc_price": 405,
+        "volume": 15500,
+        "turnover": 6274406.9,
+        "ratio": "0.20",
+        "change_price": 0.8
+    },
+    {
+        "time": 1731986220,
+        "price": 404600,
+        "cc_price": 404.6,
+        "volume": 11100,
+        "turnover": 4493049.5,
+        "ratio": "0.10",
+        "change_price": 0.4
+    },
+    {
+        "time": 1731986280,
+        "price": 404800,
+        "cc_price": 404.8,
+        "volume": 35600,
+        "turnover": 14404980,
+        "ratio": "0.15",
+        "change_price": 0.6
+    },
+    {
+        "time": 1731986340,
+        "price": 404800,
+        "cc_price": 404.8,
+        "volume": 8900,
+        "turnover": 3602150,
+        "ratio": "0.15",
+        "change_price": 0.6
+    },
+    {
+        "time": 1731986400,
+        "price": 404800,
+        "cc_price": 404.8,
+        "volume": 14600,
+        "turnover": 5911080,
+        "ratio": "0.15",
+        "change_price": 0.6
+    },
+    {
+        "time": 1731986460,
+        "price": 405000,
+        "cc_price": 405,
+        "volume": 12900,
+        "turnover": 5223910,
+        "ratio": "0.20",
+        "change_price": 0.8
+    },
+    {
+        "time": 1731986520,
+        "price": 405000,
+        "cc_price": 405,
+        "volume": 28000,
+        "turnover": 11339940,
+        "ratio": "0.20",
+        "change_price": 0.8
+    },
+    {
+        "time": 1731986580,
+        "price": 404800,
+        "cc_price": 404.8,
+        "volume": 14600,
+        "turnover": 5913160,
+        "ratio": "0.15",
+        "change_price": 0.6
+    },
+    {
+        "time": 1731986640,
+        "price": 405000,
+        "cc_price": 405,
+        "volume": 7800,
+        "turnover": 3158710,
+        "ratio": "0.20",
+        "change_price": 0.8
+    },
+    {
+        "time": 1731986700,
+        "price": 405400,
+        "cc_price": 405.4,
+        "volume": 23700,
+        "turnover": 9602400,
+        "ratio": "0.30",
+        "change_price": 1.2
+    },
+    {
+        "time": 1731986760,
+        "price": 405600,
+        "cc_price": 405.6,
+        "volume": 8500,
+        "turnover": 3446480,
+        "ratio": "0.35",
+        "change_price": 1.4
+    },
+    {
+        "time": 1731986820,
+        "price": 405800,
+        "cc_price": 405.8,
+        "volume": 23700,
+        "turnover": 9612587.8,
+        "ratio": "0.40",
+        "change_price": 1.6
+    },
+    {
+        "time": 1731986880,
+        "price": 405600,
+        "cc_price": 405.6,
+        "volume": 7500,
+        "turnover": 3041890,
+        "ratio": "0.35",
+        "change_price": 1.4
+    },
+    {
+        "time": 1731986940,
+        "price": 405800,
+        "cc_price": 405.8,
+        "volume": 10300,
+        "turnover": 4178190,
+        "ratio": "0.40",
+        "change_price": 1.6
+    },
+    {
+        "time": 1731987000,
+        "price": 406200,
+        "cc_price": 406.2,
+        "volume": 31100,
+        "turnover": 12625590,
+        "ratio": "0.49",
+        "change_price": 2
+    },
+    {
+        "time": 1731987060,
+        "price": 406000,
+        "cc_price": 406,
+        "volume": 19500,
+        "turnover": 7919470,
+        "ratio": "0.45",
+        "change_price": 1.8
+    },
+    {
+        "time": 1731987120,
+        "price": 406000,
+        "cc_price": 406,
+        "volume": 17700,
+        "turnover": 7186330,
+        "ratio": "0.45",
+        "change_price": 1.8
+    },
+    {
+        "time": 1731987180,
+        "price": 406200,
+        "cc_price": 406.2,
+        "volume": 11500,
+        "turnover": 4669790,
+        "ratio": "0.49",
+        "change_price": 2
+    },
+    {
+        "time": 1731987240,
+        "price": 406200,
+        "cc_price": 406.2,
+        "volume": 10200,
+        "turnover": 4142920,
+        "ratio": "0.49",
+        "change_price": 2
+    },
+    {
+        "time": 1731987300,
+        "price": 406200,
+        "cc_price": 406.2,
+        "volume": 9300,
+        "turnover": 3776710,
+        "ratio": "0.49",
+        "change_price": 2
+    },
+    {
+        "time": 1731987360,
+        "price": 406000,
+        "cc_price": 406,
+        "volume": 16300,
+        "turnover": 6617650,
+        "ratio": "0.45",
+        "change_price": 1.8
+    },
+    {
+        "time": 1731987420,
+        "price": 406000,
+        "cc_price": 406,
+        "volume": 5700,
+        "turnover": 2313798,
+        "ratio": "0.45",
+        "change_price": 1.8
+    },
+    {
+        "time": 1731987480,
+        "price": 406200,
+        "cc_price": 406.2,
+        "volume": 14600,
+        "turnover": 5928616.5,
+        "ratio": "0.49",
+        "change_price": 2
+    },
+    {
+        "time": 1731987540,
+        "price": 406400,
+        "cc_price": 406.4,
+        "volume": 13100,
+        "turnover": 5321410,
+        "ratio": "0.54",
+        "change_price": 2.2
+    },
+    {
+        "time": 1731987600,
+        "price": 406400,
+        "cc_price": 406.4,
+        "volume": 4400,
+        "turnover": 1787970,
+        "ratio": "0.54",
+        "change_price": 2.2
+    },
+    {
+        "time": 1731987660,
+        "price": 406400,
+        "cc_price": 406.4,
+        "volume": 9600,
+        "turnover": 3901280,
+        "ratio": "0.54",
+        "change_price": 2.2
+    },
+    {
+        "time": 1731987720,
+        "price": 406400,
+        "cc_price": 406.4,
+        "volume": 9600,
+        "turnover": 3901230,
+        "ratio": "0.54",
+        "change_price": 2.2
+    },
+    {
+        "time": 1731987780,
+        "price": 405800,
+        "cc_price": 405.8,
+        "volume": 27900,
+        "turnover": 11329180,
+        "ratio": "0.40",
+        "change_price": 1.6
+    },
+    {
+        "time": 1731987840,
+        "price": 405400,
+        "cc_price": 405.4,
+        "volume": 13100,
+        "turnover": 5314090,
+        "ratio": "0.30",
+        "change_price": 1.2
+    },
+    {
+        "time": 1731987900,
+        "price": 405600,
+        "cc_price": 405.6,
+        "volume": 6500,
+        "turnover": 2636290,
+        "ratio": "0.35",
+        "change_price": 1.4
+    },
+    {
+        "time": 1731987960,
+        "price": 405600,
+        "cc_price": 405.6,
+        "volume": 17300,
+        "turnover": 7016430,
+        "ratio": "0.35",
+        "change_price": 1.4
+    },
+    {
+        "time": 1731988020,
+        "price": 405400,
+        "cc_price": 405.4,
+        "volume": 21400,
+        "turnover": 8680010,
+        "ratio": "0.30",
+        "change_price": 1.2
+    },
+    {
+        "time": 1731988080,
+        "price": 405200,
+        "cc_price": 405.2,
+        "volume": 18100,
+        "turnover": 7336734.9,
+        "ratio": "0.25",
+        "change_price": 1
+    },
+    {
+        "time": 1731988140,
+        "price": 405400,
+        "cc_price": 405.4,
+        "volume": 13800,
+        "turnover": 5592370,
+        "ratio": "0.30",
+        "change_price": 1.2
+    },
+    {
+        "time": 1731988200,
+        "price": 405400,
+        "cc_price": 405.4,
+        "volume": 19500,
+        "turnover": 7902670,
+        "ratio": "0.30",
+        "change_price": 1.2
+    },
+    {
+        "time": 1731988260,
+        "price": 405400,
+        "cc_price": 405.4,
+        "volume": 24700,
+        "turnover": 10008441.2,
+        "ratio": "0.30",
+        "change_price": 1.2
+    },
+    {
+        "time": 1731988320,
+        "price": 405400,
+        "cc_price": 405.4,
+        "volume": 18900,
+        "turnover": 7660980,
+        "ratio": "0.30",
+        "change_price": 1.2
+    },
+    {
+        "time": 1731988380,
+        "price": 405400,
+        "cc_price": 405.4,
+        "volume": 19500,
+        "turnover": 7902870,
+        "ratio": "0.30",
+        "change_price": 1.2
+    },
+    {
+        "time": 1731988440,
+        "price": 405600,
+        "cc_price": 405.6,
+        "volume": 16400,
+        "turnover": 6647160,
+        "ratio": "0.35",
+        "change_price": 1.4
+    },
+    {
+        "time": 1731988500,
+        "price": 405400,
+        "cc_price": 405.4,
+        "volume": 20700,
+        "turnover": 8388540,
+        "ratio": "0.30",
+        "change_price": 1.2
+    },
+    {
+        "time": 1731988560,
+        "price": 405400,
+        "cc_price": 405.4,
+        "volume": 17100,
+        "turnover": 6930030,
+        "ratio": "0.30",
+        "change_price": 1.2
+    },
+    {
+        "time": 1731988620,
+        "price": 406000,
+        "cc_price": 406,
+        "volume": 47600,
+        "turnover": 19292220,
+        "ratio": "0.45",
+        "change_price": 1.8
+    },
+    {
+        "time": 1731988680,
+        "price": 406400,
+        "cc_price": 406.4,
+        "volume": 12800,
+        "turnover": 5197200,
+        "ratio": "0.54",
+        "change_price": 2.2
+    },
+    {
+        "time": 1731988740,
+        "price": 406400,
+        "cc_price": 406.4,
+        "volume": 1200,
+        "turnover": 487560,
+        "ratio": "0.54",
+        "change_price": 2.2
+    },
+    {
+        "time": 1731988800,
+        "price": 406400,
+        "cc_price": 406.4,
+        "volume": 12500,
+        "turnover": 5080300,
+        "ratio": "0.54",
+        "change_price": 2.2
+    },
+    {
+        "time": 1731992460,
+        "price": 406200,
+        "cc_price": 406.2,
+        "volume": 25400,
+        "turnover": 10315540,
+        "ratio": "0.49",
+        "change_price": 2
+    },
+    {
+        "time": 1731992520,
+        "price": 405400,
+        "cc_price": 405.4,
+        "volume": 53000,
+        "turnover": 21511970,
+        "ratio": "0.30",
+        "change_price": 1.2
+    },
+    {
+        "time": 1731992580,
+        "price": 405200,
+        "cc_price": 405.2,
+        "volume": 20500,
+        "turnover": 8309110,
+        "ratio": "0.25",
+        "change_price": 1
+    },
+    {
+        "time": 1731992640,
+        "price": 405000,
+        "cc_price": 405,
+        "volume": 17200,
+        "turnover": 6966970,
+        "ratio": "0.20",
+        "change_price": 0.8
+    },
+    {
+        "time": 1731992700,
+        "price": 405400,
+        "cc_price": 405.4,
+        "volume": 34300,
+        "turnover": 13895670,
+        "ratio": "0.30",
+        "change_price": 1.2
+    },
+    {
+        "time": 1731992760,
+        "price": 405600,
+        "cc_price": 405.6,
+        "volume": 24700,
+        "turnover": 10010767.5,
+        "ratio": "0.35",
+        "change_price": 1.4
+    },
+    {
+        "time": 1731992820,
+        "price": 405600,
+        "cc_price": 405.6,
+        "volume": 13600,
+        "turnover": 5513550,
+        "ratio": "0.35",
+        "change_price": 1.4
+    },
+    {
+        "time": 1731992880,
+        "price": 405400,
+        "cc_price": 405.4,
+        "volume": 11100,
+        "turnover": 4500790,
+        "ratio": "0.30",
+        "change_price": 1.2
+    },
+    {
+        "time": 1731992940,
+        "price": 405600,
+        "cc_price": 405.6,
+        "volume": 21500,
+        "turnover": 8720760,
+        "ratio": "0.35",
+        "change_price": 1.4
+    },
+    {
+        "time": 1731993000,
+        "price": 405600,
+        "cc_price": 405.6,
+        "volume": 12800,
+        "turnover": 5193090,
+        "ratio": "0.35",
+        "change_price": 1.4
+    },
+    {
+        "time": 1731993060,
+        "price": 406200,
+        "cc_price": 406.2,
+        "volume": 12900,
+        "turnover": 5236800,
+        "ratio": "0.49",
+        "change_price": 2
+    },
+    {
+        "time": 1731993120,
+        "price": 406400,
+        "cc_price": 406.4,
+        "volume": 15200,
+        "turnover": 6176030,
+        "ratio": "0.54",
+        "change_price": 2.2
+    },
+    {
+        "time": 1731993180,
+        "price": 406200,
+        "cc_price": 406.2,
+        "volume": 23000,
+        "turnover": 9343690,
+        "ratio": "0.49",
+        "change_price": 2
+    },
+    {
+        "time": 1731993240,
+        "price": 406200,
+        "cc_price": 406.2,
+        "volume": 15100,
+        "turnover": 6132880,
+        "ratio": "0.49",
+        "change_price": 2
+    },
+    {
+        "time": 1731993300,
+        "price": 406200,
+        "cc_price": 406.2,
+        "volume": 8300,
+        "turnover": 3371830,
+        "ratio": "0.49",
+        "change_price": 2
+    },
+    {
+        "time": 1731993360,
+        "price": 406400,
+        "cc_price": 406.4,
+        "volume": 5500,
+        "turnover": 2234672.9,
+        "ratio": "0.54",
+        "change_price": 2.2
+    },
+    {
+        "time": 1731993420,
+        "price": 406600,
+        "cc_price": 406.6,
+        "volume": 31500,
+        "turnover": 12802180,
+        "ratio": "0.59",
+        "change_price": 2.4
+    },
+    {
+        "time": 1731993480,
+        "price": 406000,
+        "cc_price": 406,
+        "volume": 50600,
+        "turnover": 20549800,
+        "ratio": "0.45",
+        "change_price": 1.8
+    },
+    {
+        "time": 1731993540,
+        "price": 406200,
+        "cc_price": 406.2,
+        "volume": 29700,
+        "turnover": 12058560,
+        "ratio": "0.49",
+        "change_price": 2
+    },
+    {
+        "time": 1731993600,
+        "price": 405600,
+        "cc_price": 405.6,
+        "volume": 18300,
+        "turnover": 7424150,
+        "ratio": "0.35",
+        "change_price": 1.4
+    },
+    {
+        "time": 1731993660,
+        "price": 405600,
+        "cc_price": 405.6,
+        "volume": 6300,
+        "turnover": 2555050,
+        "ratio": "0.35",
+        "change_price": 1.4
+    },
+    {
+        "time": 1731993720,
+        "price": 405600,
+        "cc_price": 405.6,
+        "volume": 30600,
+        "turnover": 12416690,
+        "ratio": "0.35",
+        "change_price": 1.4
+    },
+    {
+        "time": 1731993780,
+        "price": 405800,
+        "cc_price": 405.8,
+        "volume": 15200,
+        "turnover": 6166100,
+        "ratio": "0.40",
+        "change_price": 1.6
+    },
+    {
+        "time": 1731993840,
+        "price": 406000,
+        "cc_price": 406,
+        "volume": 21300,
+        "turnover": 8642540,
+        "ratio": "0.45",
+        "change_price": 1.8
+    },
+    {
+        "time": 1731993900,
+        "price": 406600,
+        "cc_price": 406.6,
+        "volume": 27300,
+        "turnover": 11089470,
+        "ratio": "0.59",
+        "change_price": 2.4
+    },
+    {
+        "time": 1731993960,
+        "price": 406200,
+        "cc_price": 406.2,
+        "volume": 29700,
+        "turnover": 12067512.9,
+        "ratio": "0.49",
+        "change_price": 2
+    },
+    {
+        "time": 1731994020,
+        "price": 406200,
+        "cc_price": 406.2,
+        "volume": 10600,
+        "turnover": 4307010,
+        "ratio": "0.49",
+        "change_price": 2
+    },
+    {
+        "time": 1731994080,
+        "price": 406400,
+        "cc_price": 406.4,
+        "volume": 10800,
+        "turnover": 4387890,
+        "ratio": "0.54",
+        "change_price": 2.2
+    },
+    {
+        "time": 1731994140,
+        "price": 406000,
+        "cc_price": 406,
+        "volume": 14800,
+        "turnover": 6010830,
+        "ratio": "0.45",
+        "change_price": 1.8
+    },
+    {
+        "time": 1731994200,
+        "price": 406000,
+        "cc_price": 406,
+        "volume": 36600,
+        "turnover": 14857660,
+        "ratio": "0.45",
+        "change_price": 1.8
+    },
+    {
+        "time": 1731994260,
+        "price": 405800,
+        "cc_price": 405.8,
+        "volume": 13200,
+        "turnover": 5357029.8,
+        "ratio": "0.40",
+        "change_price": 1.6
+    },
+    {
+        "time": 1731994320,
+        "price": 405400,
+        "cc_price": 405.4,
+        "volume": 24700,
+        "turnover": 10015380,
+        "ratio": "0.30",
+        "change_price": 1.2
+    },
+    {
+        "time": 1731994380,
+        "price": 404800,
+        "cc_price": 404.8,
+        "volume": 25300,
+        "turnover": 10245098.9,
+        "ratio": "0.15",
+        "change_price": 0.6
+    },
+    {
+        "time": 1731994440,
+        "price": 405400,
+        "cc_price": 405.4,
+        "volume": 26000,
+        "turnover": 10529910,
+        "ratio": "0.30",
+        "change_price": 1.2
+    },
+    {
+        "time": 1731994500,
+        "price": 405200,
+        "cc_price": 405.2,
+        "volume": 15300,
+        "turnover": 6199170,
+        "ratio": "0.25",
+        "change_price": 1
+    },
+    {
+        "time": 1731994560,
+        "price": 405000,
+        "cc_price": 405,
+        "volume": 22100,
+        "turnover": 8955400,
+        "ratio": "0.20",
+        "change_price": 0.8
+    },
+    {
+        "time": 1731994620,
+        "price": 405400,
+        "cc_price": 405.4,
+        "volume": 20700,
+        "turnover": 8388160,
+        "ratio": "0.30",
+        "change_price": 1.2
+    },
+    {
+        "time": 1731994680,
+        "price": 405400,
+        "cc_price": 405.4,
+        "volume": 20300,
+        "turnover": 8226550,
+        "ratio": "0.30",
+        "change_price": 1.2
+    },
+    {
+        "time": 1731994740,
+        "price": 405600,
+        "cc_price": 405.6,
+        "volume": 10100,
+        "turnover": 4095030,
+        "ratio": "0.35",
+        "change_price": 1.4
+    },
+    {
+        "time": 1731994800,
+        "price": 406000,
+        "cc_price": 406,
+        "volume": 54400,
+        "turnover": 22081190,
+        "ratio": "0.45",
+        "change_price": 1.8
+    },
+    {
+        "time": 1731994860,
+        "price": 405800,
+        "cc_price": 405.8,
+        "volume": 5400,
+        "turnover": 2190990,
+        "ratio": "0.40",
+        "change_price": 1.6
+    },
+    {
+        "time": 1731994920,
+        "price": 406600,
+        "cc_price": 406.6,
+        "volume": 84200,
+        "turnover": 34191560,
+        "ratio": "0.59",
+        "change_price": 2.4
+    },
+    {
+        "time": 1731994980,
+        "price": 406800,
+        "cc_price": 406.8,
+        "volume": 46900,
+        "turnover": 19063362,
+        "ratio": "0.64",
+        "change_price": 2.6
+    },
+    {
+        "time": 1731995040,
+        "price": 406200,
+        "cc_price": 406.2,
+        "volume": 22600,
+        "turnover": 9184643.1,
+        "ratio": "0.49",
+        "change_price": 2
+    },
+    {
+        "time": 1731995100,
+        "price": 406200,
+        "cc_price": 406.2,
+        "volume": 43100,
+        "turnover": 17499900,
+        "ratio": "0.49",
+        "change_price": 2
+    },
+    {
+        "time": 1731995160,
+        "price": 406000,
+        "cc_price": 406,
+        "volume": 7800,
+        "turnover": 3166590,
+        "ratio": "0.45",
+        "change_price": 1.8
+    },
+    {
+        "time": 1731995220,
+        "price": 406000,
+        "cc_price": 406,
+        "volume": 24500,
+        "turnover": 9944710,
+        "ratio": "0.45",
+        "change_price": 1.8
+    },
+    {
+        "time": 1731995280,
+        "price": 406000,
+        "cc_price": 406,
+        "volume": 14100,
+        "turnover": 5722120,
+        "ratio": "0.45",
+        "change_price": 1.8
+    },
+    {
+        "time": 1731995340,
+        "price": 405800,
+        "cc_price": 405.8,
+        "volume": 19500,
+        "turnover": 7913310,
+        "ratio": "0.40",
+        "change_price": 1.6
+    },
+    {
+        "time": 1731995400,
+        "price": 405800,
+        "cc_price": 405.8,
+        "volume": 11400,
+        "turnover": 4624350,
+        "ratio": "0.40",
+        "change_price": 1.6
+    },
+    {
+        "time": 1731995460,
+        "price": 405000,
+        "cc_price": 405,
+        "volume": 51400,
+        "turnover": 20838460,
+        "ratio": "0.20",
+        "change_price": 0.8
+    },
+    {
+        "time": 1731995520,
+        "price": 405000,
+        "cc_price": 405,
+        "volume": 43500,
+        "turnover": 17618110,
+        "ratio": "0.20",
+        "change_price": 0.8
+    },
+    {
+        "time": 1731995580,
+        "price": 405400,
+        "cc_price": 405.4,
+        "volume": 22700,
+        "turnover": 9197290,
+        "ratio": "0.30",
+        "change_price": 1.2
+    },
+    {
+        "time": 1731995640,
+        "price": 405400,
+        "cc_price": 405.4,
+        "volume": 30700,
+        "turnover": 12444480,
+        "ratio": "0.30",
+        "change_price": 1.2
+    },
+    {
+        "time": 1731995700,
+        "price": 406200,
+        "cc_price": 406.2,
+        "volume": 48100,
+        "turnover": 19522748.8,
+        "ratio": "0.49",
+        "change_price": 2
+    },
+    {
+        "time": 1731995760,
+        "price": 406200,
+        "cc_price": 406.2,
+        "volume": 6100,
+        "turnover": 2477600,
+        "ratio": "0.49",
+        "change_price": 2
+    },
+    {
+        "time": 1731995820,
+        "price": 406400,
+        "cc_price": 406.4,
+        "volume": 22800,
+        "turnover": 9264138.8,
+        "ratio": "0.54",
+        "change_price": 2.2
+    },
+    {
+        "time": 1731995880,
+        "price": 406800,
+        "cc_price": 406.8,
+        "volume": 30800,
+        "turnover": 12521290,
+        "ratio": "0.64",
+        "change_price": 2.6
+    },
+    {
+        "time": 1731995940,
+        "price": 406400,
+        "cc_price": 406.4,
+        "volume": 12500,
+        "turnover": 5082380,
+        "ratio": "0.54",
+        "change_price": 2.2
+    },
+    {
+        "time": 1731996000,
+        "price": 406600,
+        "cc_price": 406.6,
+        "volume": 17500,
+        "turnover": 7115050,
+        "ratio": "0.59",
+        "change_price": 2.4
+    },
+    {
+        "time": 1731996060,
+        "price": 406600,
+        "cc_price": 406.6,
+        "volume": 22900,
+        "turnover": 9312680,
+        "ratio": "0.59",
+        "change_price": 2.4
+    },
+    {
+        "time": 1731996120,
+        "price": 406000,
+        "cc_price": 406,
+        "volume": 36400,
+        "turnover": 14795480,
+        "ratio": "0.45",
+        "change_price": 1.8
+    },
+    {
+        "time": 1731996180,
+        "price": 406800,
+        "cc_price": 406.8,
+        "volume": 22000,
+        "turnover": 8944340,
+        "ratio": "0.64",
+        "change_price": 2.6
+    },
+    {
+        "time": 1731996240,
+        "price": 406800,
+        "cc_price": 406.8,
+        "volume": 41200,
+        "turnover": 16759990,
+        "ratio": "0.64",
+        "change_price": 2.6
+    },
+    {
+        "time": 1731996300,
+        "price": 407000,
+        "cc_price": 407,
+        "volume": 11200,
+        "turnover": 4556530,
+        "ratio": "0.69",
+        "change_price": 2.8
+    },
+    {
+        "time": 1731996360,
+        "price": 407200,
+        "cc_price": 407.2,
+        "volume": 42400,
+        "turnover": 17255880,
+        "ratio": "0.74",
+        "change_price": 3
+    },
+    {
+        "time": 1731996420,
+        "price": 407000,
+        "cc_price": 407,
+        "volume": 10500,
+        "turnover": 4273410,
+        "ratio": "0.69",
+        "change_price": 2.8
+    },
+    {
+        "time": 1731996480,
+        "price": 407200,
+        "cc_price": 407.2,
+        "volume": 34300,
+        "turnover": 13958749.8,
+        "ratio": "0.74",
+        "change_price": 3
+    },
+    {
+        "time": 1731996540,
+        "price": 407600,
+        "cc_price": 407.6,
+        "volume": 55900,
+        "turnover": 22773280,
+        "ratio": "0.84",
+        "change_price": 3.4
+    },
+    {
+        "time": 1731996600,
+        "price": 406800,
+        "cc_price": 406.8,
+        "volume": 29700,
+        "turnover": 12090146.2,
+        "ratio": "0.64",
+        "change_price": 2.6
+    },
+    {
+        "time": 1731996660,
+        "price": 407200,
+        "cc_price": 407.2,
+        "volume": 25900,
+        "turnover": 10539657.6,
+        "ratio": "0.74",
+        "change_price": 3
+    },
+    {
+        "time": 1731996720,
+        "price": 407000,
+        "cc_price": 407,
+        "volume": 38300,
+        "turnover": 15587630,
+        "ratio": "0.69",
+        "change_price": 2.8
+    },
+    {
+        "time": 1731996780,
+        "price": 406800,
+        "cc_price": 406.8,
+        "volume": 11700,
+        "turnover": 4759710,
+        "ratio": "0.64",
+        "change_price": 2.6
+    },
+    {
+        "time": 1731996840,
+        "price": 407000,
+        "cc_price": 407,
+        "volume": 32400,
+        "turnover": 13180680,
+        "ratio": "0.69",
+        "change_price": 2.8
+    },
+    {
+        "time": 1731996900,
+        "price": 406600,
+        "cc_price": 406.6,
+        "volume": 28100,
+        "turnover": 11429950,
+        "ratio": "0.59",
+        "change_price": 2.4
+    },
+    {
+        "time": 1731996960,
+        "price": 406800,
+        "cc_price": 406.8,
+        "volume": 15000,
+        "turnover": 6098410,
+        "ratio": "0.64",
+        "change_price": 2.6
+    },
+    {
+        "time": 1731997020,
+        "price": 407400,
+        "cc_price": 407.4,
+        "volume": 58100,
+        "turnover": 23647530,
+        "ratio": "0.79",
+        "change_price": 3.2
+    },
+    {
+        "time": 1731997080,
+        "price": 407200,
+        "cc_price": 407.2,
+        "volume": 23100,
+        "turnover": 9406410,
+        "ratio": "0.74",
+        "change_price": 3
+    },
+    {
+        "time": 1731997140,
+        "price": 407400,
+        "cc_price": 407.4,
+        "volume": 32400,
+        "turnover": 13193890,
+        "ratio": "0.79",
+        "change_price": 3.2
+    },
+    {
+        "time": 1731997200,
+        "price": 407400,
+        "cc_price": 407.4,
+        "volume": 14500,
+        "turnover": 5906680,
+        "ratio": "0.79",
+        "change_price": 3.2
+    },
+    {
+        "time": 1731997260,
+        "price": 407800,
+        "cc_price": 407.8,
+        "volume": 61600,
+        "turnover": 25122055,
+        "ratio": "0.89",
+        "change_price": 3.6
+    },
+    {
+        "time": 1731997320,
+        "price": 408000,
+        "cc_price": 408,
+        "volume": 37200,
+        "turnover": 15169584,
+        "ratio": "0.94",
+        "change_price": 3.8
+    },
+    {
+        "time": 1731997380,
+        "price": 407800,
+        "cc_price": 407.8,
+        "volume": 34200,
+        "turnover": 13947090.9,
+        "ratio": "0.89",
+        "change_price": 3.6
+    },
+    {
+        "time": 1731997440,
+        "price": 407800,
+        "cc_price": 407.8,
+        "volume": 22200,
+        "turnover": 9053410,
+        "ratio": "0.89",
+        "change_price": 3.6
+    },
+    {
+        "time": 1731997500,
+        "price": 407600,
+        "cc_price": 407.6,
+        "volume": 20700,
+        "turnover": 8439459.5,
+        "ratio": "0.84",
+        "change_price": 3.4
+    },
+    {
+        "time": 1731997560,
+        "price": 408000,
+        "cc_price": 408,
+        "volume": 35000,
+        "turnover": 14276900,
+        "ratio": "0.94",
+        "change_price": 3.8
+    },
+    {
+        "time": 1731997620,
+        "price": 407800,
+        "cc_price": 407.8,
+        "volume": 23400,
+        "turnover": 9542422.8,
+        "ratio": "0.89",
+        "change_price": 3.6
+    },
+    {
+        "time": 1731997680,
+        "price": 407800,
+        "cc_price": 407.8,
+        "volume": 16400,
+        "turnover": 6688680,
+        "ratio": "0.89",
+        "change_price": 3.6
+    },
+    {
+        "time": 1731997740,
+        "price": 408000,
+        "cc_price": 408,
+        "volume": 28800,
+        "turnover": 11746350,
+        "ratio": "0.94",
+        "change_price": 3.8
+    },
+    {
+        "time": 1731997800,
+        "price": 407600,
+        "cc_price": 407.6,
+        "volume": 18000,
+        "turnover": 7340420,
+        "ratio": "0.84",
+        "change_price": 3.4
+    },
+    {
+        "time": 1731997860,
+        "price": 408000,
+        "cc_price": 408,
+        "volume": 42100,
+        "turnover": 17170610,
+        "ratio": "0.94",
+        "change_price": 3.8
+    },
+    {
+        "time": 1731997920,
+        "price": 408000,
+        "cc_price": 408,
+        "volume": 70700,
+        "turnover": 28845914.8,
+        "ratio": "0.94",
+        "change_price": 3.8
+    },
+    {
+        "time": 1731997980,
+        "price": 407800,
+        "cc_price": 407.8,
+        "volume": 34400,
+        "turnover": 14035937.2,
+        "ratio": "0.89",
+        "change_price": 3.6
+    },
+    {
+        "time": 1731998040,
+        "price": 407600,
+        "cc_price": 407.6,
+        "volume": 31000,
+        "turnover": 12636530,
+        "ratio": "0.84",
+        "change_price": 3.4
+    },
+    {
+        "time": 1731998100,
+        "price": 407600,
+        "cc_price": 407.6,
+        "volume": 28000,
+        "turnover": 11411612.5,
+        "ratio": "0.84",
+        "change_price": 3.4
+    },
+    {
+        "time": 1731998160,
+        "price": 408000,
+        "cc_price": 408,
+        "volume": 81100,
+        "turnover": 33085688.1,
+        "ratio": "0.94",
+        "change_price": 3.8
+    },
+    {
+        "time": 1731998220,
+        "price": 408000,
+        "cc_price": 408,
+        "volume": 25200,
+        "turnover": 10282938.1,
+        "ratio": "0.94",
+        "change_price": 3.8
+    },
+    {
+        "time": 1731998280,
+        "price": 408000,
+        "cc_price": 408,
+        "volume": 9000,
+        "turnover": 3671895.4,
+        "ratio": "0.94",
+        "change_price": 3.8
+    },
+    {
+        "time": 1731998340,
+        "price": 407600,
+        "cc_price": 407.6,
+        "volume": 20900,
+        "turnover": 8524060,
+        "ratio": "0.84",
+        "change_price": 3.4
+    },
+    {
+        "time": 1731998400,
+        "price": 407800,
+        "cc_price": 407.8,
+        "volume": 15400,
+        "turnover": 6279460,
+        "ratio": "0.89",
+        "change_price": 3.6
+    },
+    {
+        "time": 1731998460,
+        "price": 407400,
+        "cc_price": 407.4,
+        "volume": 29900,
+        "turnover": 12183740,
+        "ratio": "0.79",
+        "change_price": 3.2
+    },
+    {
+        "time": 1731998520,
+        "price": 407200,
+        "cc_price": 407.2,
+        "volume": 10200,
+        "turnover": 4155190,
+        "ratio": "0.74",
+        "change_price": 3
+    },
+    {
+        "time": 1731998580,
+        "price": 407200,
+        "cc_price": 407.2,
+        "volume": 50700,
+        "turnover": 20640490,
+        "ratio": "0.74",
+        "change_price": 3
+    },
+    {
+        "time": 1731998640,
+        "price": 407000,
+        "cc_price": 407,
+        "volume": 18800,
+        "turnover": 7650520,
+        "ratio": "0.69",
+        "change_price": 2.8
+    },
+    {
+        "time": 1731998700,
+        "price": 407200,
+        "cc_price": 407.2,
+        "volume": 38500,
+        "turnover": 15671370,
+        "ratio": "0.74",
+        "change_price": 3
+    },
+    {
+        "time": 1731998760,
+        "price": 407000,
+        "cc_price": 407,
+        "volume": 23500,
+        "turnover": 9563510,
+        "ratio": "0.69",
+        "change_price": 2.8
+    },
+    {
+        "time": 1731998820,
+        "price": 407000,
+        "cc_price": 407,
+        "volume": 26100,
+        "turnover": 10622000,
+        "ratio": "0.69",
+        "change_price": 2.8
+    },
+    {
+        "time": 1731998880,
+        "price": 407000,
+        "cc_price": 407,
+        "volume": 39100,
+        "turnover": 15916457.5,
+        "ratio": "0.69",
+        "change_price": 2.8
+    },
+    {
+        "time": 1731998940,
+        "price": 407600,
+        "cc_price": 407.6,
+        "volume": 46200,
+        "turnover": 18822853.4,
+        "ratio": "0.84",
+        "change_price": 3.4
+    },
+    {
+        "time": 1731999000,
+        "price": 407600,
+        "cc_price": 407.6,
+        "volume": 14500,
+        "turnover": 5909840,
+        "ratio": "0.84",
+        "change_price": 3.4
+    },
+    {
+        "time": 1731999060,
+        "price": 407600,
+        "cc_price": 407.6,
+        "volume": 19900,
+        "turnover": 8111450,
+        "ratio": "0.84",
+        "change_price": 3.4
+    },
+    {
+        "time": 1731999120,
+        "price": 407200,
+        "cc_price": 407.2,
+        "volume": 54200,
+        "turnover": 22091020,
+        "ratio": "0.74",
+        "change_price": 3
+    },
+    {
+        "time": 1731999180,
+        "price": 407400,
+        "cc_price": 407.4,
+        "volume": 22000,
+        "turnover": 8958940,
+        "ratio": "0.79",
+        "change_price": 3.2
+    },
+    {
+        "time": 1731999240,
+        "price": 407400,
+        "cc_price": 407.4,
+        "volume": 10700,
+        "turnover": 4358890,
+        "ratio": "0.79",
+        "change_price": 3.2
+    },
+    {
+        "time": 1731999300,
+        "price": 407400,
+        "cc_price": 407.4,
+        "volume": 16700,
+        "turnover": 6803080,
+        "ratio": "0.79",
+        "change_price": 3.2
+    },
+    {
+        "time": 1731999360,
+        "price": 407600,
+        "cc_price": 407.6,
+        "volume": 19900,
+        "turnover": 8107210,
+        "ratio": "0.84",
+        "change_price": 3.4
+    },
+    {
+        "time": 1731999420,
+        "price": 407200,
+        "cc_price": 407.2,
+        "volume": 16900,
+        "turnover": 6885190,
+        "ratio": "0.74",
+        "change_price": 3
+    },
+    {
+        "time": 1731999480,
+        "price": 407400,
+        "cc_price": 407.4,
+        "volume": 34100,
+        "turnover": 13885760,
+        "ratio": "0.79",
+        "change_price": 3.2
+    },
+    {
+        "time": 1731999540,
+        "price": 407400,
+        "cc_price": 407.4,
+        "volume": 25200,
+        "turnover": 10261929,
+        "ratio": "0.79",
+        "change_price": 3.2
+    },
+    {
+        "time": 1731999600,
+        "price": 407400,
+        "cc_price": 407.4,
+        "volume": 55300,
+        "turnover": 22528780,
+        "ratio": "0.79",
+        "change_price": 3.2
+    },
+    {
+        "time": 1731999660,
+        "price": 407600,
+        "cc_price": 407.6,
+        "volume": 25700,
+        "turnover": 10471140,
+        "ratio": "0.84",
+        "change_price": 3.4
+    },
+    {
+        "time": 1731999720,
+        "price": 407400,
+        "cc_price": 407.4,
+        "volume": 18600,
+        "turnover": 7575180,
+        "ratio": "0.79",
+        "change_price": 3.2
+    },
+    {
+        "time": 1731999780,
+        "price": 407400,
+        "cc_price": 407.4,
+        "volume": 11400,
+        "turnover": 4643680,
+        "ratio": "0.79",
+        "change_price": 3.2
+    },
+    {
+        "time": 1731999840,
+        "price": 407400,
+        "cc_price": 407.4,
+        "volume": 12100,
+        "turnover": 4928120.4,
+        "ratio": "0.79",
+        "change_price": 3.2
+    },
+    {
+        "time": 1731999900,
+        "price": 407600,
+        "cc_price": 407.6,
+        "volume": 48500,
+        "turnover": 19758620,
+        "ratio": "0.84",
+        "change_price": 3.4
+    },
+    {
+        "time": 1731999960,
+        "price": 407600,
+        "cc_price": 407.6,
+        "volume": 15800,
+        "turnover": 6439170,
+        "ratio": "0.84",
+        "change_price": 3.4
+    },
+    {
+        "time": 1732000020,
+        "price": 407600,
+        "cc_price": 407.6,
+        "volume": 16800,
+        "turnover": 6846160,
+        "ratio": "0.84",
+        "change_price": 3.4
+    },
+    {
+        "time": 1732000080,
+        "price": 407600,
+        "cc_price": 407.6,
+        "volume": 18400,
+        "turnover": 7498440,
+        "ratio": "0.84",
+        "change_price": 3.4
+    },
+    {
+        "time": 1732000140,
+        "price": 407400,
+        "cc_price": 407.4,
+        "volume": 21600,
+        "turnover": 8803440,
+        "ratio": "0.79",
+        "change_price": 3.2
+    },
+    {
+        "time": 1732000200,
+        "price": 407400,
+        "cc_price": 407.4,
+        "volume": 41200,
+        "turnover": 16785786.1,
+        "ratio": "0.79",
+        "change_price": 3.2
+    },
+    {
+        "time": 1732000260,
+        "price": 407400,
+        "cc_price": 407.4,
+        "volume": 81200,
+        "turnover": 33073390,
+        "ratio": "0.79",
+        "change_price": 3.2
+    },
+    {
+        "time": 1732000320,
+        "price": 407000,
+        "cc_price": 407,
+        "volume": 87200,
+        "turnover": 35494680,
+        "ratio": "0.69",
+        "change_price": 2.8
+    },
+    {
+        "time": 1732000380,
+        "price": 407000,
+        "cc_price": 407,
+        "volume": 17400,
+        "turnover": 7080730,
+        "ratio": "0.69",
+        "change_price": 2.8
+    },
+    {
+        "time": 1732000440,
+        "price": 406800,
+        "cc_price": 406.8,
+        "volume": 22900,
+        "turnover": 9316300,
+        "ratio": "0.64",
+        "change_price": 2.6
+    },
+    {
+        "time": 1732000500,
+        "price": 407000,
+        "cc_price": 407,
+        "volume": 92700,
+        "turnover": 37724730,
+        "ratio": "0.69",
+        "change_price": 2.8
+    },
+    {
+        "time": 1732000560,
+        "price": 406800,
+        "cc_price": 406.8,
+        "volume": 10100,
+        "turnover": 4108330,
+        "ratio": "0.64",
+        "change_price": 2.6
+    },
+    {
+        "time": 1732000620,
+        "price": 407000,
+        "cc_price": 407,
+        "volume": 49200,
+        "turnover": 20012450,
+        "ratio": "0.69",
+        "change_price": 2.8
+    },
+    {
+        "time": 1732000680,
+        "price": 407000,
+        "cc_price": 407,
+        "volume": 45000,
+        "turnover": 18308460,
+        "ratio": "0.69",
+        "change_price": 2.8
+    },
+    {
+        "time": 1732000740,
+        "price": 407400,
+        "cc_price": 407.4,
+        "volume": 27300,
+        "turnover": 11116040,
+        "ratio": "0.79",
+        "change_price": 3.2
+    },
+    {
+        "time": 1732000800,
+        "price": 407200,
+        "cc_price": 407.2,
+        "volume": 17100,
+        "turnover": 6962710.8,
+        "ratio": "0.74",
+        "change_price": 3
+    },
+    {
+        "time": 1732000860,
+        "price": 406800,
+        "cc_price": 406.8,
+        "volume": 4900,
+        "turnover": 1993640,
+        "ratio": "0.64",
+        "change_price": 2.6
+    },
+    {
+        "time": 1732000920,
+        "price": 407000,
+        "cc_price": 407,
+        "volume": 46200,
+        "turnover": 18803050,
+        "ratio": "0.69",
+        "change_price": 2.8
+    },
+    {
+        "time": 1732000980,
+        "price": 407200,
+        "cc_price": 407.2,
+        "volume": 21200,
+        "turnover": 8632210,
+        "ratio": "0.74",
+        "change_price": 3
+    },
+    {
+        "time": 1732001040,
+        "price": 407200,
+        "cc_price": 407.2,
+        "volume": 30800,
+        "turnover": 12546300,
+        "ratio": "0.74",
+        "change_price": 3
+    },
+    {
+        "time": 1732001100,
+        "price": 407000,
+        "cc_price": 407,
+        "volume": 18800,
+        "turnover": 7654750,
+        "ratio": "0.69",
+        "change_price": 2.8
+    },
+    {
+        "time": 1732001160,
+        "price": 406800,
+        "cc_price": 406.8,
+        "volume": 20200,
+        "turnover": 8221170,
+        "ratio": "0.64",
+        "change_price": 2.6
+    },
+    {
+        "time": 1732001220,
+        "price": 407000,
+        "cc_price": 407,
+        "volume": 18400,
+        "turnover": 7487970,
+        "ratio": "0.69",
+        "change_price": 2.8
+    },
+    {
+        "time": 1732001280,
+        "price": 407200,
+        "cc_price": 407.2,
+        "volume": 8300,
+        "turnover": 3378690,
+        "ratio": "0.74",
+        "change_price": 3
+    },
+    {
+        "time": 1732001340,
+        "price": 406800,
+        "cc_price": 406.8,
+        "volume": 31700,
+        "turnover": 12901170,
+        "ratio": "0.64",
+        "change_price": 2.6
+    },
+    {
+        "time": 1732001400,
+        "price": 406600,
+        "cc_price": 406.6,
+        "volume": 24800,
+        "turnover": 10088878.8,
+        "ratio": "0.59",
+        "change_price": 2.4
+    },
+    {
+        "time": 1732001460,
+        "price": 406600,
+        "cc_price": 406.6,
+        "volume": 75100,
+        "turnover": 30540456,
+        "ratio": "0.59",
+        "change_price": 2.4
+    },
+    {
+        "time": 1732001520,
+        "price": 406600,
+        "cc_price": 406.6,
+        "volume": 72400,
+        "turnover": 29450130,
+        "ratio": "0.59",
+        "change_price": 2.4
+    },
+    {
+        "time": 1732001580,
+        "price": 406600,
+        "cc_price": 406.6,
+        "volume": 21500,
+        "turnover": 8745410,
+        "ratio": "0.59",
+        "change_price": 2.4
+    },
+    {
+        "time": 1732001640,
+        "price": 406800,
+        "cc_price": 406.8,
+        "volume": 22100,
+        "turnover": 8990060,
+        "ratio": "0.64",
+        "change_price": 2.6
+    },
+    {
+        "time": 1732001700,
+        "price": 406800,
+        "cc_price": 406.8,
+        "volume": 11600,
+        "turnover": 4718210,
+        "ratio": "0.64",
+        "change_price": 2.6
+    },
+    {
+        "time": 1732001760,
+        "price": 407000,
+        "cc_price": 407,
+        "volume": 33200,
+        "turnover": 13508318.2,
+        "ratio": "0.69",
+        "change_price": 2.8
+    },
+    {
+        "time": 1732001820,
+        "price": 406600,
+        "cc_price": 406.6,
+        "volume": 52700,
+        "turnover": 21437230,
+        "ratio": "0.59",
+        "change_price": 2.4
+    },
+    {
+        "time": 1732001880,
+        "price": 407000,
+        "cc_price": 407,
+        "volume": 47600,
+        "turnover": 19364330.4,
+        "ratio": "0.69",
+        "change_price": 2.8
+    },
+    {
+        "time": 1732001940,
+        "price": 406800,
+        "cc_price": 406.8,
+        "volume": 21600,
+        "turnover": 8788100,
+        "ratio": "0.64",
+        "change_price": 2.6
+    },
+    {
+        "time": 1732002000,
+        "price": 406600,
+        "cc_price": 406.6,
+        "volume": 77200,
+        "turnover": 31393970,
+        "ratio": "0.59",
+        "change_price": 2.4
+    },
+    {
+        "time": 1732002060,
+        "price": 406400,
+        "cc_price": 406.4,
+        "volume": 22800,
+        "turnover": 9271050,
+        "ratio": "0.54",
+        "change_price": 2.2
+    },
+    {
+        "time": 1732002120,
+        "price": 406400,
+        "cc_price": 406.4,
+        "volume": 11500,
+        "turnover": 4675030,
+        "ratio": "0.54",
+        "change_price": 2.2
+    },
+    {
+        "time": 1732002180,
+        "price": 406600,
+        "cc_price": 406.6,
+        "volume": 8700,
+        "turnover": 3536460,
+        "ratio": "0.59",
+        "change_price": 2.4
+    },
+    {
+        "time": 1732002240,
+        "price": 406600,
+        "cc_price": 406.6,
+        "volume": 11900,
+        "turnover": 4837810,
+        "ratio": "0.59",
+        "change_price": 2.4
+    },
+    {
+        "time": 1732002300,
+        "price": 406600,
+        "cc_price": 406.6,
+        "volume": 70500,
+        "turnover": 28661940,
+        "ratio": "0.59",
+        "change_price": 2.4
+    },
+    {
+        "time": 1732002360,
+        "price": 406800,
+        "cc_price": 406.8,
+        "volume": 36500,
+        "turnover": 14842260,
+        "ratio": "0.64",
+        "change_price": 2.6
+    },
+    {
+        "time": 1732002420,
+        "price": 406600,
+        "cc_price": 406.6,
+        "volume": 10800,
+        "turnover": 4391500,
+        "ratio": "0.59",
+        "change_price": 2.4
+    },
+    {
+        "time": 1732002480,
+        "price": 406600,
+        "cc_price": 406.6,
+        "volume": 50700,
+        "turnover": 20618226.1,
+        "ratio": "0.59",
+        "change_price": 2.4
+    },
+    {
+        "time": 1732002540,
+        "price": 406600,
+        "cc_price": 406.6,
+        "volume": 27300,
+        "turnover": 11102687.2,
+        "ratio": "0.59",
+        "change_price": 2.4
+    },
+    {
+        "time": 1732002600,
+        "price": 406600,
+        "cc_price": 406.6,
+        "volume": 17800,
+        "turnover": 7237890,
+        "ratio": "0.59",
+        "change_price": 2.4
+    },
+    {
+        "time": 1732002660,
+        "price": 406800,
+        "cc_price": 406.8,
+        "volume": 19600,
+        "turnover": 7970510,
+        "ratio": "0.64",
+        "change_price": 2.6
+    },
+    {
+        "time": 1732002720,
+        "price": 406600,
+        "cc_price": 406.6,
+        "volume": 38400,
+        "turnover": 15616880,
+        "ratio": "0.59",
+        "change_price": 2.4
+    },
+    {
+        "time": 1732002780,
+        "price": 406600,
+        "cc_price": 406.6,
+        "volume": 36000,
+        "turnover": 14640160,
+        "ratio": "0.59",
+        "change_price": 2.4
+    },
+    {
+        "time": 1732002840,
+        "price": 406600,
+        "cc_price": 406.6,
+        "volume": 27900,
+        "turnover": 11346200,
+        "ratio": "0.59",
+        "change_price": 2.4
+    },
+    {
+        "time": 1732002900,
+        "price": 407000,
+        "cc_price": 407,
+        "volume": 80200,
+        "turnover": 32623950,
+        "ratio": "0.69",
+        "change_price": 2.8
+    },
+    {
+        "time": 1732002960,
+        "price": 406600,
+        "cc_price": 406.6,
+        "volume": 103800,
+        "turnover": 42210980,
+        "ratio": "0.59",
+        "change_price": 2.4
+    },
+    {
+        "time": 1732003020,
+        "price": 406600,
+        "cc_price": 406.6,
+        "volume": 14600,
+        "turnover": 5935810,
+        "ratio": "0.59",
+        "change_price": 2.4
+    },
+    {
+        "time": 1732003080,
+        "price": 406200,
+        "cc_price": 406.2,
+        "volume": 12400,
+        "turnover": 5039360,
+        "ratio": "0.49",
+        "change_price": 2
+    },
+    {
+        "time": 1732003140,
+        "price": 406400,
+        "cc_price": 406.4,
+        "volume": 28600,
+        "turnover": 11622850,
+        "ratio": "0.54",
+        "change_price": 2.2
+    },
+    {
+        "time": 1732003200,
+        "price": 406200,
+        "cc_price": 406.2,
+        "volume": 937700,
+        "turnover": 380911740,
+        "ratio": "0.49",
+        "change_price": 2
+    }
+]

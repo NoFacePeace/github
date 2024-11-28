@@ -36,7 +36,7 @@ func main() {
 }
 
 func multiple() {
-	stocks, err := finance.ListStocks(finance.WithListStocksCount(500))
+	stocks, err := finance.ListStocks(finance.WithListStocksCount(1000))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -52,24 +52,75 @@ func multiple() {
 }
 
 func single(name, code string) {
-	points, err := indicator.AllPrice(code)
+	points, err := indicator.Price(code)
 	if err != nil {
 		log.Fatal(err)
 	}
 	mn := 1
 	mx := 30
-	// s, l, win, ps := indicator.SMABestCrossMaxPercent(ps, mn, mx, 3)
-	s, l, win, ps := indicator.SMAGoldenCrossLastPercent(points, mn, mx, 7, 2)
-	cnt := len(ps) / 2
-	if win >= 85 && len(ps)%2 > 0 {
-		date := ps[len(ps)-1].Date.Format(datetime.LayoutDateWithDash)
-		fmt.Println(name, code, date, "golden", s, l, cnt, win)
+	// SMACrossMaxPercentBest(name, code, points, mn, mx, 3)
+	// SMAGoldenCross(name, code, points, mn, mx)
+	SMACrossLastPercentBest(name, code, points, mn, mx, 4, 2)
+}
+func SMACrossLastPercentBest(name, code string, points []indicator.Point, mn, mx, last int, percent float64) {
+	s, l, win, ps := indicator.SMAGoldenCrossLastPercent(points, mn, mx, last, percent)
+	n := len(ps)
+	if n <= 0 {
+		return
 	}
-	s, l, win, ps = indicator.SMADeadCrossLastPercent(points, mn, mx, 7, 2)
-	cnt = len(ps) / 2
-	if win >= 85 && len(ps) > 0 {
-		date := ps[len(ps)-1].Date.Format(datetime.LayoutDateWithDash)
-		fmt.Println(name, code, date, "dead", s, l, cnt, win)
+	date := ps[n-1].Date.Format(datetime.LayoutDateWithDash)
+	price := ps[n-1].Price
+	cnt := n / 2
+	if n%2 == 0 {
+		fmt.Println(name, code, date, "sell", "golden", price, price*1.02, s, l, cnt, win)
+	} else {
+		fmt.Println(name, code, date, "buy", "golden", price, price*1.02, s, l, cnt, win)
+	}
+	s, l, win, ps = indicator.SMADeadCrossLastPercent(points, mn, mx, last, percent)
+	n = len(ps)
+	if n <= 0 {
+		return
+	}
+	date = ps[n-1].Date.Format(datetime.LayoutDateWithDash)
+	price = ps[n-1].Price
+	cnt = n / 2
+	if n%2 == 0 {
+		fmt.Println(name, code, date, "sell", "dead", price, price*1.02, s, l, cnt, win)
+	} else {
+		fmt.Println(name, code, date, "buy", "dead", price, price*1.02, s, l, cnt, win)
+	}
+}
+
+func SMACrossMaxPercentBest(name, code string, points []indicator.Point, mn, mx int, percent float64) {
+	s, l, win, ps := indicator.SMACrossMaxPercentBest(points, mn, mx, percent)
+	n := len(ps)
+	if n == 0 {
+		fmt.Println(name, code)
+		return
+	}
+	cnt := len(ps) / 2
+	date := ps[len(ps)-1].Date.Format(datetime.LayoutDateWithDash)
+	price := ps[len(ps)-1].Price
+	if n%2 == 0 {
+		fmt.Println(name, code, date, "sell", price, s, l, cnt, win)
+	} else {
+		fmt.Println(name, code, date, "buy", price, s, l, cnt, win)
+	}
+}
+
+func SMAGoldenCross(name, code string, points []indicator.Point, mn, mx int) {
+	s, l, win, ps := indicator.SMAGoldenCrossBest(points, mn, mx)
+	n := len(ps)
+	if n == 0 {
+		fmt.Println(name, code)
+		return
+	}
+	cnt := len(ps) / 2
+	date := ps[len(ps)-1].Date.Format(datetime.LayoutDateWithDash)
+	if len(ps)%2 == 0 {
+		fmt.Println(name, code, date, "sell", s, l, cnt, win)
+	} else {
+		fmt.Println(name, code, date, "buy", s, l, cnt, win)
 	}
 }
 
@@ -90,7 +141,7 @@ func SMACrossDetail(code string, s, l int) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	ps = indicator.Cross(ps, indicator.SMA(ps, s), indicator.SMA(ps, l))
+	ps = indicator.GoldenCross(ps, indicator.SMA(ps, s), indicator.SMA(ps, l))
 	for i := 0; i < len(ps)-1; i += 2 {
 		fmt.Println(
 			ps[i].Date.Format(datetime.LayoutDateWithLine),
