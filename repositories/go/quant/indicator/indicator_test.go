@@ -96,7 +96,7 @@ func TestCrossMax(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := CrossMax(tt.args.ps, tt.args.short, tt.args.long); len(got) == 0 {
+			if got := GoldenCrossMax(tt.args.ps, tt.args.short, tt.args.long); len(got) == 0 {
 				t.Errorf("CrossMax() = %v, want %v", got, tt.want)
 			}
 		})

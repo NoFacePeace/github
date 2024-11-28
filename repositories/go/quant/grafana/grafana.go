@@ -78,7 +78,7 @@ func (g *Grafana) GetSMACross(c *gin.Context) {
 	l, _ := strconv.Atoi(c.Query("long"))
 	short := indicator.SMA(ps, s)
 	long := indicator.SMA(ps, l)
-	cross := indicator.Cross(ps, short, long)
+	cross := indicator.GoldenCross(ps, short, long)
 	buy := []indicator.Point{}
 	sell := []indicator.Point{}
 	for i := 0; i < len(cross); i++ {
