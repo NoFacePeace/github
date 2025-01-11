@@ -9,7 +9,7 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/NoFacePeace/github/repositories/go/external/tencnet/finance"
+	"github.com/NoFacePeace/github/repositories/go/external/tencent/finance"
 	"github.com/NoFacePeace/github/repositories/go/quant/grafana"
 	"github.com/NoFacePeace/github/repositories/go/quant/indicator"
 	"github.com/NoFacePeace/github/repositories/go/utils/datetime"

@@ -1,10 +1,10 @@
 package main
 
 import (
+	"context"
 	"log"
-	"net"
-	"net/rpc"
-	"net/rpc/jsonrpc"
+
+	rpc "github.com/NoFacePeace/github/repositories/go/quic-go-rpc"
 )
 
 func main() {
@@ -14,22 +14,11 @@ func main() {
 
 func server() {
 	rpc.RegisterName("HelloService", new(HelloService))
-	listener, err := net.Listen("tcp", ":1234")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer listener.Close()
-	conn, err := listener.Accept()
-	if err != nil {
-		log.Fatal(err)
-	}
-	rpc.ServeConn(conn)
-	rpc.ServeCodec(jsonrpc.NewServerCodec(conn))
-
+	rpc.ListenAndServe(context.Background(), ":1234")
 }
 
 func client() {
-	client, err := rpc.Dial("tcp", "localhost:1234")
+	client, err := rpc.NewClient(context.Background(), "localhost:1234")
 	if err != nil {
 		log.Fatal(err)
 	}
