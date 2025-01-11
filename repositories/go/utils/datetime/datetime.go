@@ -3,9 +3,10 @@ package datetime
 import "time"
 
 var (
-	LayoutDateWithLine = "2006-01-02"
-	LayoutDate         = "20060102"
-	LayoutDateWithDash = "2006-01-02"
+	LayoutDateWithLine  = "2006-01-02"
+	LayoutDate          = "20060102"
+	LayoutDateWithDash  = "2006-01-02"
+	LayoutDatetimeMinue = "200601021504"
 )
 
 func IsWeekend(t time.Time) bool {

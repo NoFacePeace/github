@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/NoFacePeace/github/repositories/go/external/tencnet/finance"
+	"github.com/NoFacePeace/github/repositories/go/external/tencent/finance"
 )
 
 type Point struct {
