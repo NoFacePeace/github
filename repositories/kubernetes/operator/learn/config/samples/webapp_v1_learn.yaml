@@ -1,0 +1,9 @@
+apiVersion: webapp.localhost/v1
+kind: Learn
+metadata:
+  labels:
+    app.kubernetes.io/name: learn
+    app.kubernetes.io/managed-by: kustomize
+  name: learn-sample
+spec:
+  # TODO(user): Add fields here
