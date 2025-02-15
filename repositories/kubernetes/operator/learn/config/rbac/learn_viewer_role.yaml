@@ -1,0 +1,23 @@
+# permissions for end users to view learns.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: learn
+    app.kubernetes.io/managed-by: kustomize
+  name: learn-viewer-role
+rules:
+- apiGroups:
+  - webapp.localhost
+  resources:
+  - learns
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - webapp.localhost
+  resources:
+  - learns/status
+  verbs:
+  - get
