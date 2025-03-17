@@ -68,6 +68,7 @@ require (
 	github.com/quic-go/quic-go v0.48.2
 	github.com/stretchr/testify v1.9.0
 	go.uber.org/zap v1.27.0
+	gocv.io/x/gocv v0.40.0
 	golang.org/x/oauth2 v0.7.0 // indirect
 	golang.org/x/sys v0.29.0 // indirect
 	golang.org/x/term v0.28.0 // indirect

@@ -18,13 +18,19 @@ package controller
 
 import (
 	"context"
+	"fmt"
+	"reflect"
+
+	webappv1 "localhost/learn/api/v1"
+
+	coreV1 "k8s.io/api/core/v1"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/log"
-
-	webappv1 "localhost/learn/api/v1"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 )
 
 // LearnReconciler reconciles a Learn object
@@ -47,10 +53,12 @@ type LearnReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.18.4/pkg/reconcile
 func (r *LearnReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	_ = log.FromContext(ctx)
+	// _ = log.FromContext(ctx)
 
 	// TODO(user): your logic here
 
+	logger := log.FromContext(ctx)
+	logger.Info(fmt.Sprintf("%+v", req))
 	return ctrl.Result{}, nil
 }
 
@@ -58,5 +66,38 @@ func (r *LearnReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 func (r *LearnReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&webappv1.Learn{}).
+		Owns(&coreV1.Pod{}).
+		WithEventFilter(eventFilter()).
 		Complete(r)
+}
+
+func eventFilter() predicate.Predicate {
+	basic := func(obj client.Object) []any {
+		return []any{
+			"namespace",
+			obj.GetNamespace(),
+			"name",
+			obj.GetName(),
+			"kind",
+			reflect.TypeOf(obj),
+		}
+	}
+	return predicate.Funcs{
+		UpdateFunc: func(e event.UpdateEvent) bool {
+			log.Log.Info("update event", basic(e.ObjectOld)...)
+			return true
+		},
+		DeleteFunc: func(e event.DeleteEvent) bool {
+			log.Log.Info("delete event", basic(e.Object)...)
+			return true
+		},
+		CreateFunc: func(e event.CreateEvent) bool {
+			log.Log.Info("create event", basic(e.Object)...)
+			return true
+		},
+		GenericFunc: func(e event.GenericEvent) bool {
+			log.Log.Info("generic event", basic(e.Object)...)
+			return true
+		},
+	}
 }
