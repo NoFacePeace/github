@@ -65,8 +65,11 @@ func (r *LearnReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 // SetupWithManager sets up the controller with the Manager.
 func (r *LearnReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
+		// crd 类型
 		For(&webappv1.Learn{}).
+		// 子资源
 		Owns(&coreV1.Pod{}).
+		// 过滤事件
 		WithEventFilter(eventFilter()).
 		Complete(r)
 }
