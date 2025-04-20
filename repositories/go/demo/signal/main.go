@@ -1,20 +1,15 @@
 package main
 
 import (
-	"fmt"
-	"os"
+	"context"
 	"os/signal"
+	"syscall"
+	"time"
 )
 
 func main() {
-	ch := make(chan os.Signal, 1)
-	signal.Notify(ch, os.Interrupt)
-	<-ch
-	fmt.Println("Shutting down")
-}
-
-func WaitOSInterrupt() {
-	ch := make(chan os.Signal, 1)
-	signal.Notify(ch, os.Interrupt)
-	<-ch
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+	<-ctx.Done()
+	time.Sleep(1 * time.Minute)
 }
