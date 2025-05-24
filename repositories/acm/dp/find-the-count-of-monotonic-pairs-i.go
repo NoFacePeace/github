@@ -17,7 +17,7 @@ func countOfPairs(nums []int) int {
 		dp[0][a] = 1
 	}
 	for i := 1; i < n; i++ {
-		d := max(0, nums[i]-nums[i-1])
+		d := maxSlice(0, nums[i]-nums[i-1])
 		for j := d; j <= nums[i]; j++ {
 			if j == 0 {
 				dp[i][j] = dp[i-1][j-d]

@@ -10,7 +10,7 @@ func lengthOfLIS(nums []int) int {
 			if nums[i] <= nums[j] {
 				continue
 			}
-			dp[i] = max(dp[i], dp[j]+1)
+			dp[i] = maxSlice(dp[i], dp[j]+1)
 		}
 		if dp[i] > mx {
 			mx = dp[i]

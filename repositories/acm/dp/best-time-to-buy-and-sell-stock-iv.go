@@ -16,15 +16,15 @@ func maxProfitIV(k int, prices []int) int {
 		sell[i] = math.MinInt / 2
 	}
 	for i := 1; i < n; i++ {
-		buy[0] = max(buy[0], sell[0]-prices[i])
+		buy[0] = maxSlice(buy[0], sell[0]-prices[i])
 		for j := 1; j <= k; j++ {
-			buy[j] = max(buy[j], sell[j]-prices[i])
-			sell[j] = max(sell[j], buy[j-1]+prices[i])
+			buy[j] = maxSlice(buy[j], sell[j]-prices[i])
+			sell[j] = maxSlice(sell[j], buy[j-1]+prices[i])
 		}
 	}
-	return max(sell...)
+	return maxSlice(sell...)
 }
-func max(a ...int) int {
+func maxSlice(a ...int) int {
 	res := a[0]
 	for _, v := range a[1:] {
 		if v > res {

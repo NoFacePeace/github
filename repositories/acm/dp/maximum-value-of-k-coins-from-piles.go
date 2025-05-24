@@ -12,7 +12,7 @@ func maxValueOfCoins(piles [][]int, k int) int {
 			for t := 1; t <= len(pile); t++ {
 				value += pile[t-1]
 				if i >= t && f[i-t] != -1 {
-					f[i] = max(f[i], f[i-t]+value)
+					f[i] = maxSlice(f[i], f[i-t]+value)
 				}
 			}
 		}

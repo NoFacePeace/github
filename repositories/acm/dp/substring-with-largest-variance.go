@@ -13,13 +13,13 @@ func largestVariance(s string) int {
 				f, g := 0, -1<<63
 				for i < len(pos0) || j < len(pos1) {
 					if j == len(pos1) || (i < len(pos0) && pos0[i] < pos1[j]) {
-						f, g = max(f, 0)+1, g+1
+						f, g = maxSlice(f, 0)+1, g+1
 						i++
 					} else {
-						f, g = max(f, 0)-1, max(f, g, 0)-1
+						f, g = maxSlice(f, 0)-1, maxSlice(f, g, 0)-1
 						j++
 					}
-					ans = max(ans, g)
+					ans = maxSlice(ans, g)
 				}
 			}
 		}

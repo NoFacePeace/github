@@ -6,7 +6,7 @@ func jump(nums []int) int {
 	end := 0
 	m := 0
 	for i := 0; i < l-1; i++ {
-		m = max(m, i+nums[i])
+		m = maxSlice(m, i+nums[i])
 		if i == end {
 			end = m
 			cnt++

@@ -30,7 +30,7 @@ func maximumPoints(edges [][]int, coins []int, k int) int {
 				res1 += dfs(child, node, f+1)
 			}
 		}
-		memo[node][f] = max(res0, res1)
+		memo[node][f] = maxSlice(res0, res1)
 		return memo[node][f]
 	}
 	return dfs(0, -1, 0)
