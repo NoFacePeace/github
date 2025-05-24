@@ -23,28 +23,28 @@ func minTimeToReach(moveTime [][]int) int {
 	var dfs func(i, j int)
 	dfs = func(i, j int) {
 		if i-1 >= 0 {
-			t := max(dp[i][j], moveTime[i-1][j])
+			t := maxSlice(dp[i][j], moveTime[i-1][j])
 			if t+1 < dp[i-1][j] {
 				dp[i-1][j] = t + 1
 				dfs(i-1, j)
 			}
 		}
 		if i+1 < n {
-			t := max(dp[i][j], moveTime[i+1][j])
+			t := maxSlice(dp[i][j], moveTime[i+1][j])
 			if t+1 < dp[i+1][j] {
 				dp[i+1][j] = t + 1
 				dfs(i+1, j)
 			}
 		}
 		if j-1 >= 0 {
-			t := max(dp[i][j], moveTime[i][j-1])
+			t := maxSlice(dp[i][j], moveTime[i][j-1])
 			if t+1 < dp[i][j-1] {
 				dp[i][j-1] = t + 1
 				dfs(i, j-1)
 			}
 		}
 		if j+1 < m {
-			t := max(dp[i][j], moveTime[i][j+1])
+			t := maxSlice(dp[i][j], moveTime[i][j+1])
 			if t+1 < dp[i][j+1] {
 				dp[i][j+1] = t + 1
 				dfs(i, j+1)

@@ -18,7 +18,7 @@ func maximalSquare(matrix [][]byte) int {
 				continue
 			}
 			dp[i][j] = 1
-			mx = max(dp[i][j], mx)
+			mx = maxSlice(dp[i][j], mx)
 			if i == 0 {
 				continue
 			}
@@ -27,7 +27,7 @@ func maximalSquare(matrix [][]byte) int {
 			}
 			mn := min(dp[i][j-1], dp[i-1][j]) + 1
 			dp[i][j] = min(mn, dp[i-1][j-1]+1)
-			mx = max(dp[i][j], mx)
+			mx = maxSlice(dp[i][j], mx)
 		}
 	}
 	return mx * mx

@@ -15,7 +15,7 @@ func twoEggDrop(n int) int {
 		}
 		ans := n
 		for i := 1; i < n; i++ {
-			cnt := max(i, f(n-i)+1)
+			cnt := maxSlice(i, f(n-i)+1)
 			ans = min(ans, cnt)
 		}
 		m[n] = ans
