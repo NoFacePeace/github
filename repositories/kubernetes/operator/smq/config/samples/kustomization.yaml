@@ -1,0 +1,4 @@
+## Append samples of your project ##
+resources:
+- smq_v1_smq.yaml
+# +kubebuilder:scaffold:manifestskustomizesamples
