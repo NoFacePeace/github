@@ -1,0 +1,9 @@
+apiVersion: smq.localhost/v1
+kind: Smq
+metadata:
+  labels:
+    app.kubernetes.io/name: smq
+    app.kubernetes.io/managed-by: kustomize
+  name: smq-sample
+spec:
+  # TODO(user): Add fields here

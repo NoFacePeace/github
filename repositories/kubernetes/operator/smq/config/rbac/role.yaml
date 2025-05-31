@@ -1,0 +1,32 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: manager-role
+rules:
+- apiGroups:
+  - smq.localhost
+  resources:
+  - smqs
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - smq.localhost
+  resources:
+  - smqs/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - smq.localhost
+  resources:
+  - smqs/status
+  verbs:
+  - get
+  - patch
+  - update
