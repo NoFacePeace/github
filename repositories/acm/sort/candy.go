@@ -4,50 +4,29 @@ import "sort"
 
 func candy(ratings []int) int {
 	n := len(ratings)
-	arr := [][2]int{}
-	for k, v := range ratings {
-		arr = append(arr, [2]int{k, v})
+	pos := make([]int, n)
+	for i := 0; i < n; i++ {
+		pos[i] = i
 	}
-	sort.Slice(arr, func(a, b int) bool {
-		return arr[a][1] < arr[b][1]
+	sort.Slice(pos, func(a, b int) bool {
+		return ratings[pos[a]] < ratings[pos[b]]
 	})
-	sogas := make([]int, n)
+	arr := make([]int, n)
+	for i := 0; i < n; i++ {
+		arr[i] = 1
+	}
+	for i := 0; i < n; i++ {
+		p := pos[i]
+		if p != 0 && ratings[p-1] > ratings[p] {
+			arr[p-1] = max(arr[p-1], arr[p]+1)
+		}
+		if p != n-1 && ratings[p+1] > ratings[p] {
+			arr[p+1] = max(arr[p+1], arr[p]+1)
+		}
+	}
+	ans := 0
 	for _, v := range arr {
-		idx, rate := v[0], v[1]
-		if idx == 0 {
-			if rate == ratings[idx+1] {
-				sogas[idx] = 1
-			} else {
-				sogas[idx] = sogas[idx+1] + 1
-			}
-			continue
-		}
-		if idx == n-1 {
-			if rate == ratings[idx-1] {
-				sogas[idx] = 1
-			} else {
-				sogas[idx] = sogas[idx-1] + 1
-			}
-			continue
-		}
-		if rate == ratings[idx-1] && rate == ratings[idx+1] {
-			sogas[idx] = 1
-			continue
-		}
-		if rate == ratings[idx-1] {
-			sogas[idx] = sogas[idx+1] + 1
-			continue
-		}
-		if rate == ratings[idx+1] {
-			sogas[idx] = sogas[idx-1] + 1
-			continue
-		}
-		soga := max(sogas[idx-1], sogas[idx+1])
-		sogas[idx] = soga + 1
+		ans += v
 	}
-	sum := 0
-	for _, v := range sogas {
-		sum += v
-	}
-	return sum
+	return ans
 }
