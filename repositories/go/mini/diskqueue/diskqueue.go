@@ -2,6 +2,7 @@ package diskqueue
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -43,7 +44,7 @@ type diskQueue struct {
 	readFileNum int64
 	// 写文件序号
 	writeFileNum int64
-	// 待定
+	// 未消费总数
 	depth int64
 
 	// 读写锁，防止退出的时候还在写入，不是用于写入的时候加锁
@@ -110,6 +111,9 @@ type diskQueue struct {
 
 	// 读缓冲
 	reader *bufio.Reader
+
+	// 写缓冲
+	writeBuf bytes.Buffer
 }
 
 func New(name string, path string, maxBytesPerFile int64, minMsgSize int32, maxMsgSize int32, syncEvery int, syncTimeout time.Duration) Interface {
@@ -298,21 +302,28 @@ func (d *diskQueue) ioLoop() {
 	var err error
 	var dataRead []byte
 	syncTicker := time.NewTicker(d.syncTimeout)
+	// 协程，死循环
 	for {
+		// 循环次数，判断是否需要同步
 		if count == d.syncEvery {
 			d.needSync = true
 		}
+
+		// 需要同步，重置循环次数
 		if d.needSync {
 			if err := d.sync(); err != nil {
 				slog.Error("disk queue sync error", "error", err)
 			}
 			count = 0
 		}
+
+		// 判断是否需要读一条数据
 		if d.readFileNum < d.writeFileNum || d.readPos < d.writePos {
 			if d.nextReadPos == d.readPos {
 				dataRead, err = d.readOne()
 				if err != nil {
 					slog.Error("disk queue read one error", "error", err)
+					// 处理读异常
 					d.handleReadError()
 					continue
 				}
@@ -356,12 +367,16 @@ func (d *diskQueue) fileName(fileNum int64) string {
 func (d *diskQueue) readOne() ([]byte, error) {
 	var err error
 	var msgSize int32
+
+	// 如果读文件为空，则打开文件
 	if d.readFile == nil {
 		curFileName := d.fileName(d.readFileNum)
 		d.readFile, err = os.OpenFile(curFileName, os.O_RDONLY, 0600)
 		if err != nil {
 			return nil, fmt.Errorf("os open file error: [%w]", err)
 		}
+
+		// 重新定位到读位置
 		if d.readPos > 0 {
 			if _, err = d.readFile.Seek(d.readPos, 0); err != nil {
 				d.readFile.Close()
@@ -380,6 +395,7 @@ func (d *diskQueue) readOne() ([]byte, error) {
 		}
 		d.reader = bufio.NewReader(d.readFile)
 	}
+	// 读下一个信息大小
 	if err := binary.Read(d.reader, binary.BigEndian, &msgSize); err != nil {
 		d.readFile.Close()
 		d.readFile = nil
@@ -390,6 +406,7 @@ func (d *diskQueue) readOne() ([]byte, error) {
 		d.readFile = nil
 		return nil, fmt.Errorf("invalid message read size (%d)", msgSize)
 	}
+	// 读取消息
 	readBuf := make([]byte, msgSize)
 	if _, err := stdio.ReadFull(d.reader, readBuf); err != nil {
 		d.readFile.Close()
@@ -399,24 +416,175 @@ func (d *diskQueue) readOne() ([]byte, error) {
 	totalBytes := int64(4 + msgSize)
 	d.nextReadPos = totalBytes + d.readPos
 	d.nextReadFileNum = d.readFileNum
-	if d.readFileNum < d.writeFileNum && d.nextReadPos >= d.maxBytesPerFileRead {
 
+	// 如果下一个读位置大于最大的文件大小，则切换到下一个文件
+	if d.readFileNum < d.writeFileNum && d.nextReadPos >= d.maxBytesPerFileRead {
+		if d.readFile != nil {
+			d.readFile.Close()
+			d.readFile = nil
+		}
+		d.nextReadFileNum++
+		d.nextReadPos = 0
 	}
-	return nil, nil
+	return readBuf, nil
 }
 
 func (d *diskQueue) handleReadError() {
+	// 如果读文件和写文件一致，关闭写文件，新建文件
+	if d.readFileNum == d.writeFileNum {
+		if d.writeFile != nil {
+			d.writeFile.Close()
+			d.writeFile = nil
+		}
+		d.writeFileNum++
+		d.writePos = 0
+	}
 
+	// 将异常文件备份
+	badFn := d.fileName(d.readFileNum)
+	badRenameFn := badFn + ".bad"
+	if err := os.Rename(badFn, badRenameFn); err != nil {
+		slog.Error("os rename error", "error", err)
+	}
+
+	// 重置读文件元数据
+	d.readFileNum++
+	d.readPos = 0
+	d.nextReadFileNum = d.readFileNum
+	d.nextReadPos = 0
+	d.needSync = true
+
+	// 检查读写元数据是否异常k m
+	d.checkTailCorruption(d.depth)
 }
 
 func (d *diskQueue) moveForward() {
-
+	oldReadFileNum := d.readFileNum
+	d.readFileNum = d.nextReadFileNum
+	d.readPos = d.nextReadPos
+	d.depth -= 1
+	if oldReadFileNum != d.nextReadFileNum {
+		d.needSync = true
+		fn := d.fileName(oldReadFileNum)
+		if err := os.Remove(fn); err != nil {
+			slog.Error("os remove", "error", err)
+		}
+	}
+	d.checkTailCorruption(d.depth)
 }
 
 func (d *diskQueue) deleteAllFiles() error {
+	if err := d.skipToNextRWFile(); err != nil {
+		return fmt.Errorf("diskqueue skip to next rw file error: [%w]", err)
+	}
+	err := os.Remove(d.metaDataFileName())
+	if err != nil && os.IsNotExist(err) {
+		return fmt.Errorf("os remove error: [%w]", err)
+	}
 	return nil
 }
 
-func (d *diskQueue) writeOne([]byte) error {
+func (d *diskQueue) writeOne(data []byte) (err error) {
+	dataLen := int32(len(data))
+	totalBytes := int64(4 + dataLen)
+	if dataLen < d.minMsgSize || dataLen > d.maxMsgSize {
+		return fmt.Errorf("invalid message write size (%d) minMsgSize=%d maxMsgSize=%d", dataLen, d.minMsgSize, d.maxMsgSize)
+	}
+
+	// 检查是否超过文件大小
+	// 超过文件大小，重新新建文件
+	if d.writePos > 0 && d.writePos+totalBytes > d.maxBytesPerFile {
+		if d.readFileNum == d.writeFileNum {
+			d.maxBytesPerFileRead = d.writePos
+		}
+		d.writeFileNum++
+		d.writePos = 0
+		if err := d.sync(); err != nil {
+			slog.Error("disk queue sync error: [%w]", "error", err)
+		}
+		if d.writeFile != nil {
+			d.writeFile.Close()
+			d.writeFile = nil
+		}
+	}
+
+	// 检查写文件是否打开
+	if d.writeFile == nil {
+		curFileName := d.fileName(d.writeFileNum)
+		d.writeFile, err = os.OpenFile(curFileName, os.O_RDWR|os.O_CREATE, 0600)
+		if err != nil {
+			return err
+		}
+		if d.writePos != 0 {
+			if _, err = d.writeFile.Seek(d.writePos, 0); err != nil {
+				d.writeFile.Close()
+				d.writeFile = nil
+				return err
+			}
+		}
+	}
+	d.writeBuf.Reset()
+	if err := binary.Write(&d.writeBuf, binary.BigEndian, dataLen); err != nil {
+		return err
+	}
+	if _, err := d.writeBuf.Write(data); err != nil {
+		return err
+	}
+	if _, err := d.writeFile.Write(d.writeBuf.Bytes()); err != nil {
+		d.writeFile.Close()
+		d.writeFile = nil
+		return err
+	}
+	d.writePos += totalBytes
+	d.depth += 1
 	return nil
+}
+
+// 检查读写元数据是否异常
+func (d *diskQueue) checkTailCorruption(depth int64) {
+	if d.readFileNum < d.writeFileNum || d.readPos < d.writePos {
+		return
+	}
+	if depth != 0 {
+		d.depth = 0
+		d.needSync = true
+	}
+	if d.readFileNum != d.writeFileNum || d.readPos != d.writePos {
+		d.skipToNextRWFile()
+		d.needSync = true
+	}
+}
+
+// 跳过损坏文件
+func (d *diskQueue) skipToNextRWFile() (err error) {
+	// 关闭读文件
+	if d.readFile != nil {
+		d.readFile.Close()
+		d.readFile = nil
+	}
+
+	// 关闭写文件
+	if d.writeFile != nil {
+		d.writeFile.Close()
+		d.writeFile = nil
+	}
+
+	// 删除损坏文件
+	for i := d.readFileNum; i <= d.writeFileNum; i++ {
+		fn := d.fileName(i)
+		innerErr := os.Remove(fn)
+		if innerErr != nil && !os.IsNotExist(innerErr) {
+			err = innerErr
+		}
+	}
+
+	// 重置读写文件元数据
+	d.writeFileNum++
+	d.writePos = 0
+	d.readFileNum = d.writeFileNum
+	d.readPos = 0
+	d.nextReadFileNum = d.writeFileNum
+	d.nextReadPos = 0
+	d.depth = 0
+	return
 }
