@@ -1,12 +1,15 @@
 package main
 
 import (
-	"github.com/NoFacePeace/github/repositories/go/utils/pprof"
+	"net/http"
+
+	"github.com/NoFacePeace/github/repositories/go/utils/prometheus"
 	"github.com/NoFacePeace/github/repositories/go/utils/signal"
 )
 
 func main() {
 	ctx := signal.SetupSignalHandler()
-	pprof.Start(pprof.WithPort(6061))
+	prometheus.Start()
+	http.ListenAndServe(":80", nil)
 	<-ctx.Done()
 }
