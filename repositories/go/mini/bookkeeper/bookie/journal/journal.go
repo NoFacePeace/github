@@ -4,8 +4,8 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/NoFacePeace/github/repositories/go/bookkeeper/bookie/ledger"
-	"github.com/NoFacePeace/github/repositories/go/bookkeeper/common/collections"
+	"github.com/NoFacePeace/github/repositories/go/mini/bookkeeper/bookie/ledger"
+	"github.com/NoFacePeace/github/repositories/go/mini/bookkeeper/common/collections"
 )
 
 const (

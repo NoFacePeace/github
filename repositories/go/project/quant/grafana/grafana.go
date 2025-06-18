@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/NoFacePeace/github/repositories/go/quant/indicator"
+	"github.com/NoFacePeace/github/repositories/go/project/quant/indicator"
 	"github.com/gin-gonic/gin"
 )
 

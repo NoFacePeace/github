@@ -1,8 +1,8 @@
 package bookie
 
 import (
-	"github.com/NoFacePeace/github/repositories/go/bookkeeper/bookie/journal"
-	"github.com/NoFacePeace/github/repositories/go/bookkeeper/bookie/ledger"
+	"github.com/NoFacePeace/github/repositories/go/mini/bookkeeper/bookie/journal"
+	"github.com/NoFacePeace/github/repositories/go/mini/bookkeeper/bookie/ledger"
 )
 
 type BookieImpl struct {

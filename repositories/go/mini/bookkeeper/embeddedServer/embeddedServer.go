@@ -1,9 +1,9 @@
 package embeddedserver
 
 import (
-	"github.com/NoFacePeace/github/repositories/go/bookkeeper/bookie"
-	"github.com/NoFacePeace/github/repositories/go/bookkeeper/bookie/ledger"
-	"github.com/NoFacePeace/github/repositories/go/bookkeeper/common/component"
+	"github.com/NoFacePeace/github/repositories/go/mini/bookkeeper/bookie"
+	"github.com/NoFacePeace/github/repositories/go/mini/bookkeeper/bookie/ledger"
+	"github.com/NoFacePeace/github/repositories/go/mini/bookkeeper/common/component"
 )
 
 type EmbeddedServer struct {

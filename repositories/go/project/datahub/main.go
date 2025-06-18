@@ -6,7 +6,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/NoFacePeace/github/repositories/go/datahub/stock/tencent"
+	"github.com/NoFacePeace/github/repositories/go/project/datahub/stock/tencent"
 	"github.com/NoFacePeace/github/repositories/go/utils/log"
 
 	"github.com/robfig/cron/v3"

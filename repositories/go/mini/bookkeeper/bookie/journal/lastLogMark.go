@@ -1,6 +1,6 @@
 package journal
 
-import "github.com/NoFacePeace/github/repositories/go/bookkeeper/bookie/ledger"
+import "github.com/NoFacePeace/github/repositories/go/mini/bookkeeper/bookie/ledger"
 
 type LastLogMark struct {
 	LogFileId     int
