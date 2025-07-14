@@ -1,3 +1,6 @@
 ###
 
 https://proxy.finance.qq.com/cgi/cgi-bin/stockinfoquery/fs/app/get?warrant=false&needDataType=fs%2Cqt&code=hk00700&stockType=GP&fs.type=d1&fund=false&_rndtime=1733048061&_appName=ios&_dev=iPhone11,8&_devId=c55c8b27c2d4632724936a75b0ff8a74f874395d&_appver=11.21.2&_ifChId=&_isChId=1&_osVer=18.1.1&openid=oA0GbjrmFxO9Frxp3QvMbwg9_Y1k&fskey=v0ba828ab22662e5f90955aa89e47188&appid=wxcbc3ab3807acb685&access_token=&buildType=store&check=11&_idfa=&lang=zh_CN&_ui=c55c8b27c2d4632724936a75b0ff8a74f874395d
+
+### 获取行业榜单
+GET https://proxy.finance.qq.com/cgi/cgi-bin/rank/pt/getRank?direct=down&board_type=hy2&sort_type=PriceRatio
