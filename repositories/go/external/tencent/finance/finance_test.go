@@ -2,6 +2,8 @@ package finance
 
 import (
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestGetKline(t *testing.T) {
@@ -62,7 +64,8 @@ func TestGetAllKline(t *testing.T) {
 		{
 			name: "test",
 			args: args{
-				code: "sh600941",
+				// code: "sh600941",
+				code: "pt01801055",
 			},
 		},
 	}
@@ -103,4 +106,10 @@ func Test_getBoardRankList(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_getRank(t *testing.T) {
+	data, err := getRank()
+	require.Nil(t, err)
+	require.Equal(t, len(data.RankList), 40)
 }

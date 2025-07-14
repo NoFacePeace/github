@@ -19,8 +19,8 @@ var (
 )
 
 type Point struct {
-	Last float64
-	Date time.Time
+	Last float64   `json:"last"`
+	Date time.Time `json:"date"`
 }
 
 type Stock struct {
@@ -188,21 +188,88 @@ type getBoardRankListRespData struct {
 	Total  int `json:"total"`
 }
 
+func getRank(options ...Option) (*getRankRespData, error) {
+	endpoint := "https://proxy.finance.qq.com/cgi/cgi-bin/rank/pt/getRank"
+	u, err := url.Parse(endpoint)
+	if err != nil {
+		return nil, fmt.Errorf("url parse error: [%w]", err)
+	}
+	params := &url.Values{}
+	params.Add("count", "40")
+	params.Add("offset", "0")
+	params.Add("direct", "up")
+	params.Add("board_type", "hy2")
+	params.Add("sort_type", "PriceRatio")
+	for _, option := range options {
+		option.apply(params)
+	}
+	u.RawQuery = params.Encode()
+	resp := &getRankResp{}
+	if err := get(u.String(), resp); err != nil {
+		return nil, fmt.Errorf("finance get error: [%w]", err)
+	}
+	return resp.Data, nil
+}
+
+type getRankResp struct {
+	Code int              `json:"code"`
+	Msg  string           `json:"msg"`
+	Data *getRankRespData `json:"data"`
+}
+
+type getRankRespData struct {
+	RankList []struct {
+		Code string `json:"code"`
+		Hsl  string `json:"hsl"`
+		Lb   string `json:"lb"`
+		Ltsz string `json:"ltsz"`
+		Lzg  struct {
+			Code string `json:"code"`
+			Name string `json:"name"`
+			Zd   string `json:"zd"`
+			Zdf  string `json:"zdf"`
+			Zxj  string `json:"zxj"`
+		} `json:"lzg"`
+		Name      string `json:"name"`
+		Speed     string `json:"speed"`
+		StockType string `json:"stock_type"`
+		Turnover  string `json:"turnover"`
+		Volume    string `json:"volume"`
+		Zd        string `json:"zd"`
+		Zdf       string `json:"zdf"`
+		ZdfD20    string `json:"zdf_d20"`
+		ZdfD5     string `json:"zdf_d5"`
+		ZdfD60    string `json:"zdf_d60"`
+		ZdfW52    string `json:"zdf_w52"`
+		ZdfY      string `json:"zdf_y"`
+		Zgb       string `json:"zgb"`
+		Zljlr     string `json:"zljlr"`
+		ZljlrD20  string `json:"zljlr_d20"`
+		ZljlrD5   string `json:"zljlr_d5"`
+		Zllc      string `json:"zllc"`
+		Zllr      string `json:"zllr"`
+		Zsz       string `json:"zsz"`
+		Zxj       string `json:"zxj"`
+	} `json:"rank_list"`
+	Offset int `json:"offset"`
+	Total  int `json:"total"`
+}
+
 func get(url string, resp any) error {
 	rsp, err := http.Get(url)
 	if err != nil {
-		return fmt.Errorf("get %s error: [%w]", url, err)
+		return fmt.Errorf("http get url %s error: [%w]", url, err)
 	}
 	defer rsp.Body.Close()
 	body, err := io.ReadAll(rsp.Body)
 	if err != nil {
-		return fmt.Errorf("get %s error: [%w]", url, err)
+		return fmt.Errorf("url %s io read all error: [%w]", url, err)
 	}
 	if rsp.StatusCode != http.StatusOK {
-		return fmt.Errorf("get %s error: status code %d, body %s", url, rsp.StatusCode, string(body))
+		return fmt.Errorf("url %s status code %d error: [%s]", url, rsp.StatusCode, string(body))
 	}
 	if err := json.Unmarshal(body, resp); err != nil {
-		return fmt.Errorf("get %s error: [%w]", url, err)
+		return fmt.Errorf("url %s json unmarshal error: [%w]", url, err)
 	}
 	return nil
 }
