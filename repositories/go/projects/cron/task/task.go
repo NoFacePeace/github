@@ -63,10 +63,10 @@ func (t *Task) Channels() []channel.Channel {
 func GetPlatesDroppedBy20Percent() Result {
 	ret := Result{}
 	ret.Time = time.Now()
-	if datetime.IsChinesStockMarketTradingDay(ret.Time) {
+	if !datetime.IsChinesStockMarketTradingDay(ret.Time) {
+		ret.Message = "today is weekday or outside trading hours"
 		return ret
 	}
-
 	plates, err := finance.ListPlates(finance.PlateTypeHY2)
 	if err != nil {
 		ret.Message = "finance list plates error"
