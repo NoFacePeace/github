@@ -19,8 +19,9 @@ var (
 )
 
 type Point struct {
-	Last float64   `json:"last"`
-	Date time.Time `json:"date"`
+	Last   float64   `json:"last"`
+	Date   time.Time `json:"date"`
+	Volume float64   `json:"volume"`
 }
 
 type Stock struct {
@@ -68,6 +69,7 @@ func GetKline(code string, options ...Option) ([]Point, error) {
 	for _, node := range resp.Data.Nodes {
 		p := Point{}
 		p.Last = node.Last
+		p.Volume = node.Volume
 		p.Date, _ = time.Parse(datetime.LayoutDateWithDash, node.Date)
 		arr = append(arr, p)
 	}
