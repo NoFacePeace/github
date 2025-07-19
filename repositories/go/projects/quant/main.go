@@ -10,8 +10,8 @@ import (
 	"syscall"
 
 	"github.com/NoFacePeace/github/repositories/go/external/tencent/finance"
-	"github.com/NoFacePeace/github/repositories/go/project/quant/grafana"
-	"github.com/NoFacePeace/github/repositories/go/project/quant/indicator"
+	"github.com/NoFacePeace/github/repositories/go/projects/quant/grafana"
+	"github.com/NoFacePeace/github/repositories/go/projects/quant/indicator"
 	"github.com/NoFacePeace/github/repositories/go/utils/datetime"
 )
 

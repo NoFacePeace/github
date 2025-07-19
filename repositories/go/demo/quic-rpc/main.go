@@ -4,7 +4,7 @@ import (
 	"context"
 	"log"
 
-	rpc "github.com/NoFacePeace/github/repositories/go/project/quic-go-rpc"
+	rpc "github.com/NoFacePeace/github/repositories/go/projects/quic-go-rpc"
 )
 
 func main() {

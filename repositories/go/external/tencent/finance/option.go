@@ -79,3 +79,13 @@ type offsetOption struct {
 func (o *offsetOption) apply(params *url.Values) {
 	params.Set("offset", strconv.Itoa(o.offset))
 }
+
+type limitOption int
+
+func (l limitOption) apply(params *url.Values) {
+	params.Set("limit", strconv.Itoa(int(l)))
+}
+
+func WithLimit(limit int) Option {
+	return limitOption(limit)
+}
