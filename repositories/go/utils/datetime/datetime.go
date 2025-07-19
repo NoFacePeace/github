@@ -1,6 +1,9 @@
 package datetime
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 var (
 	LayoutDateWithLine  = "2006-01-02"
@@ -25,4 +28,16 @@ func Yesterday(ts ...time.Time) time.Time {
 		return ts[0].AddDate(0, 0, -1)
 	}
 	return time.Now().AddDate(0, 0, -1)
+}
+
+func IsChinesStockMarketTradingDay(t time.Time) bool {
+	if IsWeekend(t) {
+		return false
+	}
+	year, month, day := t.Date()
+	loc := t.Location()
+	start := time.Date(year, month, day, 9, 30, 0, 0, loc)
+	end := time.Date(year, month, day, 15, 0, 0, 0, loc)
+	fmt.Println(start, end)
+	return t.After(start) && t.Before(end)
 }

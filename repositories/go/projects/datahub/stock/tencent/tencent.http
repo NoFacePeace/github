@@ -16,7 +16,7 @@ GET https://proxy.finance.qq.com/cgi/cgi-bin/rank/pt/getRank?count=200&offset=0&
 GET https://proxy.finance.qq.com/cgi/cgi-bin/stockinfoquery/kline/app/get?added=false&ktype=day&fqtype=&limit=650&toDate=2020-02-10&warrant=false&code=pt01801731&stockType=BK-HY-2&fund=false&_rndtime=1713480565&_appName=ios&_dev=iPhone11,8&_devId=c55c8b27c2d4632724936a75b0ff8a74f874395d&_appver=11.14.0&_ifChId=&_isChId=1&_osVer=17.4.1&openid=oA0GbjrmFxO9Frxp3QvMbwg9_Y1k&fskey=v0b94ccfa2566133954888a265ec7394&appid=wxcbc3ab3807acb685&access_token=&buildType=store&check=11&_idfa=&lang=zh_CN&_ui=c55c8b27c2d4632724936a75b0ff8a74f874395d
 
 ### 
-GET https://proxy.finance.qq.com/cgi/cgi-bin/stockinfoquery/kline/app/get?ktype=day&limit=1&code=pt01801731&qq=hfq
+GET https://proxy.finance.qq.com/cgi/cgi-bin/stockinfoquery/kline/app/get?ktype=day&limit=740&code=pt01801731
 
 ###
 GET https://proxy.finance.qq.com/cgi/cgi-bin/stockinfoquery/kline/app/get?ktype=day&limit=10&code=sz002772&=hfq

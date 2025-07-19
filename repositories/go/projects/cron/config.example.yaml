@@ -1,0 +1,8 @@
+tasks:
+  - name: test
+    channel:
+    - name: seatalk
+      config:
+        url: https://localhost
+        group: group
+
