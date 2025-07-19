@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/NoFacePeace/github/repositories/go/external/tencent/finance"
@@ -64,6 +65,18 @@ func main() {
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"msg": fmt.Errorf("finance get all kline error: [%w]", err).Error()})
 			return
+		}
+		from := c.Query("from")
+		if from != "" {
+			t, _ := strconv.Atoi(from)
+			d := time.UnixMilli(int64(t))
+			for i := 0; i < len(ps); i++ {
+				if ps[i].Date.After(d) {
+					ps = ps[i:]
+					continue
+				}
+
+			}
 		}
 		c.JSON(http.StatusOK, ps)
 	})
