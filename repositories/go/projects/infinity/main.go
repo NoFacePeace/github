@@ -40,14 +40,27 @@ func main() {
 		}
 		c.JSON(http.StatusOK, plates)
 	})
-	r.GET("/tencent/finance/kline", func(c *gin.Context) {
-		code := c.Query("code")
-		if code == "" {
+	r.GET("/tencent/finance/kline/:name", func(c *gin.Context) {
+		name := c.Param("name")
+		if name == "" {
 			c.JSON(http.StatusBadRequest, gin.H{"msg": errors.New("bad request").Error()})
 			return
 		}
-		fmt.Println(code)
-		ps, err := finance.GetAllKline(code)
+		plates, err := finance.ListPlates(finance.PlateTypeHY2)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"msg": fmt.Errorf("finance list plates error: [%w]", err).Error(),
+			})
+			return
+		}
+		code := ""
+		for _, plate := range plates {
+			if plate.Name == name {
+				code = plate.Code
+				break
+			}
+		}
+		ps, err := finance.GetKline(code)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"msg": fmt.Errorf("finance get all kline error: [%w]", err).Error()})
 			return
