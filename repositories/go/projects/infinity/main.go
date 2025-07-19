@@ -73,9 +73,8 @@ func main() {
 			for i := 0; i < len(ps); i++ {
 				if ps[i].Date.After(d) {
 					ps = ps[i:]
-					continue
+					break
 				}
-
 			}
 		}
 		c.JSON(http.StatusOK, ps)
