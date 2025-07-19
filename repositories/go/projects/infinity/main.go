@@ -162,6 +162,57 @@ func main() {
 		}
 		c.JSON(http.StatusOK, ret)
 	})
+	r.GET("/tencent/finance/plates/volume/low", func(c *gin.Context) {
+		plates, err := finance.ListPlates(finance.PlateTypeHY2, finance.DirectOptionUp)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"msg": fmt.Errorf("finance list plates error: [%w]", err).Error(),
+			})
+			return
+		}
+		ret := []map[string]any{}
+		for _, plate := range plates {
+			ps, err := finance.GetKline(plate.Code)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{
+					"msg": fmt.Errorf("finance get kline error: [%w]", err).Error(),
+				})
+				return
+			}
+			if len(ps) == 0 {
+				continue
+			}
+			from := c.Query("from")
+			if from != "" {
+				t, _ := strconv.Atoi(from)
+				d := time.UnixMilli(int64(t))
+				for i := 0; i < len(ps); i++ {
+					if ps[i].Date.After(d) {
+						ps = ps[i:]
+						break
+					}
+				}
+			}
+			n := len(ps)
+			if n == 0 {
+				continue
+			}
+			mn := ps[0]
+			for i := 1; i < n; i++ {
+				if ps[i].Volume <= mn.Volume {
+					mn = ps[i]
+				}
+			}
+			tmp := map[string]any{
+				"name":   plate.Name,
+				"volume": mn.Volume,
+				"date":   mn.Date,
+			}
+			ret = append(ret, tmp)
+
+		}
+		c.JSON(http.StatusOK, ret)
+	})
 	srv := &http.Server{
 		Handler: r,
 	}
