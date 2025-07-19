@@ -90,7 +90,7 @@ func main() {
 		c.JSON(http.StatusOK, arr)
 	})
 	r.GET("/tencent/finance/low", func(c *gin.Context) {
-		plates, err := finance.ListPlates(finance.PlateTypeHY2)
+		plates, err := finance.ListPlates(finance.PlateTypeHY2, finance.DirectOptionUp)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"msg": fmt.Errorf("finance list plates error: [%w]", err).Error(),

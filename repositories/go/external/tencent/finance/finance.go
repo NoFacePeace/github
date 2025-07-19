@@ -197,7 +197,7 @@ func getRank(options ...Option) (*getRankRespData, error) {
 	params := &url.Values{}
 	params.Add("count", "40")
 	params.Add("offset", "0")
-	params.Add("direct", "up")
+	params.Add("direct", "down")
 	params.Add("board_type", "hy2")
 	params.Add("sort_type", "PriceRatio")
 	for _, option := range options {
