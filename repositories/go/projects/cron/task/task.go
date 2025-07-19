@@ -67,7 +67,7 @@ func GetPlatesDroppedBy20Percent() Result {
 		ret.Message = "today is weekday or outside trading hours"
 		return ret
 	}
-	plates, err := finance.ListPlates(finance.PlateTypeHY2)
+	plates, err := finance.ListPlates(finance.PlateTypeHY2, finance.DirectOptionUp)
 	if err != nil {
 		ret.Message = "finance list plates error"
 		slog.Error("finance list plates error", "error", err)

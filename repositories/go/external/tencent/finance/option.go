@@ -89,3 +89,14 @@ func (l limitOption) apply(params *url.Values) {
 func WithLimit(limit int) Option {
 	return limitOption(limit)
 }
+
+type directOption string
+
+func (d directOption) apply(params *url.Values) {
+	params.Set("direct", string(d))
+}
+
+var (
+	DirectOptionUp   directOption = "up"
+	DirectOptionDown directOption = "down"
+)

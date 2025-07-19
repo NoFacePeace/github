@@ -13,12 +13,13 @@ const (
 	PlateTypeHY2 PlateType = "hy2"
 )
 
-func ListPlates(typ PlateType) ([]Plate, error) {
+func ListPlates(typ PlateType, options ...Option) ([]Plate, error) {
 	offset := 0
 	count := 40
 	ps := []Plate{}
 	for {
-		data, err := getRank(WithCount(40), WithOffset(offset))
+		options = append(options, WithCount(40), WithOffset(offset))
+		data, err := getRank(options...)
 		if err != nil {
 			return nil, fmt.Errorf("finace get rank error: [%w]", err)
 		}
