@@ -1,8 +1,9 @@
 tasks:
-  - name: test
-    channel:
-    - name: seatalk
-      config:
-        url: https://localhost
-        group: group
+  - name: GetPlatesDroppedBy20Percent
+    spec: "* * * * *"
+    channels:
+      - name: seatalk
+        config:
+          url: <url>
+          group: <group>
 
