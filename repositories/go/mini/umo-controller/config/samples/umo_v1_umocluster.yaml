@@ -1,9 +1,0 @@
-apiVersion: umo.localhost/v1
-kind: UmoCluster
-metadata:
-  labels:
-    app.kubernetes.io/name: umo-controller
-    app.kubernetes.io/managed-by: kustomize
-  name: umocluster-sample
-spec:
-  # TODO(user): Add fields here
