@@ -1,0 +1,5 @@
+###
+POST https://dq.10jqka.com.cn/interval_calculation/block_info/v1/get_block_list
+Content-Type: application/json
+
+{"type":1,"history_info":{"history_type":"0","start_date":"20251120093000","end_date":"20251120150000"},"page_info":{"page":1,"page_size":20},"sort_info":{"sort_field":"0","sort_type":"desc"}}
