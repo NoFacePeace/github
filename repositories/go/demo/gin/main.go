@@ -13,6 +13,7 @@ import (
 
 func main() {
 	ctx := signal.SetupSignalHandler()
+
 	r := gin.Default()
 	r.GET("/ping", func(c *gin.Context) {
 		c.JSON(200, gin.H{
@@ -22,6 +23,14 @@ func main() {
 	srv := &http.Server{
 		Handler: r,
 	}
+	defer func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := srv.Shutdown(ctx); err != nil {
+			slog.Error("http server shutdown error", "error", err)
+		}
+		slog.Info("http server shutdown success")
+	}()
 	go func() {
 		if err := srv.ListenAndServe(); err != http.ErrServerClosed {
 			slog.Error("http server listen and server error", "error", err)
@@ -29,10 +38,5 @@ func main() {
 		}
 	}()
 	<-ctx.Done()
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	if err := srv.Shutdown(ctx); err != nil {
-		slog.Error("http server shutdown error", "error", err)
-		os.Exit(1)
-	}
+
 }
