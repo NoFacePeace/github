@@ -2,7 +2,6 @@
   "name": "frontend",
   "version": "0.0.0",
   "private": true,
-  "type": "module",
   "engines": {
     "node": "^20.19.0 || >=22.12.0"
   },
@@ -20,6 +19,10 @@
     "format": "prettier --write --experimental-cli src/"
   },
   "dependencies": {
+    "@tailwindcss/vite": "^4.1.18",
+    "element-plus": "^2.13.0",
+    "monaco-editor": "^0.55.1",
+    "monaco-editor-vue3": "^1.0.5",
     "pinia": "^3.0.4",
     "vue": "^3.5.26",
     "vue-router": "^4.6.4"
@@ -36,6 +39,7 @@
     "@vue/eslint-config-typescript": "^14.6.0",
     "@vue/test-utils": "^2.4.6",
     "@vue/tsconfig": "^0.8.1",
+    "autoprefixer": "^10.4.23",
     "eslint": "^9.39.2",
     "eslint-plugin-oxlint": "~1.35.0",
     "eslint-plugin-playwright": "^2.4.0",
@@ -44,9 +48,12 @@
     "jsdom": "^27.3.0",
     "npm-run-all2": "^8.0.4",
     "oxlint": "~1.35.0",
+    "postcss": "^8.5.6",
     "prettier": "3.7.4",
+    "tailwindcss": "^4.1.18",
     "typescript": "~5.9.3",
     "vite": "npm:rolldown-vite@latest",
+    "vite-plugin-monaco-editor": "^1.1.0",
     "vite-plugin-vue-devtools": "^8.0.5",
     "vitest": "^4.0.16",
     "vue-tsc": "^3.2.1"
