@@ -37,6 +37,7 @@ type MiddlewareSpec struct {
 	// custom
 	Normal         []NodeSetSpec  `json:"normal,omitempty" yaml:"normal"`
 	UpdateStrategy UpdateStrategy `json:"updateStrategy,omitempty" yaml:"updateStrategy"`
+	MiddlewareType string         `json:"middlewareType" yaml:"middlewareType"`
 }
 
 // MiddlewareStatus defines the observed state of Middleware.

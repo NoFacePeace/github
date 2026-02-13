@@ -3,9 +3,10 @@ package core
 import (
 	"context"
 	"fmt"
-	"time"
 
 	umov1 "nofacepeace.github.io/controller/api/v1"
+	"nofacepeace.github.io/controller/pkg/config"
+	"nofacepeace.github.io/controller/pkg/model"
 
 	corev1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
@@ -21,21 +22,19 @@ const (
 )
 
 type PodManager struct {
-	config *PodManagerConfig
 	client.Client
 }
 
-type PodManagerConfig struct {
-	PollInterval  time.Duration
-	PollTimeout   time.Duration
-	PollImmediate bool
-}
-
+// GetClusterPods 获取集群 pod
 func (p *PodManager) GetClusterPods(ctx context.Context, cls *umov1.Middleware) ([]corev1.Pod, error) {
 	list := &corev1.PodList{}
 	opts := []client.ListOption{
 		client.InNamespace(cls.GetNamespace()),
-		client.MatchingLabels(map[string]string{}),
+		client.MatchingLabels(map[string]string{
+			model.LabelClusterId:      cls.GetName(),
+			model.LabelMiddlewareType: cls.Spec.MiddlewareType,
+			model.LabelEksId:          config.Get().Eks.Id,
+		}),
 	}
 	if err := p.Client.List(ctx, list, opts...); err != nil {
 		return nil, fmt.Errorf("k8s client list error: [%w]", err)
@@ -62,6 +61,7 @@ func (p *PodManager) GetPodIfExists(ctx context.Context, ns, name string) (*core
 	return pod, false, fmt.Errorf("pod manager get pod error: [%w]", err)
 }
 
+// DeletePod delete pod
 func (p *PodManager) DeletePod(ctx context.Context, pod *corev1.Pod, force bool) error {
 	if force {
 		if err := p.Client.Delete(ctx, pod, client.GracePeriodSeconds(forceDeleteGracePeriodSeconds), client.PropagationPolicy(metav1.DeletePropagationForeground)); err != nil {
@@ -101,7 +101,7 @@ func (p *PodManager) CreatePod(ctx context.Context, cls *umov1.Middleware, pod *
 }
 
 func (p *PodManager) isPodReady(ns, name string) error {
-	return wait.PollUntilContextTimeout(context.Background(), p.config.PollInterval, p.config.PollTimeout, p.config.PollImmediate, func(ctx context.Context) (bool, error) {
+	return wait.PollUntilContextTimeout(context.Background(), config.GetPollInterval(), config.GetPollTimeout(), config.GetPollImmediate(), func(ctx context.Context) (bool, error) {
 		pod, err := p.getPod(ctx, ns, name)
 		if err != nil {
 			if k8sErrors.IsNotFound(err) {
@@ -150,7 +150,7 @@ func (p *PodManager) deletePvc() error {
 }
 
 func (p *PodManager) isPodDeleted(ctx context.Context, pod *corev1.Pod) error {
-	return wait.PollUntilContextTimeout(ctx, p.config.PollInterval, p.config.PollTimeout, p.config.PollImmediate, func(ctx context.Context) (bool, error) {
+	return wait.PollUntilContextTimeout(ctx, config.GetPollInterval(), config.GetPollTimeout(), config.GetPollImmediate(), func(ctx context.Context) (bool, error) {
 		_, err := p.getPod(ctx, pod.GetNamespace(), pod.Name)
 		if err == nil {
 			return false, nil

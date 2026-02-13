@@ -8,6 +8,7 @@ import (
 	"sync/atomic"
 
 	umov1 "nofacepeace.github.io/controller/api/v1"
+	"nofacepeace.github.io/controller/pkg/config"
 
 	corev1 "k8s.io/api/core/v1"
 )
@@ -35,7 +36,7 @@ func (n *NodeManager) checkNodes(ctx context.Context, cls *umov1.Middleware) err
 		batchCount := &atomic.Int32{}
 		errCh := make(chan error, updateStrategy.Concurrency)
 		for eks, nodeCount := range nodeset.NodeCounts {
-			if eks != GetConfig().Eks.Id {
+			if eks != config.Get().Eks.Id {
 				continue
 			}
 			for idx := nodeCount.Offset; idx < nodeCount.Offset+nodeCount.Count; idx++ {
