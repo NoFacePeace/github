@@ -27,6 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -37,21 +38,18 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	umov1 "nofacepeace.github.io/controller/api/v1"
 
+	"nofacepeace.github.io/controller/pkg/config"
 	"nofacepeace.github.io/controller/pkg/core"
+	"nofacepeace.github.io/controller/pkg/model"
 )
 
 // MiddlewareReconciler reconciles a Middleware object
 type MiddlewareReconciler struct {
 	client.Client
 	Scheme   *runtime.Scheme
-	nameToNs sync.Map
+	NameToNs sync.Map
 	sync.Mutex
-	ClusterReconciler *core.ClusterReconciler
-	config            *Config
-}
-
-type Config struct {
-	MiddlewareType string
+	Reconciler *core.Reconciler
 }
 
 // +kubebuilder:rbac:groups=umo.nofacepeace.github.io,resources=middlewares,verbs=get;list;watch;create;update;patch;delete
@@ -72,9 +70,10 @@ func (r *MiddlewareReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	ns := req.Namespace
 	logger := logf.FromContext(ctx)
 	logger = logger.WithValues("namespace", ns, "name", name, "reconciler", "middleware")
-	// 记录 name 与 namespace 映射，详见 LoopCallReconcile
-	if _, ok := r.nameToNs.Load(name); !ok {
-		r.nameToNs.Store(name, ns)
+
+	// 记录 name 与 namespace 映射，详见 Loop
+	if _, ok := r.NameToNs.Load(name); !ok {
+		r.NameToNs.Store(name, ns)
 	}
 
 	cls := &umov1.Middleware{
@@ -95,17 +94,23 @@ func (r *MiddlewareReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 // SetupWithManager sets up the controller with the Manager.
 func (r *MiddlewareReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&umov1.Middleware{}).
+		// 监听 Middleware 资源,过滤非指定中间件类型
+		For(&umov1.Middleware{}, builder.WithPredicates(filterMiddlewareByLabel(model.LabelMiddlewareType, config.Get().MiddlewareType))).
+		// 监听 Pod 资源,过滤非指定中间件类型的 Pod
+		Owns(&corev1.Pod{}, builder.WithPredicates(filterPodByLabel(model.LabelMiddlewareType, config.Get().MiddlewareType))).
+		// 设置 controller 事件过滤器
+		WithEventFilter(filterEvent()).
+		// 设置 controller 名称
 		Named("middleware").
 		Complete(r)
 }
 
-// LoopCallReconcile 定时循环去调用协调函数
-func (r *MiddlewareReconciler) LoopCallReconcile() {
+// Loop 定时循环去调用协调函数
+func (r *MiddlewareReconciler) Loop() {
 	sleep := time.Second * 600
 	for {
 		clusters := []*umov1.Middleware{}
-		r.nameToNs.Range(func(key, value any) bool {
+		r.NameToNs.Range(func(key, value any) bool {
 			cls := &umov1.Middleware{
 				ObjectMeta: v1.ObjectMeta{
 					Name:      key.(string),
@@ -117,7 +122,7 @@ func (r *MiddlewareReconciler) LoopCallReconcile() {
 				Name:      cls.GetName(),
 			}, cls); err != nil {
 				if k8sErrors.IsNotFound(err) {
-					r.nameToNs.Delete(key)
+					r.NameToNs.Delete(key)
 				} else {
 					slog.Error("loop call reconcile client get error", "error", err)
 				}
@@ -150,7 +155,20 @@ func (r *MiddlewareReconciler) LoopCallReconcile() {
 }
 
 func (r *MiddlewareReconciler) reconcileCluster(ctx context.Context, cls *umov1.Middleware) error {
-	return r.ClusterReconciler.Reconcile(ctx, cls)
+	return r.Reconciler.Reconcile(ctx, cls)
+}
+
+func filterMiddlewareByLabel(key, value string) predicate.Predicate {
+	return predicate.NewPredicateFuncs(func(object client.Object) bool {
+		if object == nil {
+			return false
+		}
+		middleware, ok := object.(*umov1.Middleware)
+		if !ok {
+			return false
+		}
+		return middleware.Labels[key] == value
+	})
 }
 
 func filterPodByLabel(key, value string) predicate.Predicate {

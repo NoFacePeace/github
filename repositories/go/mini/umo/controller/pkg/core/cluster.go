@@ -2,107 +2,21 @@ package core
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"time"
-
-	umov1 "nofacepeace.github.io/controller/api/v1"
-
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
+	"strings"
 
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	umov1 "nofacepeace.github.io/controller/api/v1"
+	"nofacepeace.github.io/controller/pkg/config"
+	"nofacepeace.github.io/controller/pkg/model"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 )
-
-type ClusterReconciler struct {
-	client.Client
-	nameToEventChan map[string]chan *ClusterReconcilerEvent
-	nom             *NodeManager
-	cm              *ClusterManager
-}
-
-type ClusterReconcilerEvent struct {
-	ctx     context.Context
-	cluster *umov1.Middleware
-}
-
-func NewClusterReconciler() *ClusterReconciler {
-	r := &ClusterReconciler{}
-	return r
-}
-
-func (c *ClusterReconciler) Reconcile(ctx context.Context, cls *umov1.Middleware) error {
-	logger := logf.FromContext(ctx)
-	name := cls.GetName()
-	ch := c.nameToEventChan[name]
-	if ch == nil {
-		ch = make(chan *ClusterReconcilerEvent, 100)
-		c.nameToEventChan[name] = ch
-		go func() {
-			for event := range ch {
-				for i := 0; i < 5; i++ {
-					if err := c.processEvent(event); err != nil {
-						logger.Error(err, "reconcile process event error")
-						time.Sleep(10 * time.Second)
-						continue
-					}
-					break
-				}
-			}
-		}()
-	}
-	select {
-	case ch <- &ClusterReconcilerEvent{
-		ctx:     ctx,
-		cluster: cls,
-	}:
-		logger.Info("")
-	default:
-		logger.Error(errors.New("channel full error"), "")
-	}
-	return nil
-}
-
-func (c *ClusterReconciler) processEvent(e *ClusterReconcilerEvent) error {
-	ctx := e.ctx
-	cls := e.cluster
-	logger := logf.FromContext(ctx)
-	logger.Info("cluster reconciler start process event")
-	found, err := c.clusterExists(ctx, cls)
-	if err != nil {
-		return fmt.Errorf("cluster reconciler cluster exists error: [%w]", err)
-	}
-	if !found {
-		ch, ok := c.nameToEventChan[cls.GetName()]
-		if ok {
-			delete(c.nameToEventChan, cls.GetName())
-			close(ch)
-		}
-	}
-	c.checkCluster(e)
-	return nil
-}
-
-func (c *ClusterReconciler) checkCluster(e *ClusterReconcilerEvent) error {
-	c.checkClusterNodes(e)
-	return nil
-}
-
-func (c *ClusterReconciler) checkClusterNodes(e *ClusterReconcilerEvent) error {
-	return nil
-}
-
-func (c *ClusterReconciler) clusterExists(ctx context.Context, cls *umov1.Middleware) (bool, error) {
-	_, found, err := c.cm.Exist(ctx, cls.Namespace, cls.Name)
-	if err != nil {
-		return false, fmt.Errorf("cluster manager exist error: [%w]", err)
-	}
-	return found, nil
-}
 
 type ClusterManager struct {
 	client.Client
+	sm *StatusManager
 }
 
 func (c *ClusterManager) Exist(ctx context.Context, ns, name string) (*umov1.Middleware, bool, error) {
@@ -124,4 +38,28 @@ func (c *ClusterManager) get(ctx context.Context, ns, name string) (*umov1.Middl
 		},
 	}
 	return cls, c.Client.Get(ctx, client.ObjectKeyFromObject(cls), cls)
+}
+
+func (c *ClusterManager) Skip(ctx context.Context, cls *umov1.Middleware) (bool, error) {
+	logger := logf.FromContext(ctx)
+	// 1. config skip
+	if config.Get().ClusterFilterPolicy.Skip(cls.GetName()) {
+		logger.Info("cluster manager skip cluster", "cluster", cls.GetName())
+		return true, nil
+	}
+	labels := cls.GetLabels()
+	if labels == nil {
+		logger.Info("cluster manager no labels", "cluster", cls.GetName())
+		return false, nil
+	}
+	// 2. label skip
+	if strings.EqualFold(labels[model.LabelClusterIgnore], "true") {
+		logger.Info("cluster manager ignore cluster", "cluster", cls.GetName())
+		return true, nil
+	}
+	if strings.EqualFold(labels[model.LabelManualManagement], "true") {
+		logger.Info("cluster manager manual management", "cluster", cls.GetName())
+		return true, c.sm.UpdateStatus(ctx, cls)
+	}
+	return false, nil
 }

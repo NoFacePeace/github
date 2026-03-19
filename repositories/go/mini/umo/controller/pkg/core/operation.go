@@ -5,7 +5,11 @@ import (
 	"time"
 )
 
-type Model struct {
+const (
+	OperationTypeCheckCluster = "CheckCluster"
+)
+
+type OperationModel struct {
 	Ctx         context.Context
 	Time        time.Time
 	Operation   string
@@ -16,7 +20,19 @@ type Model struct {
 	Extras      map[string]string
 }
 
-type Builder struct {
-	Model *Model
-	
+type OperationManager struct {
+}
+
+func (o *OperationManager) NewOperationBuilder(ctx context.Context, cls, op string) *OperationBuilder {
+	return &OperationBuilder{}
+}
+
+type OperationBuilder struct {
+}
+
+func (o *OperationBuilder) WithError(err error) *OperationBuilder {
+	return o
+}
+
+func (o *OperationBuilder) Report() {
 }
