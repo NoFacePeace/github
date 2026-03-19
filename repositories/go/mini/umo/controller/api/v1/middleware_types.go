@@ -17,6 +17,7 @@ limitations under the License.
 package v1
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -38,6 +39,8 @@ type MiddlewareSpec struct {
 	Normal         []NodeSetSpec  `json:"normal,omitempty" yaml:"normal"`
 	UpdateStrategy UpdateStrategy `json:"updateStrategy,omitempty" yaml:"updateStrategy"`
 	MiddlewareType string         `json:"middlewareType" yaml:"middlewareType"`
+	PublishId      string         `json:"publishId,omitempty" yaml:"publishId"`
+	GrayFilters    []GrayFilter   `json:"grayFilters,omitempty" yaml:"grayFilters"`
 }
 
 // MiddlewareStatus defines the observed state of Middleware.
@@ -61,6 +64,8 @@ type MiddlewareStatus struct {
 	// +listMapKey=type
 	// +optional
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
+
+	Phase MiddlewarePhase `json:"phase,omitempty" yaml:"phase"`
 }
 
 // +kubebuilder:object:root=true
@@ -100,6 +105,9 @@ func init() {
 type NodeSetSpec struct {
 	NodeCounts map[string]NodeCount `json:"count,omitempty" yaml:"count"`
 	Name       string               `json:"name,omitempty" yaml:"name"`
+	Type       string               `json:"type,omitempty" yaml:"type"`
+
+	VolumeClaimTemplates []VolumeClaimTemplate `json:"volumeClaimTemplates,omitempty" yaml:"volumeClaimTemplates"`
 }
 
 type NodeCount struct {
@@ -109,4 +117,29 @@ type NodeCount struct {
 
 type UpdateStrategy struct {
 	Concurrency int `json:"concurrency,omitempty" yaml:"concurrency,omitempty"`
+}
+type VolumeClaimTemplate struct {
+	Metadata  VolumeClaimMetadata              `json:"metadata,omitempty" yaml:"metadata"`
+	Spec      corev1.PersistentVolumeClaimSpec `json:"spec,omitempty" yaml:"spec"`
+	MountPath string                           `json:"mountPath,omitempty" yaml:"mountPath"`
+}
+
+type VolumeClaimMetadata struct {
+	Name        string            `json:"name,omitempty" yaml:"name"`
+	Annotations map[string]string `json:"annotations,omitempty" yaml:"annotations"`
+	Labels      map[string]string `json:"labels,omitempty" yaml:"labels"`
+}
+
+type MiddlewarePhase string
+
+const (
+	MiddlewarePending MiddlewarePhase = "Pending"
+	MiddlewareRunning MiddlewarePhase = "Running"
+)
+
+type GrayFilter struct {
+	NodeSetName string `json:"nodeSetName,omitempty" yaml:"nodeSetName"`
+	NodeType    string `json:"nodeType,omitempty" yaml:"nodeType"`
+	Type        string `json:"type,omitempty" yaml:"type"`
+	Regexp      string `json:"regexp,omitempty" yaml:"regexp"`
 }
