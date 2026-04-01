@@ -1,0 +1,70 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: opentelemetry-collectors
+---
+apiVersion: opentelemetry.io/v1alpha1
+kind: OpenTelemetryCollector
+metadata:
+  name: otelcol-business
+  namespace: opentelemetry-collectors
+spec:
+  mode: statefulset
+  replicas: 3
+  targetAllocator:
+    replicas: 2
+    image: harbor.shopeemobile.com/ses/open-telemetry/opentelemetry-operator/target-allocator:0.85.0
+    allocationStrategy: "consistent-hashing"
+    enabled: true
+    serviceAccount: opentelemetry-targetallocator-sa
+    env:
+      - name: OTELCOL_NAMESPACE
+        value: opentelemetry-collectors
+    prometheusCR:
+      enabled: true
+      serviceMonitorSelector:
+        monitor-by: targetallocator
+      podMonitorSelector:
+        monitor-by: targetallocator
+  image: harbor.shopeemobile.com/ses/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib:0.85.0
+  resources:
+    requests:
+      cpu: 200m
+      memory:  1Gi
+    limits:
+      cpu: 4
+      memory:  16Gi
+  config: |
+    receivers:
+      prometheus:
+        config:
+          scrape_configs:
+          - job_name: 'otel-collector'
+            scrape_interval: 45s
+            static_configs:
+            - targets: [ '0.0.0.0:8888' ]
+        target_allocator:
+          endpoint: http://otelcol-business-targetallocator
+          interval: 30s
+          collector_id: "${POD_NAME}"
+
+    extensions:
+      pprof:
+        endpoint: :7777
+    processors:
+      batch:
+        send_batch_max_size: 30000
+    exporters:
+      logging: {}
+      prometheusremotewrite:
+        add_metric_suffixes: false
+        remote_write_queue:
+          num_consumers: 10
+        endpoint: "https://nofacepeace.github.io/vminsert/insert/11495/prometheus"
+    service:
+      extensions: [pprof]
+      pipelines:
+        metrics:
+          receivers: [prometheus]
+          processors: [batch]
+          exporters: [logging,prometheusremotewrite]

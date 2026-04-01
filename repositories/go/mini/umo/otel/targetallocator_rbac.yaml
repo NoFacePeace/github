@@ -1,0 +1,64 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: opentelemetry-collectors
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: opentelemetry-targetallocator-role
+rules:
+  - apiGroups:
+      - monitoring.coreos.com
+    resources:
+      - servicemonitors
+      - podmonitors
+    verbs:
+      - '*'
+  - apiGroups: [""]
+    resources:
+      - namespaces
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources:
+      - nodes
+      - nodes/metrics
+      - services
+      - endpoints
+      - pods
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources:
+      - configmaps
+    verbs: ["get"]
+  - apiGroups:
+      - discovery.k8s.io
+    resources:
+      - endpointslices
+    verbs: ["get", "list", "watch"]
+  - apiGroups:
+      - networking.k8s.io
+    resources:
+      - ingresses
+    verbs: ["get", "list", "watch"]
+  - nonResourceURLs: ["/metrics"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: cluster-role-binding-clusterrolebinding-for-ta
+subjects:
+  - kind: ServiceAccount
+    name: opentelemetry-targetallocator-sa
+    namespace: opentelemetry-collectors
+roleRef:
+  kind: ClusterRole
+  name: opentelemetry-targetallocator-role
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: opentelemetry-targetallocator-sa
+  namespace: opentelemetry-collectors

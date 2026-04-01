@@ -8,10 +8,15 @@ type Config struct {
 	Eks
 	MiddlewareType      string               `json:"middlewareType" yaml:"middlewareType"`
 	ClusterFilterPolicy *ClusterFilterPolicy `json:"cluster_filter_policy" yaml:"clusterFilterPolicy"`
+	ReconcilePolicy     *ReconcilePolicy     `json:"reconcile_policy" yaml:"reconcilePolicy"`
 }
 
 type Eks struct {
 	Id string `json:"id" yaml:"id"`
+}
+
+type ReconcilePolicy struct {
+	NodeCheckErrorTolerance int `json:"node_check_error_tolerance" yaml:"nodeCheckErrorTolerance"`
 }
 
 func Get() *Config {

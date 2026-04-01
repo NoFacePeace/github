@@ -1,0 +1,35 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: optl-collector
+  labels:
+    monitor-by: smq-targetallocator
+spec:
+  jobLabel: app.kubernetes.io/component
+  namespaceSelector:
+    matchNames:
+      - opentelemetry-collectors
+  selector:
+    matchExpressions:
+      - {key: app.kubernetes.io/component, operator: In, values: [opentelemetry-collector]}
+      - {key: app.kubernetes.io/name, operator: In, values: [smq-otelcol-business-collector]}
+  podMetricsEndpoints:
+    - path: /metrics
+      port: metrics
+      interval: 30s
+      scrapeTimeout: 25s
+      relabelings:
+      - action: labelmap
+        regex: __meta_kubernetes_pod_label_(.+)
+      - action: replace
+        sourceLabels:
+        - namespace
+        targetLabel: k8s_namespace
+      - action: labeldrop
+        regex: namespace
+      - action: labeldrop
+        regex: app_kubernetes_io_managed_by
+      - action: labeldrop
+        regex: app_kubernetes_io_part_of
+      - action: labeldrop
+        regex: app_kubernetes_io_name

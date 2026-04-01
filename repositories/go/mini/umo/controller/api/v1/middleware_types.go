@@ -17,6 +17,8 @@ limitations under the License.
 package v1
 
 import (
+	"time"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -116,8 +118,14 @@ type NodeCount struct {
 }
 
 type UpdateStrategy struct {
-	Concurrency int `json:"concurrency,omitempty" yaml:"concurrency,omitempty"`
+	Concurrency         int `json:"concurrency,omitempty" yaml:"concurrency,omitempty"`
+	PodUpdateIntervalMs int `json:"podUpdateIntervalMs,omitempty" yaml:"podUpdateIntervalMs,omitempty"`
 }
+
+func (s *UpdateStrategy) PodUpdateInterval() time.Duration {
+	return time.Duration(s.PodUpdateIntervalMs) * time.Millisecond
+}
+
 type VolumeClaimTemplate struct {
 	Metadata  VolumeClaimMetadata              `json:"metadata,omitempty" yaml:"metadata"`
 	Spec      corev1.PersistentVolumeClaimSpec `json:"spec,omitempty" yaml:"spec"`
