@@ -18,6 +18,10 @@ type PvcManager struct {
 	client.Client
 }
 
+func (p *PvcManager) checkPvc(args ...any) error {
+	return nil
+}
+
 func (p *PvcManager) EnsurePvc(ctx context.Context, cls *umov1.Middleware, nodeSetSpec *umov1.NodeSetSpec, pod *corev1.Pod) error {
 	logger := logf.FromContext(ctx)
 	ns := cls.GetNamespace()

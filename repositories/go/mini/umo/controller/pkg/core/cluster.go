@@ -59,7 +59,7 @@ func (c *ClusterManager) Skip(ctx context.Context, cls *umov1.Middleware) (bool,
 	}
 	if strings.EqualFold(labels[model.LabelManualManagement], "true") {
 		logger.Info("cluster manager manual management", "cluster", cls.GetName())
-		return true, c.sm.UpdateStatus(ctx, cls)
+		return true, c.sm.UpdateClusterStatus(ctx, cls)
 	}
 	return false, nil
 }

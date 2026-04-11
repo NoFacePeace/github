@@ -108,7 +108,7 @@ func (c *Reconciler) checkCluster(e *ReconcilerEvent) (err error) {
 
 	defer func() {
 		c.om.NewOperationBuilder(e.ctx, e.cluster.Name, OperationTypeCheckCluster).WithError(err).Report()
-		if subErr := c.sm.UpdateStatus(e.ctx, e.cluster); subErr != nil {
+		if subErr := c.sm.UpdateClusterStatus(e.ctx, e.cluster); subErr != nil {
 			err = errors.Join(err, subErr)
 		}
 	}()
