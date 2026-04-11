@@ -1,0 +1,26 @@
+---
+description: 本仓库 TypeScript 示例规则（演示 .mdc 格式）
+globs: "**/*.ts"
+alwaysApply: false
+---
+
+# TypeScript 约定（示例）
+
+本规则仅在与 `**/*.ts` 匹配的文件相关时生效（`alwaysApply: false`）。
+
+## 模块
+
+- 使用 ESM（`package.json` 中 `"type": "module"`）时，保持与 `tsconfig` 的 `module` / `moduleResolution` 一致。
+- 新增仅用于本文件的类型时，优先 `type` / `interface` 放在使用处附近。
+
+## 示例：日志与入口
+
+```typescript
+// 简单脚本入口：保持单行职责清晰
+console.log("Hello, World!");
+```
+
+## 不要做的事
+
+- 不要用空 `catch` 吞掉错误；至少记录或重新抛出。
+- 不要为「示例 hello world」引入额外依赖，除非 `package.json` 已声明。

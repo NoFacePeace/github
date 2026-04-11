@@ -9,7 +9,7 @@ import (
 type StatusManager struct {
 }
 
-func (s *StatusManager) UpdateStatus(ctx context.Context, cls *umov1.Middleware) error {
+func (s *StatusManager) UpdateClusterStatus(args ...any) error {
 	return nil
 }
 

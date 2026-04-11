@@ -9,10 +9,13 @@ type Config struct {
 	MiddlewareType      string               `json:"middlewareType" yaml:"middlewareType"`
 	ClusterFilterPolicy *ClusterFilterPolicy `json:"cluster_filter_policy" yaml:"clusterFilterPolicy"`
 	ReconcilePolicy     *ReconcilePolicy     `json:"reconcile_policy" yaml:"reconcilePolicy"`
+	ControllerName      string               `json:"controller_name" yaml:"controllerName"`
 }
 
 type Eks struct {
 	Id string `json:"id" yaml:"id"`
+	Az string `json:"az" yaml:"az"`
+	Rz string `json:"rz" yaml:"rz"`
 }
 
 type ReconcilePolicy struct {

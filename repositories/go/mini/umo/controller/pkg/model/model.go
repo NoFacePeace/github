@@ -1,7 +1,8 @@
 package model
 
 const (
-	Domain = "nofacepeace.github.io"
+	Domain            = "nofacepeace.github.io"
+	ContainerNameMain = "main"
 )
 
 // cluster label
@@ -11,6 +12,22 @@ const (
 	LabelEksId            = Domain + "/eks-id"
 	LabelClusterIgnore    = Domain + "/cluster-ignore"
 	LabelManualManagement = Domain + "/manual-management"
+	LabelManagedBy        = Domain + "/managed-by"
+	LabelNodeSetName      = Domain + "/nodeset-name"
+	LabelIsEndpoint       = Domain + "/is-endpoint"
+	LabelPodName          = Domain + "/pod-name"
+	LabelNodeName         = Domain + "/node-name"
+	LabelClusterName      = Domain + "/cluster-name"
+	LabelAvailabilityZone = Domain + "/availability-zone"
+	LabelRegionZone       = Domain + "/region-zone"
+	LabelNodeSetDomain    = Domain + "/nodeset-domain"
+)
+
+// annotation
+const (
+	AnnotationTplVersion     = Domain + "/tpl-version"
+	AnnotationPublishId      = Domain + "/publish-id"
+	AnnotationNodeGeneration = Domain + "/node-generation"
 )
 
 type EventType int

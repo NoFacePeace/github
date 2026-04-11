@@ -108,8 +108,23 @@ type NodeSetSpec struct {
 	NodeCounts map[string]NodeCount `json:"count,omitempty" yaml:"count"`
 	Name       string               `json:"name,omitempty" yaml:"name"`
 	Type       string               `json:"type,omitempty" yaml:"type"`
-
+	// 是否是 endpoint
+	IsEndpoint           bool                  `json:"isEndpoint,omitempty" yaml:"isEndpoint"`
+	Resources            Resources             `json:"resources,omitempty" yaml:"resources"`
 	VolumeClaimTemplates []VolumeClaimTemplate `json:"volumeClaimTemplates,omitempty" yaml:"volumeClaimTemplates"`
+	// 节点集域名
+	Domain      string            `json:"domain,omitempty" yaml:"domain,omitempty"`
+	Annotations map[string]string `json:"annotations,omitempty" yaml:"annotations"`
+	Labels      map[string]string `json:"labels,omitempty" yaml:"labels"`
+	// pod template version
+	TplVersion string `json:"tplVersion,omitempty" yaml:"tplVersion"`
+}
+
+type Resources struct {
+	corev1.ResourceRequirements `json:",inline"`
+	Variables                   map[string]string `json:"variables,omitempty" yaml:"variables"`
+	Name                        string            `json:"name,omitempty" yaml:"name"`
+	Describe                    string            `json:"describe,omitempty" yaml:"describe"`
 }
 
 type NodeCount struct {
@@ -120,7 +135,18 @@ type NodeCount struct {
 type UpdateStrategy struct {
 	Concurrency         int `json:"concurrency,omitempty" yaml:"concurrency,omitempty"`
 	PodUpdateIntervalMs int `json:"podUpdateIntervalMs,omitempty" yaml:"podUpdateIntervalMs,omitempty"`
+	// 是否跳过检查器
+	SkipChecker bool `json:"skipChecker,omitempty" yaml:"skipChecker"`
+	// 失败后执行的动作
+	OnFailure OnFailureAction `json:"onFailure,omitempty" yaml:"onFailure"`
 }
+
+type OnFailureAction string
+
+const (
+	OnFailureActionTerminate OnFailureAction = "terminate"
+	OnFailureActionIgnore    OnFailureAction = "ignore"
+)
 
 func (s *UpdateStrategy) PodUpdateInterval() time.Duration {
 	return time.Duration(s.PodUpdateIntervalMs) * time.Millisecond
