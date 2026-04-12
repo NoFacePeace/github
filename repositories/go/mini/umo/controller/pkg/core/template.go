@@ -16,3 +16,7 @@ func (t *TplManager) createTplVar(args ...any) *TplVar {
 func (t *TplManager) generatePod(args ...any) (*corev1.Pod, error) {
 	return nil, nil
 }
+
+func (t *TplManager) parseTpl(tpl string, vars *TplVar) (string, error) {
+	return "", nil
+}

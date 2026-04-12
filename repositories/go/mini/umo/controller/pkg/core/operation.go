@@ -7,6 +7,7 @@ import (
 
 const (
 	OperationTypeCheckCluster = "CheckCluster"
+	OperationTypePreCheck     = "PreCheck"
 )
 
 type OperationModel struct {
@@ -31,6 +32,10 @@ type OperationBuilder struct {
 }
 
 func (o *OperationBuilder) WithError(err error) *OperationBuilder {
+	return o
+}
+
+func (o *OperationBuilder) WithNodeName(name string) *OperationBuilder {
 	return o
 }
 

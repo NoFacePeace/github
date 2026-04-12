@@ -39,6 +39,7 @@ type MiddlewareSpec struct {
 
 	// custom
 	Normal         []NodeSetSpec  `json:"normal,omitempty" yaml:"normal"`
+	Gray           []NodeSetSpec  `json:"gray,omitempty" yaml:"gray"`
 	UpdateStrategy UpdateStrategy `json:"updateStrategy,omitempty" yaml:"updateStrategy"`
 	MiddlewareType string         `json:"middlewareType" yaml:"middlewareType"`
 	PublishId      string         `json:"publishId,omitempty" yaml:"publishId"`
@@ -118,6 +119,18 @@ type NodeSetSpec struct {
 	Labels      map[string]string `json:"labels,omitempty" yaml:"labels"`
 	// pod template version
 	TplVersion string `json:"tplVersion,omitempty" yaml:"tplVersion"`
+	Config     Config `json:"config,omitempty" yaml:"config"`
+}
+
+type Config struct {
+	Files     map[string]string `json:"files,omitempty" yaml:"files"`
+	Envs      map[string]string `json:"envs,omitempty" yaml:"envs"`
+	Variables map[string]string `json:"variables,omitempty" yaml:"variables"`
+}
+
+type File struct {
+	Path    string `json:"path,omitempty" yaml:"path"`
+	Content string `json:"content,omitempty" yaml:"content"`
 }
 
 type Resources struct {
@@ -135,6 +148,7 @@ type NodeCount struct {
 type UpdateStrategy struct {
 	Concurrency         int `json:"concurrency,omitempty" yaml:"concurrency,omitempty"`
 	PodUpdateIntervalMs int `json:"podUpdateIntervalMs,omitempty" yaml:"podUpdateIntervalMs,omitempty"`
+	PodExecTimeoutMs    int `json:"podExecTimeoutMs,omitempty" yaml:"podExecTimeoutMs,omitempty"`
 	// 是否跳过检查器
 	SkipChecker bool `json:"skipChecker,omitempty" yaml:"skipChecker"`
 	// 失败后执行的动作
@@ -172,8 +186,12 @@ const (
 )
 
 type GrayFilter struct {
-	NodeSetName string `json:"nodeSetName,omitempty" yaml:"nodeSetName"`
-	NodeType    string `json:"nodeType,omitempty" yaml:"nodeType"`
-	Type        string `json:"type,omitempty" yaml:"type"`
-	Regexp      string `json:"regexp,omitempty" yaml:"regexp"`
+	NodeSetName    string              `json:"nodeSetName,omitempty" yaml:"nodeSetName"`
+	NodeType       string              `json:"nodeType,omitempty" yaml:"nodeType"`
+	Type           string              `json:"type,omitempty" yaml:"type"`
+	Regexp         string              `json:"regexp,omitempty" yaml:"regexp"`
+	Percent        int                 `json:"percent,omitempty" yaml:"percent"`
+	MatchLabels    map[string][]string `json:"matchLabels,omitempty" yaml:"matchLabels"`
+	Stage          int                 `json:"stage,omitempty" yaml:"stage"`
+	UpdateStrategy UpdateStrategy      `json:"updateStrategy,omitempty" yaml:"updateStrategy"`
 }

@@ -24,3 +24,6 @@ func init() {
 func RecordClusterReconcile(middleware, eks, cluster string, retry bool, err error) {
 	ClusterReconcileTotal.WithLabelValues(middleware, eks, cluster, strconv.FormatBool(retry), err.Error()).Inc()
 }
+
+func Inc(args ...any) {
+}
