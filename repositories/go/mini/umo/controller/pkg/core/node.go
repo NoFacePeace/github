@@ -2,9 +2,11 @@ package core
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"maps"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -18,63 +20,61 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	apiClient "nofacepeace.github.io/controller/pkg/client"
 	"nofacepeace.github.io/controller/pkg/config"
+	"nofacepeace.github.io/controller/pkg/extensions/checker"
+	"nofacepeace.github.io/controller/pkg/metrics"
 	"nofacepeace.github.io/controller/pkg/model"
 )
 
 const (
 	LabelClusterDeleteStage       = "delete-stage"
 	ClusterDeleteStageNodeOffline = "node-offline"
-
-	// feature
-	FeatureDeleteCluster = "cluster_delete"
 )
 
 type NodeManager struct {
-	fm     *FeatureManager
-	pom    *PodManager
-	tm     *TplManager
-	Schema *runtime.Scheme
-	em     *EventManager
-	pvm    *PvcManager
-	stm    *StatusManager
-}
-
-type nodeGroup struct {
-	nodes          []*node
-	updateStrategy *umov1.UpdateStrategy
-}
-
-type node struct {
-	spec umov1.NodeSetSpec
-	pod  *corev1.Pod
-	name string
+	fm          *FeatureManager
+	pom         *PodManager
+	tm          *TplManager
+	Schema      *runtime.Scheme
+	em          *EventManager
+	pvm         *PvcManager
+	stm         *StatusManager
+	preCheckers []checker.Checker
+	op          *OperationManager
 }
 
 func (n *NodeManager) checkNodes(ctx context.Context, cls *umov1.Middleware) error {
 	if n.isClusterOffline(cls) {
 		return nil
 	}
+
 	nodeGroupMap := map[string]*nodeGroup{}
 	for _, nodeset := range cls.Spec.Normal {
 		for eks, cnts := range nodeset.NodeCounts {
+			// 只检查当前 EKS 的节点
 			if eks != config.Get().Eks.Id {
 				continue
 			}
+
+			// 遍历节点集中的所有节点
 			for idx := cnts.Offset; idx < cnts.Offset+cnts.Count; idx++ {
 				nodeName := generateNodeName(cls.GetName(), nodeset.Name, idx)
 				pod, _, err := n.pom.GetPodIfExists(ctx, cls.GetNamespace(), nodeName)
 				if err != nil {
 					return fmt.Errorf("pod manager get pod if exists error: [%w]", err)
 				}
-				spec, filter := GetFinalNodeSet(ctx, cls, pod, idx)
+
+				spec, filter := getFinalNodeSet(cls, &nodeset, pod, idx)
 				groupName := generateGroupName(filter)
 				group := nodeGroupMap[groupName]
 				if group == nil {
 					group = &nodeGroup{}
+					group.updateStrategy = n.getGrayFilterUpdateStrategy(cls, filter)
 					nodeGroupMap[groupName] = group
 				}
 				group.nodes = append(group.nodes, &node{
 					spec: spec,
+					name: nodeName,
+					pod:  pod,
 				})
 			}
 		}
@@ -84,6 +84,62 @@ func (n *NodeManager) checkNodes(ctx context.Context, cls *umov1.Middleware) err
 		groups = append(groups, group)
 	}
 	return n.checkNodeGroups(ctx, cls, groups)
+}
+
+// isClusterOffline 检查集群是否离线
+func (n *NodeManager) isClusterOffline(cls *umov1.Middleware) bool {
+	labels := cls.GetLabels()
+	if labels == nil {
+		return false
+	}
+	return labels[LabelClusterDeleteStage] == ClusterDeleteStageNodeOffline && n.fm.IsEnabled(model.FeatureDeleteCluster)
+}
+
+func (n *NodeManager) getGrayFilterUpdateStrategy(cls *umov1.Middleware, filter *umov1.GrayFilter) *umov1.UpdateStrategy {
+	s := filter.UpdateStrategy
+	def := n.getClusterUpdateStrategy(cls)
+	return n.fixUpdateStrategy(&s, def)
+}
+
+func (n *NodeManager) getClusterUpdateStrategy(cls *umov1.Middleware) *umov1.UpdateStrategy {
+	s := cls.Spec.UpdateStrategy
+	mid := n.getMiddlewareTypeUpdateStrategy(cls)
+	return n.fixUpdateStrategy(&s, mid)
+}
+
+func (n *NodeManager) getMiddlewareTypeUpdateStrategy(cls *umov1.Middleware) *umov1.UpdateStrategy {
+	s, ok := config.Get().ReconcilePolicy.UpdateStrategys[cls.Spec.MiddlewareType]
+	def := n.getDefaultUpdateStrategy()
+	if !ok {
+		return def
+	}
+	return n.fixUpdateStrategy(&s, def)
+}
+
+func (n *NodeManager) fixUpdateStrategy(a *umov1.UpdateStrategy, b *umov1.UpdateStrategy) *umov1.UpdateStrategy {
+	if a == nil {
+		return b
+	}
+	if a.Concurrency <= 0 {
+		a.Concurrency = b.Concurrency
+	}
+	if a.PodUpdateIntervalMs <= 0 {
+		a.PodUpdateIntervalMs = b.PodUpdateIntervalMs
+	}
+	if a.PodExecTimeoutMs <= 0 {
+		a.PodExecTimeoutMs = b.PodExecTimeoutMs
+	}
+	if a.SkipChecker {
+		a.SkipChecker = b.SkipChecker
+	}
+	if a.OnFailure == "" {
+		a.OnFailure = b.OnFailure
+	}
+	return a
+}
+
+func (n *NodeManager) getDefaultUpdateStrategy() *umov1.UpdateStrategy {
+	return config.DefaultUpdateStrategy
 }
 
 // checkNodeGroups 检查节点组
@@ -128,13 +184,14 @@ func (n *NodeManager) checkNodeGroups(ctx context.Context, cls *umov1.Middleware
 	return nil
 }
 
-func (n *NodeManager) checkNode(ctx context.Context, cls *umov1.Middleware, node *node, strategy *umov1.UpdateStrategy, args ...any) error {
+func (n *NodeManager) checkNode(ctx context.Context, cls *umov1.Middleware, node *node, strategy *umov1.UpdateStrategy) error {
 	if apiClient.IsClusterPublishAbort(cls.GetName(), cls.Spec.PublishId) {
 		return nil
 	}
 	if err := n.reconcileNode(ctx, cls, node, strategy); err != nil {
 		return fmt.Errorf("node manager reconcile error: [%w]", err)
 	}
+	n.op.NewOperationBuilder(ctx, cls.GetName(), "checkNode").Report()
 	if n.SkipSleep(ctx) {
 		return nil
 	}
@@ -185,7 +242,7 @@ func (n *NodeManager) createNode(ctx context.Context, cls *umov1.Middleware, nod
 		return fmt.Errorf("node manager generate pod error: [%w]", err)
 	}
 	if !strategy.SkipChecker {
-		if err := n.preCheck(); err != nil {
+		if err := n.preCheck(ctx, cls, node); err != nil {
 			return fmt.Errorf("node manager pre check error: [%w]", err)
 		}
 	}
@@ -202,24 +259,53 @@ func (n *NodeManager) createNode(ctx context.Context, cls *umov1.Middleware, nod
 	return nil
 }
 
+// generatePod 生成 pod
 func (n *NodeManager) generatePod(cls *umov1.Middleware, node *node, vars *TplVar) (*corev1.Pod, error) {
-	tplName := generateTplName()
+	// 生成模板名称
+	tplName := generateTplName(cls.Spec.MiddlewareType, node.spec.TplVersion)
+
+	// 生成 pod
 	pod, err := n.tm.generatePod(tplName, vars)
 	if err != nil {
 		return nil, fmt.Errorf("template manager generate pod error: [%w]", err)
 	}
 
+	// 设置 pod 名称
 	pod.SetName(node.name)
+	// 设置 pod 命名空间
 	pod.SetNamespace(cls.GetNamespace())
+	// 设置 pod 主机名
 	pod.Spec.Hostname = node.name
+	// 设置 pod 子域名
 	pod.Spec.Subdomain = cls.GetName()
 
+	// 设置 pod 主容器资源
 	for i, v := range pod.Spec.Containers {
 		if v.Name == model.ContainerNameMain {
 			pod.Spec.Containers[i].Resources = node.spec.Resources.ResourceRequirements
 			break
 		}
 	}
+
+	// 设置 pod 标签
+	n.setPodLabels(cls, node, pod)
+	// 设置 pod 注解
+	if err := n.setPodAnnotations(cls, node, pod, vars); err != nil {
+		return nil, fmt.Errorf("node manager set pod annotations error: [%w]", err)
+	}
+
+	// 绑定 pod pvc
+	n.bindPodPvc(node, pod)
+	// 添加节点亲和性
+	n.addNodeAffinityForUnhealthyNodes(pod)
+	// 设置 pod 配置
+	if err := n.setPodConfig(node, pod, vars); err != nil {
+		return nil, fmt.Errorf("node manager set pod config error: [%w]", err)
+	}
+	return pod, nil
+}
+
+func (n *NodeManager) setPodLabels(cls *umov1.Middleware, node *node, pod *corev1.Pod) {
 	if pod.Labels == nil {
 		pod.Labels = map[string]string{}
 	}
@@ -231,7 +317,6 @@ func (n *NodeManager) generatePod(cls *umov1.Middleware, node *node, vars *TplVa
 		}
 	}
 	maps.Copy(pod.Labels, node.spec.Labels)
-	// set pod labels
 	pod.Labels[model.LabelClusterId] = cls.GetName()
 	pod.Labels[model.LabelEksId] = config.Get().Eks.Id
 	pod.Labels[model.LabelMiddlewareType] = cls.Spec.MiddlewareType
@@ -244,8 +329,9 @@ func (n *NodeManager) generatePod(cls *umov1.Middleware, node *node, vars *TplVa
 	pod.Labels[model.LabelAvailabilityZone] = config.Get().Eks.Az
 	pod.Labels[model.LabelRegionZone] = config.Get().Eks.Rz
 	pod.Labels[model.LabelNodeSetDomain] = node.spec.Domain
+}
 
-	// set pod annotations
+func (n *NodeManager) setPodAnnotations(cls *umov1.Middleware, node *node, pod *corev1.Pod, vars *TplVar, args ...any) error {
 	if pod.Annotations == nil {
 		pod.Annotations = map[string]string{}
 	}
@@ -259,7 +345,194 @@ func (n *NodeManager) generatePod(cls *umov1.Middleware, node *node, vars *TplVa
 	pod.Annotations[model.AnnotationPublishId] = cls.Spec.PublishId
 	pod.Annotations[model.AnnotationNodeGeneration] = strconv.Itoa(vars.NodeGeneration)
 
-	return pod, nil
+	cns := []string{}
+	for _, container := range pod.Spec.Containers {
+		cns = append(cns, container.Name)
+	}
+	sort.Strings(cns)
+	pod.Annotations[model.AnnotationContainers] = strings.Join(cns, ",")
+
+	if n.fm.IsEnabled(model.FeatureInplaceVpa) {
+		m := map[string]corev1.ResourceRequirements{}
+		m[model.ContainerNameMain] = node.spec.Resources.ResourceRequirements
+		raw, err := json.Marshal(m)
+		if err != nil {
+			return fmt.Errorf("json marshal error: [%w]", err)
+		}
+		pod.Annotations[model.AnnotationInplaceVpa] = string(raw)
+	}
+	return nil
+}
+
+func (n *NodeManager) bindPodPvc(node *node, pod *corev1.Pod) {
+	for _, vct := range node.spec.VolumeClaimTemplates {
+		name := n.pvm.genPvcName(pod.Name, vct.Metadata.Name)
+		volume := corev1.Volume{
+			Name: name,
+			VolumeSource: corev1.VolumeSource{
+				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+					ClaimName: name,
+					ReadOnly:  false,
+				},
+			},
+		}
+		pod.Spec.Volumes = append(pod.Spec.Volumes, volume)
+		for i := range pod.Spec.Containers {
+			if pod.Spec.Containers[i].Name == model.ContainerNameMain {
+				pod.Spec.Containers[i].VolumeMounts = append(pod.Spec.Containers[i].VolumeMounts, corev1.VolumeMount{
+					Name:      name,
+					MountPath: vct.MountPath,
+					ReadOnly:  false,
+				})
+				break
+			}
+		}
+	}
+}
+
+// addNodeAffinityForUnhealthyNodes 添加节点亲和性，避免使用不健康的节点
+func (n *NodeManager) addNodeAffinityForUnhealthyNodes(pod *corev1.Pod) {
+	if pod.Spec.Affinity == nil {
+		pod.Spec.Affinity = &corev1.Affinity{}
+	}
+	if pod.Spec.Affinity.NodeAffinity == nil {
+		pod.Spec.Affinity.NodeAffinity = &corev1.NodeAffinity{}
+	}
+	if pod.Spec.Affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution == nil {
+		pod.Spec.Affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution = &corev1.NodeSelector{}
+	}
+
+	requirement := corev1.NodeSelectorRequirement{
+		Key:      model.LabelNodeHealthStatus,
+		Operator: corev1.NodeSelectorOpNotIn,
+		Values:   []string{model.LabelNodeHealthStatusValueUnhealthy},
+	}
+	if len(pod.Spec.Affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms) == 0 {
+		pod.Spec.Affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms = []corev1.NodeSelectorTerm{
+			{MatchExpressions: []corev1.NodeSelectorRequirement{requirement}},
+		}
+	} else {
+		for i := range pod.Spec.Affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms {
+			pod.Spec.Affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms[i].MatchExpressions = append(
+				pod.Spec.Affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms[i].MatchExpressions,
+				requirement,
+			)
+		}
+	}
+}
+
+func (n *NodeManager) setPodConfig(node *node, pod *corev1.Pod, vars *TplVar, args ...any) error {
+	items := []corev1.DownwardAPIVolumeFile{}
+	// files
+	for k, v := range node.spec.Config.Files {
+		value, err := n.tm.parseTpl(v, vars)
+		if err != nil {
+			return fmt.Errorf("template manager parse tpl error: [%w]", err)
+		}
+		pod.Annotations[k] = value
+		items = append(items, corev1.DownwardAPIVolumeFile{
+			Path: k,
+			FieldRef: &corev1.ObjectFieldSelector{
+				FieldPath: fmt.Sprintf("metadata.annotations['%s']", k),
+			},
+		})
+	}
+	// version
+	pod.Annotations[model.AnnotationTplVersion] = generateVersion()
+	items = append(items, corev1.DownwardAPIVolumeFile{
+		Path: model.AnnotationTplVersion,
+		FieldRef: &corev1.ObjectFieldSelector{
+			FieldPath: fmt.Sprintf("metadata.annotations['%s']", model.AnnotationTplVersion),
+		},
+	})
+	volum := corev1.Volume{
+		Name: model.VolumeNameConfigFiles,
+		VolumeSource: corev1.VolumeSource{
+			DownwardAPI: &corev1.DownwardAPIVolumeSource{
+				Items: items,
+			},
+		},
+	}
+	pod.Spec.Volumes = append(pod.Spec.Volumes, volum)
+
+	for i, container := range pod.Spec.Containers {
+		mounted := false
+		for _, volume := range container.VolumeMounts {
+			if volume.Name == model.VolumeNameConfigFiles {
+				mounted = true
+				break
+			}
+		}
+		if !mounted {
+			pod.Spec.Containers[i].VolumeMounts = append(pod.Spec.Containers[i].VolumeMounts, corev1.VolumeMount{
+				Name:      model.VolumeNameConfigFiles,
+				MountPath: model.VolumeConfigFilesMountPath,
+				ReadOnly:  false,
+			})
+		}
+	}
+
+	// env
+	envs := []corev1.EnvVar{}
+	for k, v := range node.spec.Config.Envs {
+		value, err := n.tm.parseTpl(v, vars)
+		if err != nil {
+			return fmt.Errorf("template manager parse tpl error: [%w]", err)
+		}
+		pod.Annotations[k] = value
+		envs = append(envs, corev1.EnvVar{
+			Name: k,
+			ValueFrom: &corev1.EnvVarSource{
+				FieldRef: &corev1.ObjectFieldSelector{
+					FieldPath: fmt.Sprintf("metadata.annotations['%s']", k),
+				},
+			},
+		})
+	}
+	for i := range pod.Spec.Containers {
+		pod.Spec.Containers[i].Env = append(pod.Spec.Containers[i].Env, envs...)
+	}
+
+	for k, v := range node.spec.Config.Variables {
+		value, err := n.tm.parseTpl(v, vars)
+		if err != nil {
+			return fmt.Errorf("template manager parse variables tpl error: [%w]", err)
+		}
+		pod.Annotations[k] = value
+	}
+
+	for k, v := range node.spec.Resources.Variables {
+		value, err := n.tm.parseTpl(v, vars)
+		if err != nil {
+			return fmt.Errorf("template manager parse resources variables tpl error: [%w]", err)
+		}
+		pod.Annotations[k] = value
+	}
+	return nil
+}
+
+func (n *NodeManager) preCheck(ctx context.Context, cls *umov1.Middleware, node *node, args ...any) (err error) {
+	if len(n.preCheckers) == 0 {
+		return nil
+	}
+	defer func() {
+		if err != nil {
+			metrics.Inc(ctx, cls.Name)
+			n.op.NewOperationBuilder(ctx, cls.GetName(), "preCheck").WithError(err).WithNodeName(node.name).Report()
+		}
+	}()
+	n.op.NewOperationBuilder(ctx, cls.GetName(), "preCheck").WithNodeName(node.name).Report()
+	for _, checker := range n.preCheckers {
+		res, msg, err := checker.Check(ctx, node.pod)
+		n.op.NewOperationBuilder(ctx, cls.GetName(), checker.GetName()).WithNodeName(node.name).WithError(err).Report()
+		if err != nil {
+			return fmt.Errorf("checker %s check error: [%w]", checker.GetName(), err)
+		}
+		if res != model.CheckerResultOk {
+			return fmt.Errorf("checker %s check result not ok: [%s]", checker.GetName(), msg)
+		}
+	}
+	return nil
 }
 
 func (n *NodeManager) updateNode(args ...any) error {
@@ -268,38 +541,41 @@ func (n *NodeManager) updateNode(args ...any) error {
 }
 
 func (n *NodeManager) SkipSleep(ctx context.Context) bool {
-	return false
+	value, ok := ctx.Value(model.CtxKeySkipSleep).(bool)
+	if !ok {
+		return false
+	}
+	return value
 }
 func (n *NodeManager) ScaleDown(ctx context.Context, cls *umov1.Middleware, pods []corev1.Pod) error {
 	return nil
-}
-
-func (n *NodeManager) isClusterOffline(cls *umov1.Middleware) bool {
-	labels := cls.GetLabels()
-	if labels == nil {
-		return false
-	}
-	return labels[LabelClusterDeleteStage] == ClusterDeleteStageNodeOffline && n.fm.IsEnabled(FeatureDeleteCluster)
 }
 
 func (n *NodeManager) getUpdateStrategy(cls *umov1.Middleware) umov1.UpdateStrategy {
 	return umov1.UpdateStrategy{}
 }
 
-func (n *NodeManager) preCheck(args ...any) error {
+func (n *NodeManager) postCheck(args ...any) error {
 	return nil
 }
 
-func (n *NodeManager) postCheck(args ...any) error {
-	return nil
+type nodeGroup struct {
+	nodes          []*node
+	updateStrategy *umov1.UpdateStrategy
+}
+
+type node struct {
+	spec *umov1.NodeSetSpec
+	pod  *corev1.Pod
+	name string
 }
 
 func generateNodeName(cls, nodeset string, idx int) string {
 	return fmt.Sprintf("%s-%s-%d", cls, nodeset, idx)
 }
 
-func generateGroupName(filter umov1.GrayFilter) string {
-	return ""
+func generateGroupName(filter *umov1.GrayFilter) string {
+	return fmt.Sprintf("stage-%s-%s-%d", filter.NodeType, filter.NodeSetName, filter.Stage)
 }
 
 func errorsToError(errs []error) error {
@@ -313,6 +589,10 @@ func errorsToError(errs []error) error {
 	return ret
 }
 
-func generateTplName(args ...any) string {
-	return ""
+func generateTplName(middleware, tplVersion string) string {
+	return fmt.Sprintf("%s_%s", middleware, tplVersion)
+}
+
+func generateVersion() string {
+	return fmt.Sprint(time.Now().Unix())
 }

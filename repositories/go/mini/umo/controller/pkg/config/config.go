@@ -1,8 +1,21 @@
 package config
 
-import "time"
+import (
+	"time"
 
-var config = &Config{}
+	umov1 "nofacepeace.github.io/controller/api/v1"
+)
+
+var (
+	config                = &Config{}
+	DefaultUpdateStrategy = &umov1.UpdateStrategy{
+		Concurrency:         1,
+		PodUpdateIntervalMs: 1000,
+		PodExecTimeoutMs:    60000,
+		SkipChecker:         false,
+		OnFailure:           umov1.OnFailureActionTerminate,
+	}
+)
 
 type Config struct {
 	Eks
@@ -19,7 +32,8 @@ type Eks struct {
 }
 
 type ReconcilePolicy struct {
-	NodeCheckErrorTolerance int `json:"node_check_error_tolerance" yaml:"nodeCheckErrorTolerance"`
+	NodeCheckErrorTolerance int                             `json:"node_check_error_tolerance" yaml:"nodeCheckErrorTolerance"`
+	UpdateStrategys         map[string]umov1.UpdateStrategy `json:"update_strategy" yaml:"updateStrategy"`
 }
 
 func Get() *Config {
