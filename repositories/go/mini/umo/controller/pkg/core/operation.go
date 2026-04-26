@@ -8,6 +8,7 @@ import (
 const (
 	OperationTypeCheckCluster = "CheckCluster"
 	OperationTypePreCheck     = "PreCheck"
+	OperationTypePostCheck    = "PostCheck"
 )
 
 type OperationModel struct {

@@ -140,9 +140,10 @@ func (p *PodManager) setPodNotReady() {
 
 }
 
-func (p *PodManager) updatePodAnnotation(ctx context.Context, pod *corev1.Pod) {
+func (p *PodManager) updatePodAnnotation(args ...any) error {
 	// newPod := pod.DeepCopy()
 	// newPod :=
+	return nil
 }
 
 func (p *PodManager) deletePvc() error {
