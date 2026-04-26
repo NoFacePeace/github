@@ -31,15 +31,17 @@ const (
 )
 
 type NodeManager struct {
-	fm          *FeatureManager
-	pom         *PodManager
-	tm          *TplManager
-	Schema      *runtime.Scheme
-	em          *EventManager
-	pvm         *PvcManager
-	stm         *StatusManager
-	preCheckers []checker.Checker
-	op          *OperationManager
+	fm             *FeatureManager
+	pom            *PodManager
+	tm             *TplManager
+	Schema         *runtime.Scheme
+	em             *EventManager
+	pvm            *PvcManager
+	stm            *StatusManager
+	preCheckers    []checker.Checker
+	postCheckers   []checker.Checker
+	inPostCheckers []checker.Checker
+	op             *OperationManager
 }
 
 func (n *NodeManager) checkNodes(ctx context.Context, cls *umov1.Middleware) error {
@@ -253,7 +255,7 @@ func (n *NodeManager) createNode(ctx context.Context, cls *umov1.Middleware, nod
 		return fmt.Errorf("pod manager create pod error: [%w]", err)
 	}
 	n.em.Dispatch()
-	if err := n.postCheck(); err != nil {
+	if err := n.postCheck(ctx, cls, node, strategy, model.PostCeckActionCreateNode); err != nil {
 		return fmt.Errorf("node manager post check error: [%w]", err)
 	}
 	return nil
@@ -521,7 +523,7 @@ func (n *NodeManager) preCheck(ctx context.Context, cls *umov1.Middleware, node 
 			n.op.NewOperationBuilder(ctx, cls.GetName(), "preCheck").WithError(err).WithNodeName(node.name).Report()
 		}
 	}()
-	n.op.NewOperationBuilder(ctx, cls.GetName(), "preCheck").WithNodeName(node.name).Report()
+	n.op.NewOperationBuilder(ctx, cls.GetName(), OperationTypePreCheck).WithNodeName(node.name).Report()
 	for _, checker := range n.preCheckers {
 		res, msg, err := checker.Check(ctx, node.pod)
 		n.op.NewOperationBuilder(ctx, cls.GetName(), checker.GetName()).WithNodeName(node.name).WithError(err).Report()
@@ -532,6 +534,30 @@ func (n *NodeManager) preCheck(ctx context.Context, cls *umov1.Middleware, node 
 			return fmt.Errorf("checker %s check result not ok: [%s]", checker.GetName(), msg)
 		}
 	}
+	return nil
+}
+
+func (n *NodeManager) postCheck(ctx context.Context, cls *umov1.Middleware, node *node, strategy *umov1.UpdateStrategy, action string, args ...any) (err error) {
+	logger := logf.FromContext(ctx)
+	defer func() {
+		n.op.NewOperationBuilder(context.Background(), cls.GetName(), OperationTypePostCheck).WithNodeName(node.name).WithError(err).Report()
+		if err := n.pom.updatePodAnnotation(ctx, node.pod, map[string]string{}); err != nil {
+			logger.Error(err, "pod manager update pod annotation error")
+		}
+	}()
+	if strategy.SkipChecker {
+		// 如果跳过检查，直接返回成功
+		return nil
+	}
+	if config.InDryRunMode(cls.Name) {
+		// 如果是演练模式，直接返回成功
+		return nil
+	}
+	checkers := n.inPostCheckers
+	checkers = append(checkers, n.postCheckers...)
+	// for _, checker := range checkers {
+	//
+	// }
 	return nil
 }
 
@@ -553,10 +579,6 @@ func (n *NodeManager) ScaleDown(ctx context.Context, cls *umov1.Middleware, pods
 
 func (n *NodeManager) getUpdateStrategy(cls *umov1.Middleware) umov1.UpdateStrategy {
 	return umov1.UpdateStrategy{}
-}
-
-func (n *NodeManager) postCheck(args ...any) error {
-	return nil
 }
 
 type nodeGroup struct {

@@ -27,12 +27,14 @@ const (
 
 // annotation
 const (
-	AnnotationTplVersion     = Domain + "/tpl-version"
-	AnnotationPublishId      = Domain + "/publish-id"
-	AnnotationNodeGeneration = Domain + "/node-generation"
-	AnnotationContainers     = Domain + "/containers"
-	AnnotationInplaceVpa     = Domain + "/inplace-vpa"
-	AnnotationVersion        = Domain + "/version"
+	AnnotationTplVersion      = Domain + "/tpl-version"
+	AnnotationPublishId       = Domain + "/publish-id"
+	AnnotationNodeGeneration  = Domain + "/node-generation"
+	AnnotationContainers      = Domain + "/containers"
+	AnnotationInplaceVpa      = Domain + "/inplace-vpa"
+	AnnotationVersion         = Domain + "/version"
+	AnnotationPostCheckOk     = Domain + "/post-check-ok"
+	AnnotationPostCheckAction = Domain + "/post-check-action"
 )
 
 type EventType int
@@ -63,4 +65,9 @@ type CheckerResult int
 const (
 	CheckerResultOk CheckerResult = iota
 	CheckerResultSuspend
+)
+
+// action
+const (
+	PostCeckActionCreateNode = "create-node"
 )
