@@ -1,0 +1,68 @@
+###
+POST http://localhost/api/chat/duty
+Content-Type: application/json
+
+{
+  "text": "老王和张三3号换班，李四1号到5号请假",
+  "project_id": "proj_abc123",
+  "context": {
+    "year": 2026,
+    "month": 4,
+    "employees": ["老王", "张三", "李四", "王五"],
+    "shift_classes": ["早班", "中班", "晚班"],
+    "schedule": {
+      "老王": ["早班", "早班", "早班", "晚班", "休", null, null, "早班"],
+      "张三": ["晚班", "晚班", "晚班", "早班", "早班", null, null, "晚班"],
+      "李四": ["中班", "中班", "中班", "中班", "中班", null, null, "中班"],
+      "王五": ["休",   "休",   "早班", "早班", "晚班", null, null, "早班"]
+    }
+  }
+}
+
+###
+POST http://localhost/api/chat/duty
+Content-Type: application/json
+
+{
+  "text": "我要换班",
+  "project_id": "proj_abc123",
+  "context": {
+    "year": 2026,
+    "month": 4,
+    "employees": ["老王", "张三", "李四", "王五"],
+    "shift_classes": ["早班", "中班", "晚班"],
+    "schedule": {
+      "老王": ["早班", "早班", "早班", "晚班", "休", null, null, "早班"],
+      "张三": ["晚班", "晚班", "晚班", "早班", "早班", null, null, "晚班"],
+      "李四": ["中班", "中班", "中班", "中班", "中班", null, null, "中班"],
+      "王五": ["休",   "休",   "早班", "早班", "晚班", null, null, "早班"]
+    }
+  }
+}
+
+###
+POST http://localhost/api/chat/duty
+Content-Type: application/json
+
+{
+  "text": "老王3号换晚班",
+  "project_id": "proj_abc123",
+  "context": {
+    "year": 2026,
+    "month": 4,
+    "employees": ["老王", "张三", "李四", "王五"],
+    "shift_classes": ["早班", "中班", "晚班"],
+    "schedule": {
+      "老王": ["早班", "早班", "早班", "晚班", "休", null, null, "早班"],
+      "张三": ["晚班", "晚班", "晚班", "早班", "早班", null, null, "晚班"],
+      "李四": ["中班", "中班", "中班", "中班", "中班", null, null, "中班"],
+      "王五": ["休",   "休",   "早班", "早班", "晚班", null, null, "早班"]
+    }
+  }
+}
+
+###
+POST http://localhost/api/codex/approve
+Content-Type: application/json
+
+{}

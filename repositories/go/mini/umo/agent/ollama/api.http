@@ -1,0 +1,14 @@
+
+###
+POST http://localhost:11434/api/chat
+
+{
+  "model": "minimax-m2.7:cloud",
+  "messages": [
+    {
+      "role": "user",
+      "content": "why is the sky blue?"
+    }
+  ],
+  "think": false
+} 
