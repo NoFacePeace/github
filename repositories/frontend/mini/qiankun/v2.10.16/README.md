@@ -1,0 +1,4 @@
+initGlobalState
+registerMicroApps
+loadMicroApp
+start
