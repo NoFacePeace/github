@@ -23,6 +23,10 @@ const (
 	LabelNodeSetDomain                  = Domain + "/nodeset-domain"
 	LabelNodeHealthStatus               = Domain + "/node-health-status"
 	LabelNodeHealthStatusValueUnhealthy = "unhealthy"
+	LabelHealthStatus                   = Domain + "/health-status"
+	LabelHealthStatusValueMigrate       = "migrate"
+	LabelHealthStatusValueRecreate      = "recreate"
+	LabelHealthStatusValueInPlaceUpdate = "inplace-update"
 )
 
 // annotation
@@ -33,7 +37,7 @@ const (
 	AnnotationContainers      = Domain + "/containers"
 	AnnotationInplaceVpa      = Domain + "/inplace-vpa"
 	AnnotationVersion         = Domain + "/version"
-	AnnotationPostCheckOk     = Domain + "/post-check-ok"
+	AnnotationPostCheckFailed = Domain + "/post-check-failed"
 	AnnotationPostCheckAction = Domain + "/post-check-action"
 )
 
@@ -70,4 +74,10 @@ const (
 // action
 const (
 	PostCeckActionCreateNode = "create-node"
+)
+
+const (
+	NodeActionDefault int = iota
+	NodeActionInPlaceUpdate
+	NodeActionRecreate
 )

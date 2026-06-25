@@ -152,7 +152,8 @@ type UpdateStrategy struct {
 	// 是否跳过检查器
 	SkipChecker bool `json:"skipChecker,omitempty" yaml:"skipChecker"`
 	// 失败后执行的动作
-	OnFailure OnFailureAction `json:"onFailure,omitempty" yaml:"onFailure"`
+	OnFailure  OnFailureAction `json:"onFailure,omitempty" yaml:"onFailure"`
+	NodeAction int             `json:"nodeAction,omitempty" yaml:"nodeAction"`
 }
 
 type OnFailureAction string
