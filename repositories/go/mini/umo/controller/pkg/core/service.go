@@ -12,3 +12,7 @@ type ServiceManager struct {
 func (s *ServiceManager) CheckService(ctx context.Context, cls *umov1.Middleware) error {
 	return nil
 }
+
+func (s *ServiceManager) UpdateEndpoint(args ...any) error {
+	return nil
+}
