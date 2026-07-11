@@ -19,10 +19,12 @@ var (
 
 type Config struct {
 	Eks
-	MiddlewareType      string               `json:"middlewareType" yaml:"middlewareType"`
-	ClusterFilterPolicy *ClusterFilterPolicy `json:"cluster_filter_policy" yaml:"clusterFilterPolicy"`
-	ReconcilePolicy     *ReconcilePolicy     `json:"reconcile_policy" yaml:"reconcilePolicy"`
-	ControllerName      string               `json:"controller_name" yaml:"controllerName"`
+	MiddlewareType           string               `json:"middlewareType" yaml:"middlewareType"`
+	ClusterFilterPolicy      *ClusterFilterPolicy `json:"cluster_filter_policy" yaml:"clusterFilterPolicy"`
+	ReconcilePolicy          *ReconcilePolicy     `json:"reconcile_policy" yaml:"reconcilePolicy"`
+	ControllerName           string               `json:"controller_name" yaml:"controllerName"`
+	PatchOnlyKeyPrefixes     []string             `json:"patch_only_key_prefixes" yaml:"patchOnlyKeyPrefixes"`
+	InPlaceUpdateKeyPrefixes []string             `json:"in_place_update_key_prefixes" yaml:"inPlaceUpdateKeyPrefixes"`
 }
 
 type Eks struct {

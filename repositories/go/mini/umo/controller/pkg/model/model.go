@@ -32,7 +32,7 @@ const (
 // annotation
 const (
 	AnnotationTplVersion      = Domain + "/tpl-version"
-	AnnotationPublishId       = Domain + "/publish-id"
+	AnnotationPublishID       = Domain + "/publish-id"
 	AnnotationNodeGeneration  = Domain + "/node-generation"
 	AnnotationContainers      = Domain + "/containers"
 	AnnotationInplaceVpa      = Domain + "/inplace-vpa"
@@ -73,7 +73,13 @@ const (
 
 // action
 const (
-	PostCeckActionCreateNode = "create-node"
+	ActionPostCheckCreateNode        = "action-post-check-create-node"
+	ActionPostCheckMigrateNode       = "action-post-check-migrate-node"
+	ActionPreCheckMigrateNode        = "action-pre-check-migrate-node"
+	ActionPreCheckCreateNode         = "action-pre-check-create-node"
+	ActionPreCheckRecreateNode       = "action-pre-check-recreate-node"
+	ActionPreCheckInPlaceNode        = "action-pre-check-in-place-node"
+	ActionPreCheckSidecarInPlaceNode = "action-pre-check-sidecar-in-place-node"
 )
 
 const (
