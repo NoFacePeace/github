@@ -36,6 +36,7 @@ const (
 	NodeActionNone NodeAction = iota
 	NodeActionPatchOnly
 	NodeActionInPlaceUpdate
+	NodeActionSidecarInPlaceUpdate
 	NodeActionRecreate
 	NodeActionMigrate
 )
@@ -264,7 +265,7 @@ func (n *NodeManager) createNode(ctx context.Context, cls *umov1.Middleware, nod
 		return fmt.Errorf("node manager generate pod error: [%w]", err)
 	}
 	if !strategy.SkipChecker {
-		if err := n.preCheck(ctx, cls, node); err != nil {
+		if err := n.preCheck(ctx, cls, node, model.ActionPreCheckCreateNode); err != nil {
 			return fmt.Errorf("node manager pre check error: [%w]", err)
 		}
 	}
@@ -275,7 +276,7 @@ func (n *NodeManager) createNode(ctx context.Context, cls *umov1.Middleware, nod
 		return fmt.Errorf("pod manager create pod error: [%w]", err)
 	}
 	n.em.Dispatch()
-	if err := n.postCheck(ctx, cls, node, strategy, model.PostCeckActionCreateNode); err != nil {
+	if err := n.postCheck(ctx, cls, node, strategy, model.ActionPostCheckCreateNode); err != nil {
 		return fmt.Errorf("node manager post check error: [%w]", err)
 	}
 	return nil
@@ -364,7 +365,7 @@ func (n *NodeManager) setPodAnnotations(cls *umov1.Middleware, node *node, pod *
 	}
 	maps.Copy(pod.Annotations, node.spec.Annotations)
 	pod.Annotations[model.AnnotationTplVersion] = node.spec.TplVersion
-	pod.Annotations[model.AnnotationPublishId] = cls.Spec.PublishId
+	pod.Annotations[model.AnnotationPublishID] = cls.Spec.PublishId
 	pod.Annotations[model.AnnotationNodeGeneration] = strconv.Itoa(vars.NodeGeneration)
 
 	cns := []string{}
@@ -533,30 +534,6 @@ func (n *NodeManager) setPodConfig(node *node, pod *corev1.Pod, vars *TplVar, ar
 	return nil
 }
 
-func (n *NodeManager) preCheck(ctx context.Context, cls *umov1.Middleware, node *node, args ...any) (err error) {
-	if len(n.preCheckers) == 0 {
-		return nil
-	}
-	defer func() {
-		if err != nil {
-			metrics.Inc(ctx, cls.Name)
-			n.op.NewOperationBuilder(ctx, cls.GetName(), "preCheck").WithError(err).WithNodeName(node.name).Report()
-		}
-	}()
-	n.op.NewOperationBuilder(ctx, cls.GetName(), OperationTypePreCheck).WithNodeName(node.name).Report()
-	for _, checker := range n.preCheckers {
-		res, msg, err := checker.Check(ctx, node.pod)
-		n.op.NewOperationBuilder(ctx, cls.GetName(), checker.GetName()).WithNodeName(node.name).WithError(err).Report()
-		if err != nil {
-			return fmt.Errorf("checker %s check error: [%w]", checker.GetName(), err)
-		}
-		if res != model.CheckerResultOk {
-			return fmt.Errorf("checker %s check result not ok: [%s]", checker.GetName(), msg)
-		}
-	}
-	return nil
-}
-
 func (n *NodeManager) postCheck(ctx context.Context, cls *umov1.Middleware, node *node, strategy *umov1.UpdateStrategy, action string, args ...any) (err error) {
 	logger := logf.FromContext(ctx)
 	defer func() {
@@ -612,7 +589,7 @@ func (n *NodeManager) updateNode(ctx context.Context, cls *umov1.Middleware, nod
 
 func (n *NodeManager) checkPostCheck(ctx context.Context, cls *umov1.Middleware, node *node, strategy *umov1.UpdateStrategy) error {
 	pod := node.pod
-	if !isTrue(pod.Annotations[model.AnnotationPostCheckFailed]) || pod.Annotations[model.AnnotationPublishId] != cls.Spec.PublishId {
+	if !isTrue(pod.Annotations[model.AnnotationPostCheckFailed]) || pod.Annotations[model.AnnotationPublishID] != cls.Spec.PublishId {
 		return nil
 	}
 	action := pod.Annotations[model.AnnotationPostCheckAction]
@@ -620,91 +597,89 @@ func (n *NodeManager) checkPostCheck(ctx context.Context, cls *umov1.Middleware,
 }
 
 func (n *NodeManager) reconcileNodeSpec(ctx context.Context, cls *umov1.Middleware, node *node, strategy *umov1.UpdateStrategy, args ...any) error {
-	vars := n.tm.createTplVar()
+	// 如果 pod 的标签为空，初始化为一个空的 map
+	if node.pod.Labels == nil {
+		node.pod.Labels = map[string]string{}
+	}
+	// 如果 pod 的注解为空，初始化为一个空的 map
+	if node.pod.Annotations == nil {
+		node.pod.Annotations = map[string]string{}
+	}
+
+	// 生成模板变量
+	vars := n.tm.createTplVar(cls, node)
+
+	// 生成新的 pod
 	parsePod, err := n.generatePod(cls, node, vars)
 	if err != nil {
 		return fmt.Errorf("node manager generate pod error: [%w]", err)
 	}
+
+	// 生成 pod 的副本
 	newPod := node.pod.DeepCopy()
-	action, err := n.getNodeAction(node, newPod, parsePod, strategy)
+
+	// 根据 pod 的变化，设置需要执行的操作
+	actions := n.applyNodeChangeActions(ctx, node, newPod, parsePod)
+
+	// 获取最后需要执行的操作
+	action := n.getNodeAction(actions, strategy)
+
+	// 根据操作执行相应的处理
+	newPod, err = n.handleNodeChange(ctx, cls, node, newPod, parsePod, strategy, action)
 	if err != nil {
-		return fmt.Errorf("node manager check pod error: [%w]", err)
+		return fmt.Errorf("node manager handle node change: [%w]", err)
 	}
-	n.handlePod(action)
-	n.postCheckForNodeChange()
+
+	// 执行节点变更后的检查
+	if err := n.postCheckForNodeChange(ctx, cls, node, newPod, strategy, action); err != nil {
+		return fmt.Errorf("node manager post check for node change: [%w]", err)
+	}
 	return nil
 }
 
-func (n *NodeManager) getNodeAction(node *node, newPod *corev1.Pod, parsePod *corev1.Pod, strategy *umov1.UpdateStrategy) (NodeAction, error) {
-	// 如果策略中指定了更新方式，则直接使用策略中的更新方式
-	if strategy.NodeAction == model.NodeActionInPlaceUpdate {
-		return NodeActionInPlaceUpdate, nil
-	}
-	if strategy.NodeAction == model.NodeActionRecreate {
-		return NodeActionRecreate, nil
-	}
+func (n *NodeManager) applyNodeChangeActions(ctx context.Context, node *node, newPod *corev1.Pod, parsePod *corev1.Pod, args ...any) map[NodeAction]bool {
+	actions := map[NodeAction]bool{}
 
-	if n.needMigrateNode(newPod) {
-		return NodeActionMigrate, nil
-	}
-	if n.needRecreateNode(node, newPod, parsePod) {
-		return NodeActionRecreate, nil
-	}
-	if n.needInPlaceUpdateNode(newPod) {
-		return NodeActionInPlaceUpdate, nil
-	}
-	// if n.needSidecarInPlaceUpdateNode() {
+	// 根据 pod 的健康状态标签，设置需要执行的操作
+	n.applyHealthStatusChangeActions(ctx, newPod, actions)
 
-	// }
-	if n.needPatchOnlyNode(newPod) {
-		return NodeActionPatchOnly, nil
-	}
-	return NodeActionNone, nil
+	// 根据 PVC 的变化，设置需要执行的操作
+	n.applyPvcChangeActions(ctx, node, actions)
+
+	// 根据 pod 的变化，设置需要执行的操作
+	n.applyParsePodChangeActions(ctx, node, newPod, parsePod, actions)
+
+	return actions
 }
 
-func (n *NodeManager) needMigrateNode(pod *corev1.Pod, args ...any) bool {
-	if status, ok := pod.Labels[model.LabelHealthStatus]; ok && status == model.LabelHealthStatusValueMigrate {
-		return true
+// applyHealthStatusChangeActions 根据 pod 的健康状态标签，设置需要执行的操作
+func (n *NodeManager) applyHealthStatusChangeActions(ctx context.Context, pod *corev1.Pod, actions map[NodeAction]bool) {
+	logger := logf.FromContext(ctx)
+	status, ok := pod.Labels[model.LabelHealthStatus]
+	if !ok {
+		return
 	}
-
-	return false
-}
-
-func (n *NodeManager) needRecreateNode(node *node, newPod *corev1.Pod, parsePod *corev1.Pod) bool {
-	// 如果健康状态是需要重建，说明节点不健康，需要重建
-	if status, ok := newPod.Labels[model.LabelHealthStatus]; ok && status == model.LabelHealthStatusValueRecreate {
-		return true
-	}
-
-	// 如果 PVC 发生了变化，说明存储发生了变化，需要重建节点
-	if n.isPvcChanged(node) {
-		return true
-	}
-
-	// 如果模板版本发生变化，说明模板发生了变化，需要重建节点
-	if ver, ok := newPod.Annotations[model.AnnotationTplVersion]; ok && node.spec.TplVersion != ver {
-		return true
-	}
-
-	// 如果 init container 发生了变化，说明初始化配置发生了变化，需要重建节点
-	if n.isInitContainersChanged(newPod, parsePod) {
-		return true
-	}
-
-	// 如果容器发生了变化，说明应用配置发生了变化，需要重建节点
-	if n.isContainersChanged(newPod, parsePod) {
-		return true
-	}
-
-	return false
-}
-
-func (n *NodeManager) needInPlaceUpdateNode(pod *corev1.Pod, args ...any) bool {
-	if status, ok := pod.Labels[model.LabelHealthStatus]; ok && status == model.LabelHealthStatusValueInPlaceUpdate {
+	switch status {
+	case model.LabelHealthStatusValueMigrate:
+		logger.Info("pod label health status value migrate", "pod", pod.Name)
+		actions[NodeActionMigrate] = true
+	case model.LabelHealthStatusValueInPlaceUpdate:
+		logger.Info("pod label health status value inplace update", "pod", pod.Name)
+		actions[NodeActionInPlaceUpdate] = true
 		pod.Labels[model.LabelHealthStatus] = ""
-		return true
+	case model.LabelHealthStatusValueRecreate:
+		logger.Info("pod label health status value recreate", "pod", pod.Name)
+		actions[NodeActionRecreate] = true
+	default:
 	}
-	return false
+}
+
+func (n *NodeManager) applyPvcChangeActions(ctx context.Context, node *node, actions map[NodeAction]bool) {
+	logger := logf.FromContext(ctx)
+	if n.isPvcChanged(node) {
+		actions[NodeActionRecreate] = true
+		logger.Info("pvc changed, need recreate node", "node", node.name)
+	}
 }
 
 func (n *NodeManager) isPvcChanged(node *node) bool {
@@ -741,7 +716,24 @@ func (n *NodeManager) isPvcChanged(node *node) bool {
 	return false
 }
 
-func (n *NodeManager) isInitContainersChanged(newPod *corev1.Pod, parsePod *corev1.Pod, args ...any) bool {
+func (n *NodeManager) applyParsePodChangeActions(ctx context.Context, node *node, newPod *corev1.Pod, parsePod *corev1.Pod, actions map[NodeAction]bool) {
+	logger := logf.FromContext(ctx)
+
+	// 如果模板版本发生变化，说明模板发生了变化，需要重建节点
+	if ver, ok := newPod.Annotations[model.AnnotationTplVersion]; ok && node.spec.TplVersion != ver {
+		logger.Info("tpl version changed, need recreate node", "node", node.name, "old", node.spec.TplVersion, "new", ver)
+		actions[NodeActionRecreate] = true
+		return
+	}
+
+	n.applyParsePodInitContainersChangeActions(ctx, newPod, parsePod, actions)
+	n.applyParsePodContainersChangeActions(ctx, newPod, parsePod, actions)
+	n.applyParsePodAnnotationsChangeActions(ctx, node, newPod, parsePod, actions)
+	n.applyParsePodLabelsChangeActions(ctx, newPod, parsePod, actions)
+}
+
+func (n *NodeManager) applyParsePodInitContainersChangeActions(ctx context.Context, newPod *corev1.Pod, parsePod *corev1.Pod, actions map[NodeAction]bool) {
+	logger := logf.FromContext(ctx)
 	m := map[string]*corev1.Container{}
 	for i := range parsePod.Spec.InitContainers {
 		name := parsePod.Spec.InitContainers[i].Name
@@ -750,95 +742,302 @@ func (n *NodeManager) isInitContainersChanged(newPod *corev1.Pod, parsePod *core
 	for _, container := range newPod.Spec.InitContainers {
 		if parseContainer, ok := m[container.Name]; ok {
 			if container.Image != parseContainer.Image {
-				return true
+				logger.Info("init container image change, recreate", "pod", newPod.Name, "container", container.Name, "old", container.Image, "new", parseContainer.Name)
+				actions[NodeActionRecreate] = true
+				return
 			}
 			if !reflect.DeepEqual(container.Command, parseContainer.Command) {
-				return true
+				logger.Info("")
+				actions[NodeActionRecreate] = true
+				return
 			}
 			if !reflect.DeepEqual(container.Args, parseContainer.Args) {
-				return true
+				actions[NodeActionRecreate] = true
+				return
 			}
 		}
-
 	}
-	return false
 }
 
-func (n *NodeManager) isContainersChanged(newPod *corev1.Pod, parsePod *corev1.Pod, args ...any) bool {
+func (n *NodeManager) applyParsePodContainersChangeActions(ctx context.Context, newPod *corev1.Pod, parsePod *corev1.Pod, actions map[NodeAction]bool) {
+	logger := logf.FromContext(ctx)
 	if len(newPod.Spec.Containers) != len(parsePod.Spec.Containers) {
-		return true
+		actions[NodeActionRecreate] = true
+		return
 	}
 	m := map[string]*corev1.Container{}
-	for i := range newPod.Spec.Containers {
-		name := newPod.Spec.Containers[i].Name
-		m[name] = &newPod.Spec.Containers[i]
+	for i := range parsePod.Spec.Containers {
+		m[parsePod.Spec.Containers[i].Name] = &parsePod.Spec.Containers[i]
 	}
-	for _, container := range parsePod.Spec.Containers {
-		old, ok := m[container.Name]
+
+	for i, container := range newPod.Spec.Containers {
+		parseContainer, ok := m[container.Name]
 		if !ok {
-			return true
+			actions[NodeActionRecreate] = true
+			return
 		}
-		
-
+		if container.Image != parseContainer.Image {
+			actions[NodeActionInPlaceUpdate] = true
+			newPod.Spec.Containers[i].Image = parseContainer.Image
+			if container.Name == model.ContainerNameMain {
+				actions[NodeActionInPlaceUpdate] = true
+			} else {
+				actions[NodeActionSidecarInPlaceUpdate] = true
+			}
+		}
+		if !container.Resources.Requests.Cpu().Equal(*parseContainer.Resources.Requests.Cpu()) ||
+			!container.Resources.Requests.Memory().Equal(*parseContainer.Resources.Requests.Memory()) ||
+			!container.Resources.Limits.Cpu().Equal(*parseContainer.Resources.Limits.Cpu()) ||
+			!container.Resources.Limits.Memory().Equal(*parseContainer.Resources.Limits.Memory()) {
+			if n.fm.IsEnabled(model.FeatureInplaceVpa) {
+				newPod.Spec.Containers[i].Resources = parseContainer.Resources
+				actions[NodeActionPatchOnly] = true
+			} else {
+				actions[NodeActionRecreate] = true
+				return
+			}
+		}
+		if !reflect.DeepEqual(container.Command, parseContainer.Command) {
+			actions[NodeActionRecreate] = true
+			return
+		}
+		if !reflect.DeepEqual(container.Args, parseContainer.Args) {
+			actions[NodeActionRecreate] = true
+			return
+		}
+		mountMap := map[string]corev1.VolumeMount{}
+		for _, mount := range parseContainer.VolumeMounts {
+			mountMap[mount.Name] = mount
+		}
+		for _, mount := range parseContainer.VolumeMounts {
+			old, ok := mountMap[mount.Name]
+			if !ok {
+				actions[NodeActionRecreate] = true
+				return
+			}
+			if mount.MountPath != old.MountPath {
+				logger.Info("container volume mount path changed, recreate", "pod", newPod.Name, "container", container.Name, "volume", mount.Name, "old", old.MountPath, "new", mount.MountPath)
+				actions[NodeActionRecreate] = true
+				return
+			}
+		}
 	}
-	return false
 }
 
-func (n *NodeManager) isMainContainerImageChanged(newPod *corev1.Pod, parsePod *corev1.Pod) bool {
-	m := map[string]*corev1.Container{}
-	for i := range newPod.Spec.Containers {
-		name := newPod.Spec.Containers[i].Name
-		m[name] = &newPod.Spec.Containers[i]
-	}
-	for _, container := range parsePod.Spec.Containers {
-		if container.Name != model.ContainerNameMain {
+func (n *NodeManager) applyParsePodAnnotationsChangeActions(ctx context.Context, node *node, newPod *corev1.Pod, parsePod *corev1.Pod, actions map[NodeAction]bool) {
+	logger := logf.FromContext(ctx)
+	for k, v := range parsePod.Annotations {
+		if k == model.AnnotationVersion {
 			continue
 		}
-		mainContainer := m[container.Name]
-		if mainContainer.Image != container.Image {
+		if k == model.AnnotationPublishID {
+			continue
+		}
+		old, ok := newPod.Annotations[k]
+		if ok && old == v {
+			continue
+		}
+		newPod.Annotations[k] = v
+		if n.isPatchOnlyKey(k) {
+			actions[NodeActionPatchOnly] = true
+			logger.Info("pod annotation changed, is patch only key", "pod", newPod.Name, "annotation", k, "old", old, "new", v)
+			continue
+		}
+		if n.isInPlaceUpdateKey(k) {
+			actions[NodeActionInPlaceUpdate] = true
+			logger.Info("pod annotation changed, is in-place update key", "pod", newPod.Name, "annotation", k, "old", old, "new", v)
+			continue
+		}
+		if _, ok := node.spec.Config.Envs[k]; ok {
+			actions[NodeActionInPlaceUpdate] = true
+			logger.Info("pod annotation changed, env key in-place update", "pod", newPod.Name, "annotation", k, "old", old, "new", v)
+			continue
+		}
+		if _, ok := node.spec.Config.Files[k]; ok {
+			actions[NodeActionInPlaceUpdate] = true
+			logger.Info("pod annotation changed, file key in-place update", "pod", newPod.Name, "annotation", k, "old", old, "new", v)
+			continue
+		}
+		if _, ok := node.spec.Config.Variables[k]; ok {
+			actions[NodeActionInPlaceUpdate] = true
+			logger.Info("pod annotation changed, variable key in-place update", "pod", newPod.Name, "annotation", k, "old", old, "new", v)
+			continue
+		}
+		if _, ok := node.spec.Resources.Variables[k]; ok {
+			actions[NodeActionInPlaceUpdate] = true
+			logger.Info("pod annotation changed, resource variable key in-place update", "pod", newPod.Name, "annotation", k, "old", old, "new", v)
+			continue
+		}
+		actions[NodeActionPatchOnly] = true
+		logger.Info("pod annotation changed, patch only", "pod", newPod.Name, "annotation", k, "old", old, "new", v)
+	}
+}
+
+func (n *NodeManager) isPatchOnlyKey(key string) bool {
+	for _, prefix := range config.Get().PatchOnlyKeyPrefixes {
+		if strings.HasPrefix(key, prefix) {
 			return true
 		}
 	}
 	return false
-
 }
 
-func (n *NodeManager) isOtherContainersImageChanged(newPod *corev1.Pod, parsePod *corev1.Pod) bool {
-	m := map[string]*corev1.Container{}
-	for i := range newPod.Spec.Containers {
-		name := newPod.Spec.Containers[i].Name
-		m[name] = &newPod.Spec.Containers[i]
+func (n *NodeManager) applyParsePodLabelsChangeActions(ctx context.Context, newPod *corev1.Pod, parsePod *corev1.Pod, actions map[NodeAction]bool) {
+	logger := logf.FromContext(ctx)
+	for k, v := range parsePod.Labels {
+		old, ok := newPod.Labels[k]
+		if ok && old == v {
+			continue
+		}
+		newPod.Labels[k] = v
+		if n.isInPlaceUpdateKey(k) {
+			actions[NodeActionInPlaceUpdate] = true
+			logger.Info("pod label changed, in-place update", "pod", newPod.Name, "label", k, "old", old, "new", v)
+			continue
+		}
+		actions[NodeActionPatchOnly] = true
+		logger.Info("pod label changed, patch only", "pod", newPod.Name, "label", k, "old", old, "new", v)
 	}
-	for _, container := range parsePod.Spec.Containers {
-		if container.Name == model.ContainerNameMain {
-			continue
-		}
-		if _, ok := m[container.Name]; !ok {
-			continue
-		}
-		other := m[container.Name]
-		if other.Image != container.Image {
+}
+
+func (n *NodeManager) isInPlaceUpdateKey(key string) bool {
+	for _, prefix := range config.Get().InPlaceUpdateKeyPrefixes {
+		if strings.HasPrefix(key, prefix) {
 			return true
 		}
 	}
 	return false
 }
 
-func 
-
-func (n *NodeManager) needPatchOnlyNode(args ...any) bool {
-	return false
+func (n *NodeManager) getNodeAction(actions map[NodeAction]bool, strategy *umov1.UpdateStrategy) (action NodeAction) {
+	// 如果策略中指定了更新方式，则直接使用策略中的更新方式
+	defer func() {
+		if action == NodeActionNone {
+			return
+		}
+		if strategy.NodeAction == model.NodeActionInPlaceUpdate {
+			action = NodeActionInPlaceUpdate
+		}
+		if strategy.NodeAction == model.NodeActionRecreate {
+			action = NodeActionRecreate
+		}
+	}()
+	if actions[NodeActionMigrate] {
+		return NodeActionMigrate
+	}
+	if actions[NodeActionRecreate] {
+		return NodeActionRecreate
+	}
+	if actions[NodeActionInPlaceUpdate] {
+		return NodeActionInPlaceUpdate
+	}
+	if actions[NodeActionSidecarInPlaceUpdate] {
+		return NodeActionSidecarInPlaceUpdate
+	}
+	if actions[NodeActionPatchOnly] {
+		return NodeActionPatchOnly
+	}
+	return NodeActionNone
 }
 
-func (n *NodeManager) handlePod(args ...any) error {
+func (n *NodeManager) handleNodeChange(ctx context.Context, cls *umov1.Middleware, node *node, newPod, parsePod *corev1.Pod, strategy *umov1.UpdateStrategy, action NodeAction) (*corev1.Pod, error) {
+	logger := logf.FromContext(ctx)
+	preCheckAction := ""
+	switch action {
+	case NodeActionMigrate:
+		preCheckAction = model.ActionPreCheckMigrateNode
+	case NodeActionRecreate:
+		preCheckAction = model.ActionPreCheckRecreateNode
+	case NodeActionInPlaceUpdate:
+		preCheckAction = model.ActionPreCheckInPlaceNode
+	case NodeActionSidecarInPlaceUpdate:
+		preCheckAction = model.ActionPreCheckSidecarInPlaceNode
+	}
+	if !strategy.SkipChecker && preCheckAction != "" {
+		if err := n.preCheck(ctx, cls, node, preCheckAction); err != nil {
+			return newPod, fmt.Errorf("pre check: [%w]", err)
+		}
+	}
+	switch action {
+	case NodeActionMigrate:
+		newPod = parsePod
+		generation, _ := strconv.Atoi(node.pod.Annotations[model.AnnotationNodeGeneration])
+		newPod.Annotations[model.AnnotationNodeGeneration] = strconv.Itoa(generation + 1)
+		if err := n.migrateNode(ctx, cls, node, newPod); err != nil {
+			return newPod, fmt.Errorf("migrate node: [%w]", err)
+		}
+		logger.Info("migrate node", "node", node.name)
+	case NodeActionRecreate:
+		if err := n.reCreateNode(ctx, cls, node, newPod); err != nil {
+			return newPod, fmt.Errorf("recreate node: [%w]", err)
+		}
+		logger.Info("recreate node", "node", node.name)
+	case NodeActionInPlaceUpdate:
+		if err := n.inPlaceUpdateNode(ctx, cls, node, newPod); err != nil {
+			return newPod, fmt.Errorf("in place update node: [%w]", err)
+		}
+	case NodeActionSidecarInPlaceUpdate:
+		if err := n.sidecarInplaceUpdateNode(ctx, cls, node, newPod); err != nil {
+			return newPod, fmt.Errorf("sidecar in place update node: [%w]", err)
+		}
+	case NodeActionPatchOnly:
+		if err := n.patchOnlyNode(ctx, cls, node, newPod); err != nil {
+			return newPod, fmt.Errorf("patch only node: [%w]", err)
+		}
+	case NodeActionNone:
+	}
+	return newPod, nil
+}
+
+func (n *NodeManager) preCheck(ctx context.Context, cls *umov1.Middleware, node *node, action string) (err error) {
+	if len(n.preCheckers) == 0 {
+		return nil
+	}
+	defer func() {
+		if err != nil {
+			metrics.Inc(ctx, cls.Name)
+			n.op.NewOperationBuilder(ctx, cls.GetName(), action).WithError(err).WithNodeName(node.name).Report()
+		}
+	}()
+	n.op.NewOperationBuilder(ctx, cls.GetName(), OperationTypePreCheck).WithNodeName(node.name).Report()
+	for _, checker := range n.preCheckers {
+		res, msg, err := checker.Check(ctx, node.pod)
+		n.op.NewOperationBuilder(ctx, cls.GetName(), checker.GetName()).WithNodeName(node.name).WithError(err).Report()
+		if err != nil {
+			return fmt.Errorf("checker %s check error: [%w]", checker.GetName(), err)
+		}
+		if res != model.CheckerResultOk {
+			return fmt.Errorf("checker %s check result not ok: [%s]", checker.GetName(), msg)
+		}
+	}
 	return nil
 }
 
-func (n *NodeManager) postCheckForNodeChange() error {
+func (n *NodeManager) migrateNode(args ...any) error {
 	return nil
 }
 
-func (n *NodeManager) ScaleDown(ctx context.Context, cls *umov1.Middleware, pods []corev1.Pod) error {
+func (n *NodeManager) reCreateNode(args ...any) error {
+	return nil
+}
+
+func (n *NodeManager) inPlaceUpdateNode(args ...any) error {
+	return nil
+}
+
+func (n *NodeManager) sidecarInplaceUpdateNode(args ...any) error {
+	return nil
+}
+
+func (n *NodeManager) patchOnlyNode(args ...any) error {
+	return nil
+}
+
+func (n *NodeManager) postCheckForNodeChange(args ...any) error {
+	return nil
+}
+
+func (n *NodeManager) ScaleDown(args ...any) error {
 	return nil
 }
 
