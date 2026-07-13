@@ -100,6 +100,10 @@ func (p *PodManager) CreatePod(ctx context.Context, cls *umov1.Middleware, pod *
 	return nil
 }
 
+func (p *PodManager) PatchPod(args ...any) error {
+	return nil
+}
+
 func (p *PodManager) isPodReady(ns, name string) error {
 	return wait.PollUntilContextTimeout(context.Background(), config.GetPollInterval(), config.GetPollTimeout(), config.GetPollImmediate(), func(ctx context.Context) (bool, error) {
 		pod, err := p.getPod(ctx, ns, name)

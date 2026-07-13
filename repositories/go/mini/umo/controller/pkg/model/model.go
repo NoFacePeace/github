@@ -31,14 +31,16 @@ const (
 
 // annotation
 const (
-	AnnotationTplVersion      = Domain + "/tpl-version"
-	AnnotationPublishID       = Domain + "/publish-id"
-	AnnotationNodeGeneration  = Domain + "/node-generation"
-	AnnotationContainers      = Domain + "/containers"
-	AnnotationInplaceVpa      = Domain + "/inplace-vpa"
-	AnnotationVersion         = Domain + "/version"
-	AnnotationPostCheckFailed = Domain + "/post-check-failed"
-	AnnotationPostCheckAction = Domain + "/post-check-action"
+	AnnotationTplVersion                = Domain + "/tpl-version"
+	AnnotationPublishID                 = Domain + "/publish-id"
+	AnnotationNodeGeneration            = Domain + "/node-generation"
+	AnnotationContainers                = Domain + "/containers"
+	AnnotationInplaceVpa                = Domain + "/inplace-vpa"
+	AnnotationVersion                   = Domain + "/version"
+	AnnotationPostCheckFailed           = Domain + "/post-check-failed"
+	AnnotationPostCheckAction           = Domain + "/post-check-action"
+	AnnotationMainContainerRestartCount = Domain + "/main-container-restart-count"
+	AnnotationMainContainerCreateAt     = Domain + "/main-container-create-at"
 )
 
 type EventType int
@@ -73,13 +75,16 @@ const (
 
 // action
 const (
-	ActionPostCheckCreateNode        = "action-post-check-create-node"
-	ActionPostCheckMigrateNode       = "action-post-check-migrate-node"
-	ActionPreCheckMigrateNode        = "action-pre-check-migrate-node"
-	ActionPreCheckCreateNode         = "action-pre-check-create-node"
-	ActionPreCheckRecreateNode       = "action-pre-check-recreate-node"
-	ActionPreCheckInPlaceNode        = "action-pre-check-in-place-node"
-	ActionPreCheckSidecarInPlaceNode = "action-pre-check-sidecar-in-place-node"
+	ActionPostCheckCreateNode         = "action-post-check-create-node"
+	ActionPostCheckMigrateNode        = "action-post-check-migrate-node"
+	ActionPreCheckMigrateNode         = "action-pre-check-migrate-node"
+	ActionPreCheckCreateNode          = "action-pre-check-create-node"
+	ActionPreCheckRecreateNode        = "action-pre-check-recreate-node"
+	ActionPreCheckInPlaceNode         = "action-pre-check-in-place-node"
+	ActionPreCheckSidecarInPlaceNode  = "action-pre-check-sidecar-in-place-node"
+	ActionPostCheckRecreateNode       = "action-post-check-recreate-node"
+	ActionPostCheckInPlaceNode        = "action-post-check-in-place-node"
+	ActionPostCheckSidecarInPlaceNode = "action-post-check-sidecar-in-place-node"
 )
 
 const (

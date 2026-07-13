@@ -21,7 +21,6 @@ import (
 	apiClient "nofacepeace.github.io/controller/pkg/client"
 	"nofacepeace.github.io/controller/pkg/config"
 	"nofacepeace.github.io/controller/pkg/extensions/checker"
-	"nofacepeace.github.io/controller/pkg/metrics"
 	"nofacepeace.github.io/controller/pkg/model"
 )
 
@@ -538,7 +537,7 @@ func (n *NodeManager) postCheck(ctx context.Context, cls *umov1.Middleware, node
 	logger := logf.FromContext(ctx)
 	defer func() {
 		failed := err != nil
-		n.op.NewOperationBuilder(context.Background(), cls.GetName(), OperationTypePostCheck).WithNodeName(node.name).WithError(err).Report()
+		n.op.NewOperationBuilder(context.Background(), cls.GetName(), action).WithNodeName(node.name).WithError(err).Report()
 		if err := n.pom.updatePodAnnotation(ctx, node.pod, map[string]string{
 			model.AnnotationPostCheckFailed: strconv.FormatBool(failed),
 			model.AnnotationPostCheckAction: action,
@@ -625,14 +624,8 @@ func (n *NodeManager) reconcileNodeSpec(ctx context.Context, cls *umov1.Middlewa
 	action := n.getNodeAction(actions, strategy)
 
 	// 根据操作执行相应的处理
-	newPod, err = n.handleNodeChange(ctx, cls, node, newPod, parsePod, strategy, action)
-	if err != nil {
+	if err := n.handleNodeChange(ctx, cls, node, newPod, parsePod, strategy, action); err != nil {
 		return fmt.Errorf("node manager handle node change: [%w]", err)
-	}
-
-	// 执行节点变更后的检查
-	if err := n.postCheckForNodeChange(ctx, cls, node, newPod, strategy, action); err != nil {
-		return fmt.Errorf("node manager post check for node change: [%w]", err)
 	}
 	return nil
 }
@@ -940,7 +933,8 @@ func (n *NodeManager) getNodeAction(actions map[NodeAction]bool, strategy *umov1
 	return NodeActionNone
 }
 
-func (n *NodeManager) handleNodeChange(ctx context.Context, cls *umov1.Middleware, node *node, newPod, parsePod *corev1.Pod, strategy *umov1.UpdateStrategy, action NodeAction) (*corev1.Pod, error) {
+// handleNodeChange 先 pre check 再 handle change 接着 post check 最后 sleep
+func (n *NodeManager) handleNodeChange(ctx context.Context, cls *umov1.Middleware, node *node, newPod, parsePod *corev1.Pod, strategy *umov1.UpdateStrategy, action NodeAction) error {
 	logger := logf.FromContext(ctx)
 	preCheckAction := ""
 	switch action {
@@ -955,7 +949,7 @@ func (n *NodeManager) handleNodeChange(ctx context.Context, cls *umov1.Middlewar
 	}
 	if !strategy.SkipChecker && preCheckAction != "" {
 		if err := n.preCheck(ctx, cls, node, preCheckAction); err != nil {
-			return newPod, fmt.Errorf("pre check: [%w]", err)
+			return fmt.Errorf("pre check: [%w]", err)
 		}
 	}
 	switch action {
@@ -964,29 +958,53 @@ func (n *NodeManager) handleNodeChange(ctx context.Context, cls *umov1.Middlewar
 		generation, _ := strconv.Atoi(node.pod.Annotations[model.AnnotationNodeGeneration])
 		newPod.Annotations[model.AnnotationNodeGeneration] = strconv.Itoa(generation + 1)
 		if err := n.migrateNode(ctx, cls, node, newPod); err != nil {
-			return newPod, fmt.Errorf("migrate node: [%w]", err)
+			return fmt.Errorf("migrate node: [%w]", err)
 		}
 		logger.Info("migrate node", "node", node.name)
 	case NodeActionRecreate:
+		newPod = parsePod
 		if err := n.reCreateNode(ctx, cls, node, newPod); err != nil {
-			return newPod, fmt.Errorf("recreate node: [%w]", err)
+			return fmt.Errorf("recreate node: [%w]", err)
 		}
 		logger.Info("recreate node", "node", node.name)
 	case NodeActionInPlaceUpdate:
 		if err := n.inPlaceUpdateNode(ctx, cls, node, newPod); err != nil {
-			return newPod, fmt.Errorf("in place update node: [%w]", err)
+			return fmt.Errorf("in place update node: [%w]", err)
 		}
+		logger.Info("in place update", "node", node.name)
 	case NodeActionSidecarInPlaceUpdate:
 		if err := n.sidecarInplaceUpdateNode(ctx, cls, node, newPod); err != nil {
-			return newPod, fmt.Errorf("sidecar in place update node: [%w]", err)
+			return fmt.Errorf("sidecar in place update node: [%w]", err)
 		}
+		logger.Info("sidecar in place update", "node", node.name)
 	case NodeActionPatchOnly:
 		if err := n.patchOnlyNode(ctx, cls, node, newPod); err != nil {
-			return newPod, fmt.Errorf("patch only node: [%w]", err)
+			return fmt.Errorf("patch only node: [%w]", err)
 		}
+		logger.Info("patch only", "node", node.name)
 	case NodeActionNone:
 	}
-	return newPod, nil
+	postCheckAction := ""
+	switch action {
+	case NodeActionMigrate:
+		postCheckAction = model.ActionPostCheckMigrateNode
+	case NodeActionRecreate:
+		postCheckAction = model.ActionPostCheckRecreateNode
+	case NodeActionInPlaceUpdate:
+		postCheckAction = model.ActionPostCheckInPlaceNode
+	case NodeActionSidecarInPlaceUpdate:
+		postCheckAction = model.ActionPostCheckSidecarInPlaceNode
+	}
+	if !strategy.SkipChecker && postCheckAction != "" {
+		// 执行节点变更后的检查
+		if err := n.postCheckForNodeChange(ctx, cls, node, newPod, strategy, action); err != nil {
+			return fmt.Errorf("node manager post check for node change: [%w]", err)
+		}
+	}
+	if action != NodeActionNone && action != NodeActionPatchOnly {
+		time.Sleep(strategy.PodUpdateInterval())
+	}
+	return nil
 }
 
 func (n *NodeManager) preCheck(ctx context.Context, cls *umov1.Middleware, node *node, action string) (err error) {
@@ -995,11 +1013,10 @@ func (n *NodeManager) preCheck(ctx context.Context, cls *umov1.Middleware, node 
 	}
 	defer func() {
 		if err != nil {
-			metrics.Inc(ctx, cls.Name)
 			n.op.NewOperationBuilder(ctx, cls.GetName(), action).WithError(err).WithNodeName(node.name).Report()
 		}
 	}()
-	n.op.NewOperationBuilder(ctx, cls.GetName(), OperationTypePreCheck).WithNodeName(node.name).Report()
+	n.op.NewOperationBuilder(ctx, cls.GetName(), action).WithNodeName(node.name).Report()
 	for _, checker := range n.preCheckers {
 		res, msg, err := checker.Check(ctx, node.pod)
 		n.op.NewOperationBuilder(ctx, cls.GetName(), checker.GetName()).WithNodeName(node.name).WithError(err).Report()
@@ -1013,23 +1030,108 @@ func (n *NodeManager) preCheck(ctx context.Context, cls *umov1.Middleware, node 
 	return nil
 }
 
-func (n *NodeManager) migrateNode(args ...any) error {
+func (n *NodeManager) migrateNode(ctx context.Context, cls *umov1.Middleware, node *node, pod *corev1.Pod, args ...any) error {
+	// 删除 pod
+	if err := n.pom.DeletePod(ctx, node.pod, true); err != nil {
+		return fmt.Errorf("delete pod: [%w]", err)
+	}
+
+	// 检查 pvc
+	if err := n.pvm.checkPvc(); err != nil {
+		return fmt.Errorf("check pvc: [%w]", err)
+	}
+
+	// 设置 controller
+	if err := ctrl.SetControllerReference(cls, pod, n.Schema); err != nil {
+		return fmt.Errorf("set controller reference: [%w]", err)
+	}
+
+	// 添加亲和性，迁移倾向于新主机
+	n.addAvoidNodeAffinity(node.pod, pod)
+
+	// 创建 pod
+	if err := n.pom.CreatePod(ctx, cls, pod); err != nil {
+		return fmt.Errorf("create pod: [%w]", err)
+	}
 	return nil
 }
 
-func (n *NodeManager) reCreateNode(args ...any) error {
+// addAvoidNodeAffinity
+func (n *NodeManager) addAvoidNodeAffinity(old *corev1.Pod, pod *corev1.Pod) {
+	if pod.Spec.Affinity == nil {
+		pod.Spec.Affinity = &corev1.Affinity{}
+	}
+	if pod.Spec.Affinity.NodeAffinity == nil {
+		pod.Spec.Affinity.NodeAffinity = &corev1.NodeAffinity{}
+	}
+	pod.Spec.Affinity.NodeAffinity.PreferredDuringSchedulingIgnoredDuringExecution = append(
+		pod.Spec.Affinity.NodeAffinity.PreferredDuringSchedulingIgnoredDuringExecution,
+		corev1.PreferredSchedulingTerm{
+			Weight: 100,
+			Preference: corev1.NodeSelectorTerm{
+				MatchExpressions: []corev1.NodeSelectorRequirement{
+					{
+						Key:      "kubernetes.io/hostname",
+						Operator: corev1.NodeSelectorOpNotIn,
+						Values:   []string{old.Spec.NodeName},
+					},
+				},
+			},
+		},
+	)
+}
+
+// reCreateNode
+func (n *NodeManager) reCreateNode(ctx context.Context, cls *umov1.Middleware, node *node, pod *corev1.Pod) error {
+	// 删除 pod
+	if err := n.pom.DeletePod(ctx, node.pod, false); err != nil {
+		return fmt.Errorf("delete pod: [%w]", err)
+	}
+
+	// 设置 controller
+	if err := ctrl.SetControllerReference(cls, pod, n.Schema); err != nil {
+		return fmt.Errorf("set controller reference: [%w]", err)
+	}
+
+	// 创建 pod
+	if err := n.pom.CreatePod(ctx, cls, pod); err != nil {
+		return fmt.Errorf("create pod: [%w]", err)
+	}
 	return nil
 }
 
-func (n *NodeManager) inPlaceUpdateNode(args ...any) error {
+func (n *NodeManager) inPlaceUpdateNode(ctx context.Context, cls *umov1.Middleware, node *node, pod *corev1.Pod, args ...any) error {
+	pod.Annotations[model.AnnotationPublishID] = cls.Spec.PublishId
+	pod.Annotations[model.AnnotationVersion] = fmt.Sprint(time.Now().Unix())
+
+	for _, container := range pod.Status.ContainerStatuses {
+		if container.Name != model.ContainerNameMain {
+			continue
+		}
+		pod.Annotations[model.AnnotationMainContainerRestartCount] = strconv.Itoa(int(container.RestartCount))
+		if container.State.Running != nil {
+			pod.Annotations[model.AnnotationMainContainerCreateAt] = container.State.Running.StartedAt.Format(time.RFC3339)
+		}
+		break
+	}
+	if err := n.pom.PatchPod(); err != nil {
+		return fmt.Errorf("patch pod: [%w]", err)
+	}
 	return nil
 }
 
-func (n *NodeManager) sidecarInplaceUpdateNode(args ...any) error {
+func (n *NodeManager) sidecarInplaceUpdateNode(ctx context.Context, cls *umov1.Middleware, node *node, pod *corev1.Pod) error {
+	pod.Annotations[model.AnnotationPublishID] = cls.Spec.PublishId
+	if err := n.pom.PatchPod(); err != nil {
+		return fmt.Errorf("patch pod: [%w]", err)
+	}
 	return nil
 }
 
-func (n *NodeManager) patchOnlyNode(args ...any) error {
+func (n *NodeManager) patchOnlyNode(ctx context.Context, cls *umov1.Middleware, node *node, pod *corev1.Pod, args ...any) error {
+	if err := n.pom.PatchPod(); err != nil {
+		return fmt.Errorf("patch pod: [%w]", err)
+	}
 	return nil
 }
 
