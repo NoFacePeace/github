@@ -82,3 +82,7 @@ func (p *PvcManager) createPvc(ctx context.Context, cls *umov1.Middleware) error
 func (p *PvcManager) getPvcType(vct *umov1.VolumeClaimTemplate) string {
 	return ""
 }
+
+func (p *PvcManager) deletePvc(args ...any) error {
+	return nil
+}
