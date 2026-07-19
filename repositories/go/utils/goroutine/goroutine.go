@@ -15,16 +15,14 @@ type options struct {
 	loop    bool
 }
 
-type Option interface {
-	apply(*options)
-}
+type Option func(*options)
 
 func Recover(f func(), opts ...Option) {
 	options := &options{
 		handler: DefaultHandler,
 	}
 	for _, opt := range opts {
-		opt.apply(options)
+		opt(options)
 	}
 	w := func() (success bool) {
 		success = false
@@ -50,25 +48,13 @@ func Recover(f func(), opts ...Option) {
 }
 
 func WithHandler(handler func(r any)) Option {
-	return &handlerOption{
-		handler: handler,
+	return func(opts *options) {
+		opts.handler = handler
 	}
 }
 
 func WithLoop() Option {
-	return loopOption(true)
-}
-
-type handlerOption struct {
-	handler func(r any)
-}
-
-func (o *handlerOption) apply(opts *options) {
-	opts.handler = o.handler
-}
-
-type loopOption bool
-
-func (l loopOption) apply(opts *options) {
-	opts.loop = bool(l)
+	return func(opts *options) {
+		opts.loop = true
+	}
 }

@@ -21,12 +21,18 @@ import (
 	apiClient "nofacepeace.github.io/controller/pkg/client"
 	"nofacepeace.github.io/controller/pkg/config"
 	"nofacepeace.github.io/controller/pkg/extensions/checker"
+	"nofacepeace.github.io/controller/pkg/extensions/event"
 	"nofacepeace.github.io/controller/pkg/model"
 )
 
 const (
 	LabelClusterDeleteStage       = "delete-stage"
 	ClusterDeleteStageNodeOffline = "node-offline"
+)
+
+const (
+	MaxScaleDownDefaultNodeCount = 10
+	MaxScaleDownDefaultNodeRatio = float64(1) / 3
 )
 
 type NodeAction int
@@ -55,7 +61,7 @@ type NodeManager struct {
 	sm             *ServiceManager
 }
 
-func (n *NodeManager) checkNodes(ctx context.Context, cls *umov1.Middleware) error {
+func (n *NodeManager) CheckNodes(ctx context.Context, cls *umov1.Middleware) error {
 	if n.isClusterOffline(cls) {
 		return nil
 	}
@@ -98,6 +104,81 @@ func (n *NodeManager) checkNodes(ctx context.Context, cls *umov1.Middleware) err
 		groups = append(groups, group)
 	}
 	return n.checkNodeGroups(ctx, cls, groups)
+}
+
+func (n *NodeManager) ScaleDown(ctx context.Context, cls *umov1.Middleware, pods []corev1.Pod, args ...any) error {
+	logger := logf.FromContext(ctx)
+
+	action := cls.Annotations[model.AnnotationTicketAction]
+	if action != model.ActionTicketScale {
+		logger.Info("skip scale, ticket action is not scale", "action", action)
+		return nil
+	}
+
+	nodeSetMaxIndex := map[string]int{}
+	for _, nodeSet := range cls.Spec.Normal {
+		for eks, count := range nodeSet.NodeCounts {
+			if eks != config.Get().Eks.Id {
+				continue
+			}
+			nodeSetMaxIndex[nodeSet.Name] = count.Offset + count.Count
+		}
+	}
+
+	offline := n.isClusterOffline(cls)
+	podM := map[string]corev1.Pod{}
+	for _, pod := range pods {
+		idx, err := parseNodeIndex(pod.Name)
+		if err != nil {
+			return fmt.Errorf("parse node index: [%w]", err)
+		}
+		set, err := parseNodeSetName(cls.Name, pod.Name)
+		if err != nil {
+			return fmt.Errorf("parse node set name: [%w]", err)
+		}
+		maxIdx := nodeSetMaxIndex[set]
+		if idx >= maxIdx || offline {
+			podM[pod.Name] = pod
+		}
+	}
+
+	maxCnt := len(podM)
+	if !offline {
+		maxCnt = min(max(int(float64(len(pods))*MaxScaleDownDefaultNodeRatio), 1), MaxScaleDownDefaultNodeCount)
+	}
+	if len(podM) > maxCnt {
+		return fmt.Errorf("")
+	}
+
+	strategy := n.getUpdateStrategy(cls)
+
+	ens := []*event.Node{}
+	for _, pod := range podM {
+		if isTrue(pod.Labels[model.LabelManualManagement]) {
+			logger.Info("")
+			continue
+		}
+		if err := n.pom.DeletePod(ctx, &pod, true); err != nil {
+			return fmt.Errorf("delete pod: [%w]", err)
+		}
+
+		if !offline {
+			if err := n.pvm.deletePvc(); err != nil {
+				return fmt.Errorf("delete pvc: [%w]", err)
+			}
+		}
+		if err := n.sm.DeleteEndpoint(); err != nil {
+			return fmt.Errorf("delete endpoint: [%w]", err)
+		}
+		ens = append(ens, &event.Node{
+			Name:   pod.Name,
+			OldPod: pod,
+		})
+		time.Sleep(strategy.PodUpdateInterval())
+	}
+	n.em.Dispatch(ctx, cls.Name, model.EventTypeClusterScaleDown, ens)
+
+	return nil
 }
 
 // isClusterOffline 检查集群是否离线
@@ -206,10 +287,6 @@ func (n *NodeManager) checkNode(ctx context.Context, cls *umov1.Middleware, node
 		return fmt.Errorf("node manager reconcile error: [%w]", err)
 	}
 	n.op.NewOperationBuilder(ctx, cls.GetName(), "checkNode").Report()
-	if n.SkipSleep(ctx) {
-		return nil
-	}
-	time.Sleep(strategy.PodUpdateInterval())
 	return nil
 }
 
@@ -263,10 +340,8 @@ func (n *NodeManager) createNode(ctx context.Context, cls *umov1.Middleware, nod
 	if err != nil {
 		return fmt.Errorf("node manager generate pod error: [%w]", err)
 	}
-	if !strategy.SkipChecker {
-		if err := n.preCheck(ctx, cls, node, model.ActionPreCheckCreateNode); err != nil {
-			return fmt.Errorf("node manager pre check error: [%w]", err)
-		}
+	if err := n.preCheck(ctx, cls, node, strategy, model.ActionPreCheckCreateNode); err != nil {
+		return fmt.Errorf("node manager pre check error: [%w]", err)
 	}
 	if err := ctrl.SetControllerReference(cls, pod, n.Schema); err != nil {
 		return fmt.Errorf("controller runtime set controller reference error: [%w]", err)
@@ -274,7 +349,7 @@ func (n *NodeManager) createNode(ctx context.Context, cls *umov1.Middleware, nod
 	if err := n.pom.CreatePod(ctx, cls, pod); err != nil {
 		return fmt.Errorf("pod manager create pod error: [%w]", err)
 	}
-	n.em.Dispatch()
+	n.em.Dispatch(ctx, cls.Name, model.EventTypeNodeCreate, nil)
 	if err := n.postCheck(ctx, cls, node, strategy, model.ActionPostCheckCreateNode); err != nil {
 		return fmt.Errorf("node manager post check error: [%w]", err)
 	}
@@ -553,10 +628,14 @@ func (n *NodeManager) postCheck(ctx context.Context, cls *umov1.Middleware, node
 	if config.InDryRunMode(cls.Name) {
 		return nil
 	}
+	pod, err := n.pom.getPod(ctx, cls.Namespace, node.pod.Name)
+	if err != nil {
+		return fmt.Errorf("get pod: [%w]", err)
+	}
 	checkers := n.inPostCheckers
 	checkers = append(checkers, n.postCheckers...)
 	for _, checker := range checkers {
-		res, msg, retErr := checker.Check(ctx, node.pod)
+		res, msg, retErr := checker.Check(ctx, pod)
 		if retErr != nil {
 			err = fmt.Errorf("checker %s check error: [%w]", checker.GetName(), retErr)
 			break
@@ -592,7 +671,11 @@ func (n *NodeManager) checkPostCheck(ctx context.Context, cls *umov1.Middleware,
 		return nil
 	}
 	action := pod.Annotations[model.AnnotationPostCheckAction]
-	return n.postCheck(ctx, cls, node, strategy, action)
+	if err := n.postCheck(ctx, cls, node, strategy, action); err != nil {
+		return fmt.Errorf("post check: [%w]", err)
+	}
+	time.Sleep(strategy.PodUpdateInterval())
+	return nil
 }
 
 func (n *NodeManager) reconcileNodeSpec(ctx context.Context, cls *umov1.Middleware, node *node, strategy *umov1.UpdateStrategy, args ...any) error {
@@ -947,8 +1030,8 @@ func (n *NodeManager) handleNodeChange(ctx context.Context, cls *umov1.Middlewar
 	case NodeActionSidecarInPlaceUpdate:
 		preCheckAction = model.ActionPreCheckSidecarInPlaceNode
 	}
-	if !strategy.SkipChecker && preCheckAction != "" {
-		if err := n.preCheck(ctx, cls, node, preCheckAction); err != nil {
+	if preCheckAction != "" {
+		if err := n.preCheck(ctx, cls, node, strategy, preCheckAction); err != nil {
 			return fmt.Errorf("pre check: [%w]", err)
 		}
 	}
@@ -995,11 +1078,15 @@ func (n *NodeManager) handleNodeChange(ctx context.Context, cls *umov1.Middlewar
 	case NodeActionSidecarInPlaceUpdate:
 		postCheckAction = model.ActionPostCheckSidecarInPlaceNode
 	}
-	if !strategy.SkipChecker && postCheckAction != "" {
-		// 执行节点变更后的检查
-		if err := n.postCheckForNodeChange(ctx, cls, node, newPod, strategy, action); err != nil {
-			return fmt.Errorf("node manager post check for node change: [%w]", err)
-		}
+	if action == NodeActionPatchOnly || action == NodeActionNone {
+		return nil
+	}
+	if !config.InDryRunMode(cls.Name) {
+		n.em.Dispatch(ctx, cls.Name, model.EventTypeClusterCreate, nil)
+	}
+	// 执行节点变更后的检查
+	if err := n.postCheck(ctx, cls, node, strategy, postCheckAction); err != nil {
+		return fmt.Errorf("node manager post check for node change: [%w]", err)
 	}
 	if action != NodeActionNone && action != NodeActionPatchOnly {
 		time.Sleep(strategy.PodUpdateInterval())
@@ -1007,7 +1094,10 @@ func (n *NodeManager) handleNodeChange(ctx context.Context, cls *umov1.Middlewar
 	return nil
 }
 
-func (n *NodeManager) preCheck(ctx context.Context, cls *umov1.Middleware, node *node, action string) (err error) {
+func (n *NodeManager) preCheck(ctx context.Context, cls *umov1.Middleware, node *node, strategy *umov1.UpdateStrategy, action string) (err error) {
+	if !strategy.SkipChecker {
+		return nil
+	}
 	if len(n.preCheckers) == 0 {
 		return nil
 	}
@@ -1132,14 +1222,6 @@ func (n *NodeManager) patchOnlyNode(ctx context.Context, cls *umov1.Middleware, 
 	if err := n.pom.PatchPod(); err != nil {
 		return fmt.Errorf("patch pod: [%w]", err)
 	}
-	return nil
-}
-
-func (n *NodeManager) postCheckForNodeChange(args ...any) error {
-	return nil
-}
-
-func (n *NodeManager) ScaleDown(args ...any) error {
 	return nil
 }
 

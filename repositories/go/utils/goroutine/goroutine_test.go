@@ -24,7 +24,7 @@ func TestWithLoop(t *testing.T) {
 		t.Error("options loop should be true")
 	}
 	opt := WithLoop()
-	opt.apply(opts)
+	opt(opts)
 	if !opts.loop {
 		t.Error("options loop should be true")
 	}
