@@ -7,11 +7,11 @@ type Event struct {
 
 type Node struct {
 	Name   string
-	OldPod *corev1.Pod
-	NewPod *corev1.Pod
+	OldPod corev1.Pod
+	NewPod corev1.Pod
 }
 type Listener interface {
-	OnEvent(event *Event)
+	OnEvent(event Event)
 	GetName() string
 }
 
@@ -22,7 +22,7 @@ func NewWebhookListener() *WebhookListener {
 	return &WebhookListener{}
 }
 
-func (w *WebhookListener) OnEvent(event *Event) {
+func (w *WebhookListener) OnEvent(event Event) {
 }
 
 func (w *WebhookListener) GetName() string {

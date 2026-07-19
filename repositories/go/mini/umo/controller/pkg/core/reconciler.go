@@ -121,7 +121,7 @@ func (c *Reconciler) checkCluster(e *ReconcilerEvent) (err error) {
 	if err := c.svm.CheckService(e.ctx, e.cluster); err != nil {
 		return fmt.Errorf("service manager check service error: [%w]", err)
 	}
-	if err := c.nm.checkNodes(e.ctx, e.cluster); err != nil {
+	if err := c.nm.CheckNodes(e.ctx, e.cluster); err != nil {
 		return fmt.Errorf("check nodes error: [%w]", err)
 	}
 	pods, err := c.pm.GetClusterPods(e.ctx, e.cluster)
@@ -136,8 +136,7 @@ func (c *Reconciler) checkCluster(e *ReconcilerEvent) (err error) {
 		for _, pod := range pods {
 			nodes = append(nodes, &event.Node{
 				Name:   pod.Name,
-				OldPod: nil,
-				NewPod: &pod,
+				NewPod: pod,
 			})
 		}
 		c.em.Dispatch(e.ctx, e.cluster.GetName(), model.EventTypeClusterCreate, nodes)

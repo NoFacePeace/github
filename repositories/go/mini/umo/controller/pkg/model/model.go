@@ -41,6 +41,7 @@ const (
 	AnnotationPostCheckAction           = Domain + "/post-check-action"
 	AnnotationMainContainerRestartCount = Domain + "/main-container-restart-count"
 	AnnotationMainContainerCreateAt     = Domain + "/main-container-create-at"
+	AnnotationTicketAction              = Domain + "ticket_action"
 )
 
 type EventType int
@@ -49,6 +50,8 @@ const (
 	EventTypeClusterCreate EventType = iota
 	EventTypeClusterDelete
 	EventTypeClusterReconcile
+	EventTypeClusterScaleDown
+	EventTypeNodeCreate
 )
 
 // feature
@@ -73,7 +76,7 @@ const (
 	CheckerResultSuspend
 )
 
-// action
+// check action
 const (
 	ActionPostCheckCreateNode         = "action-post-check-create-node"
 	ActionPostCheckMigrateNode        = "action-post-check-migrate-node"
@@ -85,6 +88,11 @@ const (
 	ActionPostCheckRecreateNode       = "action-post-check-recreate-node"
 	ActionPostCheckInPlaceNode        = "action-post-check-in-place-node"
 	ActionPostCheckSidecarInPlaceNode = "action-post-check-sidecar-in-place-node"
+)
+
+// ticket action
+const (
+	ActionTicketScale = "scale"
 )
 
 const (

@@ -16,3 +16,7 @@ func (s *ServiceManager) CheckService(ctx context.Context, cls *umov1.Middleware
 func (s *ServiceManager) UpdateEndpoint(args ...any) error {
 	return nil
 }
+
+func (s *ServiceManager) DeleteEndpoint(args ...any) error {
+	return nil
+}

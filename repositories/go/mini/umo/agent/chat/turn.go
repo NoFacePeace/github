@@ -1,6 +1,8 @@
 package chat
 
 import (
+	"context"
+
 	"github.com/NoFacePeace/github/repositories/go/mini/umo/agent/client"
 	"github.com/NoFacePeace/github/repositories/go/mini/umo/agent/session"
 )
@@ -14,7 +16,7 @@ type Turn struct {
 	Message   string
 }
 
-func newTurn(req *Request, args ...any) *Turn {
+func newTurn(ctx context.Context, req *Request, args ...any) *Turn {
 
 	return &Turn{}
 }
