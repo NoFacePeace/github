@@ -233,7 +233,7 @@ func runBash(ctx context.Context, command string) string {
 // ═══════════════════════════════════════════════════════════
 
 // safePath 把相对路径解析到工作目录下，并拒绝任何逃逸出工作目录的路径
-// （含 `..` 越界、绝对路径、符号链接指向外部等）。所有文件类工具都先过它。
+// （含 `..` 越界、绝对路径指向外部、符号链接指向外部等）。所有文件类工具都先过它。
 func safePath(p string) (string, error) {
 	workdir, err := os.Getwd()
 	if err != nil {
@@ -246,7 +246,15 @@ func safePath(p string) (string, error) {
 		// 目录本身无符号链接时直接用原路径。
 		workdirResolved = workdir
 	}
-	abs := filepath.Join(workdirResolved, p)
+	// 关键：绝对路径不要用 filepath.Join 拼——Join 会剥掉前导分隔符再接到
+	// workdir 后面，导致 `/workdir + /workdir/foo` 这样的怪路径恰好以 workdir
+	// 开头而绕过前缀检查。绝对路径直接取其本身（再规范化）。
+	var abs string
+	if filepath.IsAbs(p) {
+		abs = filepath.Clean(p)
+	} else {
+		abs = filepath.Join(workdirResolved, p)
+	}
 	resolved, err := filepath.EvalSymlinks(abs)
 	if err != nil {
 		// 目标文件尚不存在（write 场景）：退到对父目录做规范化校验。
