@@ -3,3 +3,4 @@
 temp
 repositories/go/projects/cron/config.yaml
 node_modules
+.claude/
