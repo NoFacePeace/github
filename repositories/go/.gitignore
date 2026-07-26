@@ -2,3 +2,4 @@
 # `go build ./mini/learn-claude-code/sNN_xxx` 会在当前目录产出同名可执行文件。
 /s01_agent_loop
 /s02_tool_use
+/s03_permission
