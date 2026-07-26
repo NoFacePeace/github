@@ -1,0 +1,4 @@
+# learn-claude-code 各 lesson 是独立 main 包，在仓库根目录
+# `go build ./mini/learn-claude-code/sNN_xxx` 会在当前目录产出同名可执行文件。
+/s01_agent_loop
+/s02_tool_use
