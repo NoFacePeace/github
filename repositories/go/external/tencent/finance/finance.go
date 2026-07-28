@@ -58,7 +58,7 @@ func GetKline(code string, options ...Option) ([]Point, error) {
 	params.Set("limit", strconv.Itoa(DefaultLimit))
 	params.Set("fqtype", BeforeAdjust.String())
 	for _, option := range options {
-		option.apply(&params)
+		option(&params)
 	}
 	u.RawQuery = params.Encode()
 	var resp getKlineResp
@@ -90,7 +90,7 @@ func getBoardRankList(code string, options ...Option) (*getBoardRankListRespData
 	params.Set("sort_type", "marketValue")
 	params.Set("direct", "down")
 	for _, option := range options {
-		option.apply(&params)
+		option(&params)
 	}
 	u.RawQuery = params.Encode()
 	var resp getBoardRankListResp
@@ -203,7 +203,7 @@ func getRank(options ...Option) (*getRankRespData, error) {
 	params.Add("board_type", "hy2")
 	params.Add("sort_type", "PriceRatio")
 	for _, option := range options {
-		option.apply(params)
+		option(params)
 	}
 	u.RawQuery = params.Encode()
 	resp := &getRankResp{}
