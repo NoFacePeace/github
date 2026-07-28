@@ -14,7 +14,7 @@ func ListStocks(options ...ListStocksOption) ([]Stock, error) {
 		count: listStocksDefaultCount,
 	}
 	for _, option := range options {
-		option.apply(cfg)
+		option(cfg)
 	}
 	stocks := []Stock{}
 	offset := 0
@@ -45,33 +45,21 @@ func (typ StockType) String() string {
 	return string(typ)
 }
 
-func (typ StockType) apply(cfg *listStocksConfig) {
-	cfg.typ = typ
-}
-
 type listStocksConfig struct {
 	typ   StockType
 	count int
 }
 
-type ListStocksOption interface {
-	apply(*listStocksConfig)
-}
+type ListStocksOption func(*listStocksConfig)
 
 func WithStockType(typ StockType) ListStocksOption {
-	return AStock
-}
-
-func WithListStocksCount(count int) ListStocksOption {
-	return &listStocksCountOption{
-		count: count,
+	return func(cfg *listStocksConfig) {
+		cfg.typ = typ
 	}
 }
 
-type listStocksCountOption struct {
-	count int
-}
-
-func (o *listStocksCountOption) apply(cfg *listStocksConfig) {
-	cfg.count = o.count
+func WithListStocksCount(count int) ListStocksOption {
+	return func(cfg *listStocksConfig) {
+		cfg.count = count
+	}
 }
