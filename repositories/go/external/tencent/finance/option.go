@@ -46,6 +46,12 @@ func WithDate(date time.Time) Option {
 	}
 }
 
+func WithFromDate(date time.Time) Option {
+	return func(params *url.Values) {
+		params.Set("fromDate", date.Format(datetime.LayoutDateWithDash))
+	}
+}
+
 func WithLimit(limit int) Option {
 	return func(params *url.Values) {
 		params.Set("limit", strconv.Itoa(limit))

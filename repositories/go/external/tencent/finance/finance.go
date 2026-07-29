@@ -35,18 +35,62 @@ type Stock struct {
 }
 
 func GetAllKline(code string, options ...Option) ([]Point, error) {
+	if code == "" {
+		return nil, fmt.Errorf("get all kline: empty code")
+	}
 	toDate := time.Now()
 	ret := []Point{}
 	for {
-		options = append(options, WithDate(toDate))
-		sub, err := GetKline(code, options...)
+		// 每轮构造一份干净的 options，避免污染调用方传入的 slice，
+		// 也避免上一轮的 WithDate 残留累积。
+		opts := make([]Option, 0, len(options)+1)
+		opts = append(opts, options...)
+		opts = append(opts, WithDate(toDate))
+		sub, err := GetKline(code, opts...)
 		if err != nil {
-			return nil, fmt.Errorf("get all kline %s error: [%w]", code, err)
+			return nil, fmt.Errorf("get all kline %s: [%w]", code, err)
 		}
 		ret = append(sub, ret...)
+		// 接口未返回总数，以不满页作为末页判据。
 		if len(sub) < DefaultLimit {
 			break
 		}
+		toDate = datetime.Yesterday(sub[0].Date)
+	}
+	return ret, nil
+}
+
+// GetKlineSince returns kline points from fromDate (inclusive) to today.
+func GetKlineSince(code string, fromDate time.Time, options ...Option) ([]Point, error) {
+	if code == "" {
+		return nil, fmt.Errorf("get kline since: empty code")
+	}
+	toDate := time.Now()
+	ret := []Point{}
+	for {
+		opts := make([]Option, 0, len(options)+2)
+		opts = append(opts, options...)
+		opts = append(opts, WithFromDate(fromDate), WithDate(toDate))
+		sub, err := GetKline(code, opts...)
+		if err != nil {
+			return nil, fmt.Errorf("get kline since %s: [%w]", code, err)
+		}
+		if len(sub) == 0 {
+			break
+		}
+		// sub 按日期升序，sub[0] 是本页最早一天。
+		// 若本页最早一天已 <= fromDate，说明已覆盖起始日，截断早期多余点后收尾。
+		if !sub[0].Date.After(fromDate) {
+			for i := range sub {
+				if !sub[i].Date.Before(fromDate) {
+					sub = sub[i:]
+					break
+				}
+			}
+			ret = append(sub, ret...)
+			break
+		}
+		ret = append(sub, ret...)
 		toDate = datetime.Yesterday(sub[0].Date)
 	}
 	return ret, nil
@@ -56,7 +100,7 @@ func GetKline(code string, options ...Option) ([]Point, error) {
 	base := "https://proxy.finance.qq.com/cgi/cgi-bin/stockinfoquery/kline/app/get"
 	u, err := url.Parse(base)
 	if err != nil {
-		return nil, fmt.Errorf("get kline %s error: [%w]", code, err)
+		return nil, fmt.Errorf("get kline %s url parse: [%w]", code, err)
 	}
 	params := url.Values{}
 	params.Set("code", code)
@@ -68,7 +112,7 @@ func GetKline(code string, options ...Option) ([]Point, error) {
 	u.RawQuery = params.Encode()
 	var resp getKlineResp
 	if err := get(u.String(), &resp); err != nil {
-		return nil, fmt.Errorf("get kline %s error: [%w]", code, err)
+		return nil, fmt.Errorf("get kline %s: [%w]", code, err)
 	}
 	arr := []Point{}
 	for _, node := range resp.Data.Nodes {
@@ -89,7 +133,7 @@ func getBoardRankList(code string, options ...Option) (*getBoardRankListRespData
 	base := "https://proxy.finance.qq.com/cgi/cgi-bin/rank/hs/getBoardRankList"
 	u, err := url.Parse(base)
 	if err != nil {
-		return nil, fmt.Errorf("get board rank list %s error: [%w]", code, err)
+		return nil, fmt.Errorf("get board rank list %s url parse: [%w]", code, err)
 	}
 	params := url.Values{}
 	params.Set("_appver", "11.14.0")
@@ -104,10 +148,10 @@ func getBoardRankList(code string, options ...Option) (*getBoardRankListRespData
 	u.RawQuery = params.Encode()
 	var resp getBoardRankListResp
 	if err := get(u.String(), &resp); err != nil {
-		return nil, fmt.Errorf("get board rank list %s error: [%w]", code, err)
+		return nil, fmt.Errorf("get board rank list %s: [%w]", code, err)
 	}
 	if resp.Code != 0 {
-		return nil, fmt.Errorf("get board rank list %s error: %v", code, resp.Msg)
+		return nil, fmt.Errorf("get board rank list %s: %v", code, resp.Msg)
 	}
 	return resp.Data, nil
 }
@@ -203,7 +247,7 @@ func getRank(options ...Option) (*getRankRespData, error) {
 	endpoint := "https://proxy.finance.qq.com/cgi/cgi-bin/rank/pt/getRank"
 	u, err := url.Parse(endpoint)
 	if err != nil {
-		return nil, fmt.Errorf("url parse error: [%w]", err)
+		return nil, fmt.Errorf("get rank url parse: [%w]", err)
 	}
 	params := &url.Values{}
 	params.Add("count", "40")
@@ -217,7 +261,7 @@ func getRank(options ...Option) (*getRankRespData, error) {
 	u.RawQuery = params.Encode()
 	resp := &getRankResp{}
 	if err := get(u.String(), resp); err != nil {
-		return nil, fmt.Errorf("finance get error: [%w]", err)
+		return nil, fmt.Errorf("get rank: [%w]", err)
 	}
 	return resp.Data, nil
 }
@@ -269,18 +313,18 @@ type getRankRespData struct {
 func get(url string, resp any) error {
 	rsp, err := http.Get(url)
 	if err != nil {
-		return fmt.Errorf("http get url %s error: [%w]", url, err)
+		return fmt.Errorf("http get %s: [%w]", url, err)
 	}
 	defer rsp.Body.Close()
 	body, err := io.ReadAll(rsp.Body)
 	if err != nil {
-		return fmt.Errorf("url %s io read all error: [%w]", url, err)
+		return fmt.Errorf("io read all %s: [%w]", url, err)
 	}
 	if rsp.StatusCode != http.StatusOK {
-		return fmt.Errorf("url %s status code %d error: [%s]", url, rsp.StatusCode, string(body))
+		return fmt.Errorf("status code %s %d: [%s]", url, rsp.StatusCode, string(body))
 	}
 	if err := json.Unmarshal(body, resp); err != nil {
-		return fmt.Errorf("url %s json unmarshal error: [%w]", url, err)
+		return fmt.Errorf("json unmarshal %s: [%w]", url, err)
 	}
 	return nil
 }
