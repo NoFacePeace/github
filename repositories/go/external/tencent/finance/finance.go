@@ -20,13 +20,18 @@ var (
 
 type Point struct {
 	Last   float64   `json:"last"`
+	Open   float64   `json:"open"`
+	High   float64   `json:"high"`
+	Low    float64   `json:"low"`
 	Date   time.Time `json:"date"`
 	Volume float64   `json:"volume"`
+	Amount float64   `json:"amout"`
 }
 
 type Stock struct {
-	Code string
-	Name string
+	Code   string
+	Name   string
+	Market string
 }
 
 func GetAllKline(code string, options ...Option) ([]Point, error) {
@@ -69,7 +74,11 @@ func GetKline(code string, options ...Option) ([]Point, error) {
 	for _, node := range resp.Data.Nodes {
 		p := Point{}
 		p.Last = node.Last
+		p.Open = node.Open
+		p.Low = node.Low
+		p.High = node.High
 		p.Volume = node.Volume
+		p.Amount = node.Amount
 		p.Date, _ = time.Parse(datetime.LayoutDateWithDash, node.Date)
 		arr = append(arr, p)
 	}

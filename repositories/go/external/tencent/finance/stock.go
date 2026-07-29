@@ -6,6 +6,11 @@ var (
 	// stock type
 	AStock                 StockType = "aStock"
 	listStocksDefaultCount           = 200
+	MarketType                       = map[string]string{
+		"GP-A":     "主板",
+		"GP-A-KCB": "科创板",
+		"GP-A-CYB": "创业板",
+	}
 )
 
 func ListStocks(options ...ListStocksOption) ([]Stock, error) {
@@ -26,8 +31,9 @@ func ListStocks(options ...ListStocksOption) ([]Stock, error) {
 		}
 		for _, node := range data.RankList {
 			stocks = append(stocks, Stock{
-				Code: node.Code,
-				Name: node.Name,
+				Code:   node.Code,
+				Name:   node.Name,
+				Market: MarketType[node.StockType],
 			})
 		}
 		if len(stocks) >= cfg.count {

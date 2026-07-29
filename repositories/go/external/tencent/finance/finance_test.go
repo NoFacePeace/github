@@ -20,7 +20,7 @@ func TestGetKline(t *testing.T) {
 		{
 			name: "test",
 			args: args{
-				code:    "sh600941",
+				code:    "sh000300",
 				options: []Option{WithAdjuct(NoneAdjust)},
 			},
 		},
