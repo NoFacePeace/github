@@ -46,9 +46,11 @@ func ListStocks(options ...ListStocksOption) ([]Stock, error) {
 		}
 		for _, node := range data.RankList {
 			stocks = append(stocks, Stock{
-				Code:   node.Code,
-				Name:   node.Name,
-				Market: MarketType[node.StockType],
+				Code:       node.Code,
+				Name:       node.Name,
+				Market:     MarketType[node.StockType],
+				TotalValue: node.Zsz,
+				FlowValue:  node.Ltsz,
 			})
 		}
 		if (bounded && len(stocks) >= cfg.count) || len(data.RankList) < page || data.Total > 0 && len(stocks) >= data.Total {
