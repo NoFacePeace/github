@@ -31,9 +31,11 @@ type Point struct {
 }
 
 type Stock struct {
-	Code   string
-	Name   string
-	Market string
+	Code       string  `json:"code"`
+	Name       string  `json:"name"`
+	Market     string  `json:"market"`
+	TotalValue float64 `json:"total_value"`
+	FlowValue  float64 `json:"flow_value"`
 }
 
 func GetAllKline(code string, options ...Option) ([]Point, error) {
