@@ -15,6 +15,7 @@ import (
 	"github.com/go-logr/logr"
 	"go.opentelemetry.io/contrib/bridges/otellogr"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	"go.opentelemetry.io/otel/exporters/prometheus"
 	"go.opentelemetry.io/otel/exporters/stdout/stdoutlog"
@@ -41,6 +42,7 @@ type config struct {
 	metricReaders   []sdkmetric.Reader
 	metricFactories []metricReaderFactory
 	logProcessors   []sdklog.Processor
+	logFactories    []logProcessorFactory
 }
 
 // traceExporterFactory 在 Setup 阶段创建 Trace exporter，避免 Option 应用时产生
@@ -49,6 +51,9 @@ type traceExporterFactory func(context.Context) (sdktrace.SpanExporter, error)
 
 // metricReaderFactory 在 Setup 阶段创建 Metric Reader。
 type metricReaderFactory func(context.Context) (sdkmetric.Reader, error)
+
+// logProcessorFactory 在 Setup 阶段创建 Log Processor。
+type logProcessorFactory func(context.Context) (sdklog.Processor, error)
 
 // WithServiceName 设置 service.name 资源属性。该属性会同时应用于 Trace、Metric
 // 与 Log；若同时传入携带 service.name 的 Resource，以此 Option 的值为准。
@@ -154,6 +159,28 @@ func WithLogProcessor(processor sdklog.Processor) Option {
 	}
 }
 
+// WithOtlploghttp 添加 OTLP/HTTP Log exporter。没有传入选项时，使用环境变量或
+// 默认 endpoint，并允许明文 HTTP。调用方可使用 otlploghttp.WithEndpointURL 配置
+// Loki 的 OTLP endpoint。
+//
+// 该 Option 仅保存 Processor 工厂；实际 exporter 在 Setup(ctx, ...) 中创建。
+func WithOtlploghttp(options ...otlploghttp.Option) Option {
+	optionsCopy := append([]otlploghttp.Option(nil), options...)
+	if len(optionsCopy) == 0 {
+		optionsCopy = []otlploghttp.Option{otlploghttp.WithInsecure()}
+	}
+	return func(cfg *config) error {
+		cfg.logFactories = append(cfg.logFactories, func(ctx context.Context) (sdklog.Processor, error) {
+			exporter, err := otlploghttp.New(ctx, optionsCopy...)
+			if err != nil {
+				return nil, fmt.Errorf("create OTLP HTTP log exporter: %w", err)
+			}
+			return sdklog.NewBatchProcessor(exporter), nil
+		})
+		return nil
+	}
+}
+
 // Setup 构建并安装 OpenTelemetry 全局 Provider，返回用于刷出缓存并关闭 Provider
 // 的函数。调用方应在 main 中只调用一次，并使用带超时的 context 调用 shutdown。
 // 所有 Provider 会共享同一份 Resource；在全部创建成功之前不会修改全局状态。
@@ -187,7 +214,7 @@ func Setup(ctx context.Context, options ...Option) (func(context.Context) error,
 		return fail(err)
 	}
 	shutdownFuncs = append(shutdownFuncs, meterProvider.Shutdown)
-	loggerProvider, err := newLoggerProvider(cfg, res)
+	loggerProvider, err := newLoggerProvider(ctx, cfg, res)
 	if err != nil {
 		return fail(err)
 	}
@@ -276,8 +303,17 @@ func newMeterProvider(ctx context.Context, cfg config, res *resource.Resource) (
 }
 
 // newLoggerProvider 使用所有配置的 Processor 创建 Provider。
-func newLoggerProvider(cfg config, res *resource.Resource) (*sdklog.LoggerProvider, error) {
-	processors := cfg.logProcessors
+func newLoggerProvider(ctx context.Context, cfg config, res *resource.Resource) (*sdklog.LoggerProvider, error) {
+	processors := append([]sdklog.Processor(nil), cfg.logProcessors...)
+	var created []sdklog.Processor
+	for _, factory := range cfg.logFactories {
+		processor, err := factory(ctx)
+		if err != nil {
+			return nil, errors.Join(err, shutdownLogProcessors(ctx, created))
+		}
+		created = append(created, processor)
+		processors = append(processors, processor)
+	}
 	if len(processors) == 0 {
 		exporter, err := stdoutlog.New()
 		if err != nil {
@@ -325,6 +361,15 @@ func shutdownMetricReaders(ctx context.Context, readers []sdkmetric.Reader) erro
 	var err error
 	for _, reader := range slices.Backward(readers) {
 		err = errors.Join(err, reader.Shutdown(ctx))
+	}
+	return err
+}
+
+// shutdownLogProcessors 关闭尚未交给 Provider 管理的 Log Processor。
+func shutdownLogProcessors(ctx context.Context, processors []sdklog.Processor) error {
+	var err error
+	for _, processor := range slices.Backward(processors) {
+		err = errors.Join(err, processor.Shutdown(ctx))
 	}
 	return err
 }
