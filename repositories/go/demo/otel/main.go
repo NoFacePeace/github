@@ -5,11 +5,12 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	utilginotel "github.com/NoFacePeace/github/repositories/go/utils/gin/otel"
 	utilotel "github.com/NoFacePeace/github/repositories/go/utils/otel"
-	"github.com/NoFacePeace/github/repositories/go/utils/signal"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.opentelemetry.io/contrib/bridges/otelslog"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
@@ -24,8 +25,18 @@ var (
 )
 
 func main() {
-	ctx := signal.SetupSignalHandler()
-	otelShutdown, err := utilotel.Setup(ctx, utilotel.WithServiceName("main"), utilotel.WithMetricPrometheus(), utilotel.WithOtlptracehttp())
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+	go func() {
+		<-ctx.Done()
+		stop() // 恢复默认信号行为，使第二次 Ctrl-C 可强制终止进程。
+	}()
+
+	otelShutdown, err := utilotel.Setup(ctx,
+		utilotel.WithServiceName("main"),
+		utilotel.WithOtlptracehttp(), // 本地 collector 使用明文 HTTP；生产环境应使用 TLS。
+		utilotel.WithMetricPrometheus(),
+	)
 	if err != nil {
 		slog.Error("otel set up error", "error", err)
 		os.Exit(1)
