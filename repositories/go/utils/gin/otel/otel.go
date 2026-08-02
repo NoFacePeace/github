@@ -26,7 +26,13 @@ func InjectPropagatorToResponseHeader(c *gin.Context) {
 }
 
 func DebugPrintRouteFunc(httpMethod, absolutePath, handlerName string, nuHandlers int) {
-	logger.Debug("gin debug", "method", httpMethod, "path", absolutePath, "handler name", handlerName, "num handlers", nuHandlers)
+	logger.Debug(
+		"Gin route registered",
+		"http.request.method", httpMethod,
+		"http.route", absolutePath,
+		"code.function.name", handlerName,
+		"gin.handlers.count", nuHandlers,
+	)
 }
 
 // https://github.com/gin-gonic/gin/blob/master/logger.go#L162
@@ -43,11 +49,22 @@ func Logger(c *gin.Context) {
 	param.StatusCode = c.Writer.Status()
 	param.ErrorMessage = c.Errors.ByType(gin.ErrorTypePrivate).String()
 	param.BodySize = c.Writer.Size()
-	if raw != "" {
-		path = path + "?" + raw
-	}
 	param.Path = path
-	logger.InfoContext(c.Request.Context(), "gin", "timestamp", param.TimeStamp, "status code", param.StatusCode, "latency", param.Latency, "client ip", param.ClientIP, "method", param.Method, "path", param.Path, "error message", param.ErrorMessage)
+	attributes := []any{
+		"http.response.status_code", param.StatusCode,
+		"duration", param.Latency,
+		"client.address", param.ClientIP,
+		"http.request.method", param.Method,
+		"url.path", param.Path,
+		"http.response.body.size", param.BodySize,
+	}
+	if raw != "" {
+		attributes = append(attributes, "url.query", raw)
+	}
+	if param.ErrorMessage != "" {
+		attributes = append(attributes, "error.message", param.ErrorMessage)
+	}
+	logger.InfoContext(c.Request.Context(), "gin", attributes...)
 }
 
 // https://github.com/gin-gonic/gin/blob/master/recovery.go#L53
