@@ -30,7 +30,7 @@ func DebugPrintRouteFunc(httpMethod, absolutePath, handlerName string, nuHandler
 		"Gin route registered",
 		"http.request.method", httpMethod,
 		"http.route", absolutePath,
-		"code.function.name", handlerName,
+		"gin.handler.name", handlerName,
 		"gin.handlers.count", nuHandlers,
 	)
 }
