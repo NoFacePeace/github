@@ -9,6 +9,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"sync"
 
 	"github.com/go-logr/logr"
@@ -304,8 +305,8 @@ func newShutdown(shutdownFuncs []func(context.Context) error) func(context.Conte
 // shutdownAll 反向关闭所有 Provider，用于初始化失败时清理已经创建的组件。
 func shutdownAll(ctx context.Context, shutdownFuncs []func(context.Context) error) error {
 	var err error
-	for i := len(shutdownFuncs) - 1; i >= 0; i-- {
-		err = errors.Join(err, shutdownFuncs[i](ctx))
+	for _, shutdownFunc := range slices.Backward(shutdownFuncs) {
+		err = errors.Join(err, shutdownFunc(ctx))
 	}
 	return err
 }
@@ -313,8 +314,8 @@ func shutdownAll(ctx context.Context, shutdownFuncs []func(context.Context) erro
 // shutdownTraceExporters 关闭尚未交给 Provider 管理的 exporter。
 func shutdownTraceExporters(ctx context.Context, exporters []sdktrace.SpanExporter) error {
 	var err error
-	for i := len(exporters) - 1; i >= 0; i-- {
-		err = errors.Join(err, exporters[i].Shutdown(ctx))
+	for _, exporter := range slices.Backward(exporters) {
+		err = errors.Join(err, exporter.Shutdown(ctx))
 	}
 	return err
 }
@@ -322,8 +323,8 @@ func shutdownTraceExporters(ctx context.Context, exporters []sdktrace.SpanExport
 // shutdownMetricReaders 关闭尚未交给 Provider 管理的 Reader。
 func shutdownMetricReaders(ctx context.Context, readers []sdkmetric.Reader) error {
 	var err error
-	for i := len(readers) - 1; i >= 0; i-- {
-		err = errors.Join(err, readers[i].Shutdown(ctx))
+	for _, reader := range slices.Backward(readers) {
+		err = errors.Join(err, reader.Shutdown(ctx))
 	}
 	return err
 }
