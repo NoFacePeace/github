@@ -52,6 +52,7 @@ func main() {
 	}()
 	// gin.SetMode(gin.ReleaseMode)
 	// r := gin.Default()
+	gin.DebugPrintRouteFunc = utilginotel.DebugPrintRouteFunc
 	r := gin.New()
 	r.Use(otelgin.Middleware("gin"))
 	r.Use(utilginotel.Logger, utilginotel.Recovery)
