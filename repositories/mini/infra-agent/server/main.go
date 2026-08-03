@@ -13,10 +13,13 @@ import (
 	ginotel "github.com/NoFacePeace/github/repositories/go/utils/gin/otel"
 	"github.com/NoFacePeace/github/repositories/go/utils/otel"
 	"github.com/gin-gonic/gin"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.opentelemetry.io/contrib/bridges/otelslog"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp"
+	"infra-agent/server/handlers"
+	"infra-agent/server/routers"
+	"infra-agent/server/services"
+	"infra-agent/server/tasks"
 )
 
 func main() {
@@ -59,12 +62,17 @@ func main() {
 	// 创建 HTTP 路由，并安装遥测、访问日志和 panic 恢复中间件。
 	router := gin.New()
 	router.Use(otelgin.Middleware("infra-agent"), ginotel.Logger, ginotel.Recovery)
-	// 提供用于连通性检查的轻量接口。
-	router.GET("/ping", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{"message": "pong"})
-	})
-	// 暴露 Prometheus 指标，供采集器定期拉取。
-	router.GET("/metrics", gin.WrapH(promhttp.Handler()))
+	// 在应用入口集中组装服务、处理器和路由依赖。
+	healthService := services.NewHealthService()
+	healthHandler := handlers.NewHealthHandler(healthService)
+	taskService := tasks.NewTaskService()
+	taskHandler := handlers.NewTaskHandler(taskService)
+	routerDependencies := routers.Dependencies{
+		HealthHandler: healthHandler,
+		TaskHandler:   taskHandler,
+	}
+	// 集中注册各服务模块提供的 HTTP 路由。
+	routers.Register(router, routerDependencies)
 
 	// 将 Gin 路由挂载到可优雅关闭的标准库 HTTP Server。
 	server := &http.Server{
