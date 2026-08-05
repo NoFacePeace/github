@@ -13,6 +13,18 @@ type String struct {
 	len int
 }
 
+// NewString 模拟 Go 创建字符串描述符的过程。
+//
+// 对于字符串字面量，编译器会将字节数据放入只读数据区，并构造包含数据指针和字节长度的
+// string 描述符。该函数读取 source 的底层数据指针与长度，不分配内存也不复制字节。
+// 需要从可修改字节切片创建独立字符串时，应使用 BytesToString。
+func NewString(source string) String {
+	return String{
+		str: unsafe.Pointer(unsafe.StringData(source)),
+		len: len(source),
+	}
+}
+
 // ConcatStrings 模拟 Go 的字符串拼接流程。
 //
 // Go 编译器会将 + 表达式转换为 runtime.concatstring2 到
