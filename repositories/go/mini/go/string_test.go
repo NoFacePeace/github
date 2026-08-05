@@ -2,6 +2,17 @@ package mini
 
 import "testing"
 
+func TestNewString(t *testing.T) {
+	got := NewString("你好")
+
+	if got.len != len("你好") {
+		t.Fatalf("NewString().len = %d, want %d", got.len, len("你好"))
+	}
+	if got.str == nil {
+		t.Fatal("NewString().str = nil")
+	}
+}
+
 func TestConcatStrings(t *testing.T) {
 	tests := []struct {
 		name  string
