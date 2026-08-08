@@ -1,7 +1,6 @@
 package finance
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -11,7 +10,6 @@ import (
 	"time"
 
 	"github.com/NoFacePeace/github/repositories/go/utils/datetime"
-	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
 var (
@@ -331,38 +329,4 @@ func get(url string, resp any) error {
 		return fmt.Errorf("json unmarshal %s: [%w]", url, err)
 	}
 	return nil
-}
-
-// GetKlineSinceToolInput is the input schema for the GetKlineSince MCP tool.
-type GetKlineSinceToolInput struct {
-	Code     string `json:"code" jsonschema:"the stock code, e.g. sh600941"`
-	FromDate string `json:"fromDate" jsonschema:"the start date inclusive, format 2006-01-02"`
-}
-
-// GetKlineSinceToolOutput is the output schema for the GetKlineSince MCP tool.
-type GetKlineSinceToolOutput struct {
-	Points []Point `json:"points" jsonschema:"the kline points from fromDate to today"`
-}
-
-// GetKlineSinceToolMeta is the MCP tool metadata for GetKlineSinceTool.
-var GetKlineSinceToolMeta = &mcp.Tool{
-	Name:        "get_kline_since",
-	Description: "get kline points from a given date (inclusive) to today for a stock",
-}
-
-// GetKlineSinceTool wraps GetKlineSince as an MCP tool.
-func GetKlineSinceTool(ctx context.Context, req *mcp.CallToolRequest, input GetKlineSinceToolInput) (
-	*mcp.CallToolResult,
-	GetKlineSinceToolOutput,
-	error,
-) {
-	fromDate, err := time.Parse(datetime.LayoutDateWithDash, input.FromDate)
-	if err != nil {
-		return nil, GetKlineSinceToolOutput{}, fmt.Errorf("get kline since parse fromDate %s: [%w]", input.FromDate, err)
-	}
-	points, err := GetKlineSince(input.Code, fromDate)
-	if err != nil {
-		return nil, GetKlineSinceToolOutput{}, fmt.Errorf("get kline since: [%w]", err)
-	}
-	return nil, GetKlineSinceToolOutput{Points: points}, nil
 }
