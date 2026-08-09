@@ -9,11 +9,11 @@ import (
 
 // TaskHandler 处理任务相关的 HTTP 请求。
 type TaskHandler struct {
-	taskService tasks.TaskService
+	taskService tasks.Service
 }
 
 // NewTaskHandler 创建任务处理器。
-func NewTaskHandler(taskService tasks.TaskService) *TaskHandler {
+func NewTaskHandler(taskService tasks.Service) *TaskHandler {
 	return &TaskHandler{taskService: taskService}
 }
 

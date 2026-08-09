@@ -3,3 +3,8 @@ package tasks
 
 // Task 表示一个任务。
 type Task struct{}
+
+// createRun 创建任务的一次运行。
+func (t Task) createRun() run {
+	return run{}
+}

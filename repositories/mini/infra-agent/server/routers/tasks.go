@@ -8,5 +8,5 @@ func init() {
 
 // registerTaskRoutes 注册任务接口。
 func registerTaskRoutes(router gin.IRouter, dependencies Dependencies) {
-	router.POST("/tasks", dependencies.TaskHandler.Create)
+	router.POST("/v1/tasks", dependencies.TaskHandler.Create)
 }
