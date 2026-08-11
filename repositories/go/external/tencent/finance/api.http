@@ -4,3 +4,7 @@ https://proxy.finance.qq.com/cgi/cgi-bin/stockinfoquery/fs/app/get?warrant=false
 
 ### 获取行业榜单
 GET https://proxy.finance.qq.com/cgi/cgi-bin/rank/pt/getRank?direct=down&board_type=hy2&sort_type=PriceRatio
+
+
+###
+GET https://proxy.finance.qq.com/ifzqgtimg/stock/corp/finance/detail?symbol=600009&rttype=all&num=10
