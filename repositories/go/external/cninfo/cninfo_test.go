@@ -5,6 +5,8 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -130,29 +132,93 @@ func TestQueryLatestReport(t *testing.T) {
 }
 
 func TestResolveSecurity(t *testing.T) {
+	stockFilePath := filepath.Join(t.TempDir(), szseStockFileName)
+	if err := os.WriteFile(stockFilePath, []byte(`{"stockList":[{"code":"000001","category":"A股","orgId":"gssz0000001"}]}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
 	httpClient := &http.Client{Transport: roundTripper(func(request *http.Request) (*http.Response, error) {
-		if request.Method != http.MethodPost {
-			t.Errorf("method = %s", request.Method)
-		}
-		if request.URL.Path != "/new/information/topSearch/query" {
-			t.Errorf("path = %q", request.URL.Path)
-		}
-		if got := request.URL.Query().Get("keyWord"); got != "000001" {
-			t.Errorf("keyWord = %q", got)
-		}
-		return &http.Response{
-			StatusCode: http.StatusOK,
-			Status:     "200 OK",
-			Body:       io.NopCloser(strings.NewReader(`[{"code":"000001","orgId":"gssz0000001"}]`)),
-			Header:     make(http.Header),
-		}, nil
+		t.Fatal("unexpected download")
+		return nil, nil
 	})}
 
-	security, err := resolveSecurityWithClient(context.Background(), httpClient, "https://example.com", "sz000001")
+	security, err := resolveSecurityWithClient(context.Background(), httpClient, "https://example.com/szse_stock.json", stockFilePath, "sz000001")
 	if err != nil {
 		t.Fatal(err)
 	}
 	if got := security.stock(); got != "000001,gssz0000001" {
+		t.Errorf("stock = %q", got)
+	}
+}
+
+func TestResolveSecuritySupportsShanghaiStock(t *testing.T) {
+	stockFilePath := filepath.Join(t.TempDir(), szseStockFileName)
+	if err := os.WriteFile(stockFilePath, []byte(`{"stockList":[{"code":"600547","category":"A股","orgId":"gssh0600547"}]}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	httpClient := &http.Client{Transport: roundTripper(func(request *http.Request) (*http.Response, error) {
+		t.Fatal("unexpected download")
+		return nil, nil
+	})}
+
+	security, err := resolveSecurityWithClient(context.Background(), httpClient, "https://example.com/szse_stock.json", stockFilePath, "sh600547")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := security.stock(); got != "600547,gssh0600547" {
+		t.Errorf("stock = %q", got)
+	}
+}
+
+func TestResolveSecurityDownloadsMissingFile(t *testing.T) {
+	stockFilePath := filepath.Join(t.TempDir(), szseStockFileName)
+	httpClient := &http.Client{Transport: roundTripper(func(request *http.Request) (*http.Response, error) {
+		if request.Method != http.MethodGet {
+			t.Errorf("method = %s", request.Method)
+		}
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Status:     "200 OK",
+			Body:       io.NopCloser(strings.NewReader(`{"stockList":[{"code":"002594","category":"A股","orgId":"gshk0001211"}]}`)),
+			Header:     make(http.Header),
+		}, nil
+	})}
+
+	security, err := resolveSecurityWithClient(context.Background(), httpClient, "https://example.com/szse_stock.json", stockFilePath, "sz002594")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := security.stock(); got != "002594,gshk0001211" {
+		t.Errorf("stock = %q", got)
+	}
+	if _, err := os.Stat(stockFilePath); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestResolveSecurityRedownloadsWhenNotFound(t *testing.T) {
+	stockFilePath := filepath.Join(t.TempDir(), szseStockFileName)
+	if err := os.WriteFile(stockFilePath, []byte(`{"stockList":[{"code":"000001","category":"A股","orgId":"gssz0000001"}]}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	downloads := 0
+	httpClient := &http.Client{Transport: roundTripper(func(request *http.Request) (*http.Response, error) {
+		downloads++
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Status:     "200 OK",
+			Body:       io.NopCloser(strings.NewReader(`{"stockList":[{"code":"002594","category":"A股","orgId":"gshk0001211"}]}`)),
+			Header:     make(http.Header),
+		}, nil
+	})}
+
+	security, err := resolveSecurityWithClient(context.Background(), httpClient, "https://example.com/szse_stock.json", stockFilePath, "sz002594")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if downloads != 1 {
+		t.Errorf("downloads = %d", downloads)
+	}
+	if got := security.stock(); got != "002594,gshk0001211" {
 		t.Errorf("stock = %q", got)
 	}
 }

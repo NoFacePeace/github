@@ -5,15 +5,22 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 )
 
-const defaultBaseURL = "https://www.cninfo.com.cn"
+const (
+	defaultBaseURL    = "https://www.cninfo.com.cn"
+	szseStockURL      = defaultBaseURL + "/new/data/szse_stock.json"
+	szseStockFileName = "szse_stock.json"
+)
 
 const (
 	annualReportSummaryPageSize = 30
@@ -172,56 +179,133 @@ func (s security) stock() string {
 	return s.code + "," + s.orgID
 }
 
-type securitySearchResult struct {
-	Code  string `json:"code"`
-	OrgID string `json:"orgId"`
+type stockRecord struct {
+	Code     string `json:"code"`
+	Category string `json:"category"`
+	OrgID    string `json:"orgId"`
+}
+
+type szseStockFile struct {
+	StockList []stockRecord `json:"stockList"`
 }
 
 func resolveSecurity(ctx context.Context, stock string) (security, error) {
-	return resolveSecurityWithClient(ctx, http.DefaultClient, defaultBaseURL, stock)
+	stockFilePath, err := szseStockFilePath()
+	if err != nil {
+		return security{}, err
+	}
+	return resolveSecurityWithClient(ctx, http.DefaultClient, szseStockURL, stockFilePath, stock)
 }
 
-func resolveSecurityWithClient(ctx context.Context, httpClient *http.Client, baseURL, stock string) (security, error) {
-	market, code, err := splitStock(stock)
+func resolveSecurityWithClient(ctx context.Context, httpClient *http.Client, stockURL, stockFilePath, stock string) (security, error) {
+	_, code, err := splitStock(stock)
 	if err != nil {
 		return security{}, err
 	}
 
-	params := url.Values{
-		"keyWord": {code},
-		"maxNum":  {"10"},
+	stockFile, err := readSzseStockFile(stockFilePath)
+	switch {
+	case errors.Is(err, os.ErrNotExist):
+		if err := downloadSzseStockFile(ctx, httpClient, stockURL, stockFilePath); err != nil {
+			return security{}, err
+		}
+		stockFile, err = readSzseStockFile(stockFilePath)
+		if err != nil {
+			return security{}, err
+		}
+	case err != nil:
+		return security{}, err
 	}
-	httpRequest, err := http.NewRequestWithContext(ctx, http.MethodPost, baseURL+"/new/information/topSearch/query?"+params.Encode(), nil)
+
+	if result, found := findStock(stockFile.StockList, code); found {
+		return result, nil
+	}
+
+	if err := downloadSzseStockFile(ctx, httpClient, stockURL, stockFilePath); err != nil {
+		return security{}, err
+	}
+	stockFile, err = readSzseStockFile(stockFilePath)
 	if err != nil {
-		return security{}, fmt.Errorf("http.NewRequestWithContext: %w", err)
+		return security{}, err
+	}
+	if result, found := findStock(stockFile.StockList, code); found {
+		return result, nil
+	}
+	return security{}, fmt.Errorf("security not found: %s", stock)
+}
+
+func findStock(records []stockRecord, code string) (security, bool) {
+	for _, result := range records {
+		if result.Code == code && result.Category == "A股" && result.OrgID != "" {
+			return security{code: result.Code, orgID: result.OrgID}, true
+		}
+	}
+	return security{}, false
+}
+
+func szseStockFilePath() (string, error) {
+	cacheDirectory, err := os.UserCacheDir()
+	if err != nil {
+		return "", fmt.Errorf("os.UserCacheDir: %w", err)
+	}
+	return filepath.Join(cacheDirectory, "cninfo", szseStockFileName), nil
+}
+
+func readSzseStockFile(stockFilePath string) (szseStockFile, error) {
+	body, err := os.ReadFile(stockFilePath)
+	if err != nil {
+		return szseStockFile{}, fmt.Errorf("os.ReadFile: %w", err)
+	}
+
+	var stockFile szseStockFile
+	if err := json.Unmarshal(body, &stockFile); err != nil {
+		return szseStockFile{}, fmt.Errorf("json.Unmarshal: %w", err)
+	}
+	return stockFile, nil
+}
+
+func downloadSzseStockFile(ctx context.Context, httpClient *http.Client, stockURL, stockFilePath string) error {
+	httpRequest, err := http.NewRequestWithContext(ctx, http.MethodGet, stockURL, nil)
+	if err != nil {
+		return fmt.Errorf("http.NewRequestWithContext: %w", err)
 	}
 
 	response, err := httpClient.Do(httpRequest)
 	if err != nil {
-		return security{}, fmt.Errorf("http.Client.Do: %w", err)
+		return fmt.Errorf("http.Client.Do: %w", err)
 	}
 	defer response.Body.Close()
 
 	if response.StatusCode < http.StatusOK || response.StatusCode >= http.StatusMultipleChoices {
 		body, _ := io.ReadAll(io.LimitReader(response.Body, 4<<10))
-		return security{}, fmt.Errorf("unexpected status %s: %s", response.Status, string(body))
+		return fmt.Errorf("unexpected status %s: %s", response.Status, string(body))
+	}
+	body, err := io.ReadAll(io.LimitReader(response.Body, 10<<20))
+	if err != nil {
+		return fmt.Errorf("io.ReadAll: %w", err)
 	}
 
-	var results []securitySearchResult
-	if err := json.NewDecoder(response.Body).Decode(&results); err != nil {
-		return security{}, fmt.Errorf("json.Decoder.Decode: %w", err)
+	if err := os.MkdirAll(filepath.Dir(stockFilePath), 0o755); err != nil {
+		return fmt.Errorf("os.MkdirAll: %w", err)
 	}
+	tempFile, err := os.CreateTemp(filepath.Dir(stockFilePath), szseStockFileName+"-*")
+	if err != nil {
+		return fmt.Errorf("os.CreateTemp: %w", err)
+	}
+	tempFilePath := tempFile.Name()
+	defer os.Remove(tempFilePath)
 
-	orgIDPrefix := "gssz"
-	if market == "sh" {
-		orgIDPrefix = "gssh"
+	if _, err := tempFile.Write(body); err != nil {
+		tempFile.Close()
+		return fmt.Errorf("os.File.Write: %w", err)
 	}
-	for _, result := range results {
-		if result.Code == code && strings.HasPrefix(result.OrgID, orgIDPrefix) {
-			return security{code: result.Code, orgID: result.OrgID}, nil
-		}
+	if err := tempFile.Close(); err != nil {
+		return fmt.Errorf("os.File.Close: %w", err)
 	}
-	return security{}, fmt.Errorf("security not found: %s", stock)
+	if err := os.Rename(tempFilePath, stockFilePath); err != nil {
+		return fmt.Errorf("os.Rename: %w", err)
+	}
+	return nil
 }
 
 func splitStock(stock string) (market, code string, err error) {
