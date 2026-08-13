@@ -1,0 +1,14 @@
+@baseUrl = https://www.cninfo.com.cn
+
+### 查询平安银行（000001）的定期报告公告
+POST {{baseUrl}}/new/hisAnnouncement/query
+Content-Type: application/x-www-form-urlencoded; charset=UTF-8
+
+stock=000001%2Cgssz0000001&tabName=fulltext&pageSize=30&pageNum=1&column=szse&category=category_ndbg_szsh%3Bcategory_bndbg_szsh%3Bcategory_yjdbg_szsh%3Bcategory_sjdbg_szsh%3B&plate=sz&seDate=&searchkey=&secid=&sortName=&sortType=&isHLtitle=true
+
+
+### 查询平安银行（000001）的定期报告公告
+POST {{baseUrl}}/new/hisAnnouncement/query
+Content-Type: application/x-www-form-urlencoded; charset=UTF-8
+
+stock=000001%2Cgssz0000001&category=category_ndbg_szsh&tabName=fulltext
