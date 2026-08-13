@@ -47,7 +47,6 @@ func ListStocks(options ...ListStocksOption) ([]Stock, error) {
 				Name:       node.Name,
 				Market:     MarketType[node.StockType],
 				Price:      node.Zxj,
-				Shares:     node.Zgb,
 				TotalValue: node.Zsz,
 				FlowValue:  node.Ltsz,
 			})
