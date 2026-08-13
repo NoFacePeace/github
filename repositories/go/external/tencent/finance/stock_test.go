@@ -16,7 +16,11 @@ func TestListStocks(t *testing.T) {
 	}{
 		{
 			name: "test",
-			args: args{},
+			args: args{
+				options: []ListStocksOption{
+					WithListStocksCount(10),
+				},
+			},
 		},
 	}
 	for _, tt := range tests {
@@ -29,6 +33,9 @@ func TestListStocks(t *testing.T) {
 			if len(got) == 0 {
 				t.Errorf("ListStocks() got = %v, want non-empty", got)
 				return
+			}
+			if len(got) != 10 {
+				t.Errorf("ListStocks() got %d stocks, want 10", len(got))
 			}
 		})
 	}

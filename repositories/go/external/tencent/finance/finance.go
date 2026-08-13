@@ -32,6 +32,8 @@ type Stock struct {
 	Code       string  `json:"code"`
 	Name       string  `json:"name"`
 	Market     string  `json:"market"`
+	Price      float64 `json:"price"`  // 最新价
+	Shares     float64 `json:"shares"` // 总股本
 	TotalValue float64 `json:"total_value"`
 	FlowValue  float64 `json:"flow_value"`
 }
@@ -221,6 +223,7 @@ type getBoardRankListRespData struct {
 		Pn        float64 `json:"pn,string" gorm:"comment:市净率"`
 		Zsz       float64 `json:"zsz,string" gorm:"comment:总市值"`
 		Ltsz      float64 `json:"ltsz,string" gorm:"comment:流通市值"`
+		Zgb       float64 `json:"zgb,string" gorm:"comment:总股本"`
 		State     string  `json:"state" gorm:"varchar(255)"`
 		Speed     float64 `json:"speed,string" gorm:"comment:5分钟涨速"`
 		ZdfY      float64 `json:"zdf_y,string" gorm:"comment:年初至今涨跌幅"`
