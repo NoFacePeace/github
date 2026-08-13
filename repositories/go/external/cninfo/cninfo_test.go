@@ -64,11 +64,14 @@ func TestQueryAnnualReportSummaries(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if got := form.Get("category"); got != "category_ndbg_szsh" {
+		if got := form.Get("category"); got != categoryAnnualReport {
 			t.Errorf("category = %q", got)
 		}
-		if got := form.Get("searchkey"); got != "年度报告摘要" {
+		if got := form.Get("searchkey"); got != annualReportSummaryKeyword {
 			t.Errorf("searchkey = %q", got)
+		}
+		if got := form.Get("stock"); got != "000001,gssz0000001" {
+			t.Errorf("stock = %q", got)
 		}
 		return &http.Response{
 			StatusCode: http.StatusOK,
@@ -105,6 +108,9 @@ func TestQueryLatestReport(t *testing.T) {
 		}
 		if got := form.Get("searchkey"); got != "" {
 			t.Errorf("searchkey = %q", got)
+		}
+		if got := form.Get("stock"); got != "000001,gssz0000001" {
+			t.Errorf("stock = %q", got)
 		}
 		return &http.Response{
 			StatusCode: http.StatusOK,

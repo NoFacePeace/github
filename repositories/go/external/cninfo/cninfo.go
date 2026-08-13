@@ -23,12 +23,13 @@ const (
 	categoryFirstQuarterReport  = "category_yjdbg_szsh"
 	categoryThirdQuarterReport  = "category_sjdbg_szsh"
 	financialReportCategories   = categoryAnnualReport + ";" + categorySemiAnnualReport + ";" + categoryFirstQuarterReport + ";" + categoryThirdQuarterReport
+	annualReportSummaryKeyword  = "年度报告摘要"
 )
 
 // queryOption 用于配置公告查询的表单参数。
 type queryOption func(url.Values)
 
-// withStock sets stock, formatted as "证券代码,组织机构 ID"；为空时查询全市场公告。
+// withStock 设置 stock，格式为“证券代码,组织机构 ID”；为空时查询全市场公告。
 func withStock(stock string) queryOption {
 	return func(form url.Values) {
 		form.Set("stock", stock)
@@ -203,7 +204,7 @@ func queryAnnualReportSummariesWithClient(ctx context.Context, httpClient *http.
 		response, err := queryAnnouncementsWithClient(ctx, httpClient, baseURL,
 			withStock(stock),
 			withCategory(categoryAnnualReport),
-			withSearchKey("年度报告摘要"),
+			withSearchKey(annualReportSummaryKeyword),
 			withPageSize(annualReportSummaryPageSize),
 			withPageNum(pageNum),
 		)
