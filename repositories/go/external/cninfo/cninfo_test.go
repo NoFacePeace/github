@@ -81,7 +81,7 @@ func TestQueryAnnualReportSummaries(t *testing.T) {
 		}, nil
 	})}
 
-	summaries, err := queryAnnualReportSummariesWithClient(context.Background(), httpClient, "https://example.com", cninfoStock("sz000001"))
+	summaries, err := queryAnnualReportSummariesWithClient(context.Background(), httpClient, "https://example.com", "000001,gssz0000001")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -120,7 +120,7 @@ func TestQueryLatestReport(t *testing.T) {
 		}, nil
 	})}
 
-	report, err := queryLatestReportWithClient(context.Background(), httpClient, "https://example.com", cninfoStock("sz000001"))
+	report, err := queryLatestReportWithClient(context.Background(), httpClient, "https://example.com", "000001,gssz0000001")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -129,17 +129,52 @@ func TestQueryLatestReport(t *testing.T) {
 	}
 }
 
-func TestCNINFOStock(t *testing.T) {
+func TestResolveSecurity(t *testing.T) {
+	httpClient := &http.Client{Transport: roundTripper(func(request *http.Request) (*http.Response, error) {
+		if request.Method != http.MethodPost {
+			t.Errorf("method = %s", request.Method)
+		}
+		if request.URL.Path != "/new/information/topSearch/query" {
+			t.Errorf("path = %q", request.URL.Path)
+		}
+		if got := request.URL.Query().Get("keyWord"); got != "000001" {
+			t.Errorf("keyWord = %q", got)
+		}
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Status:     "200 OK",
+			Body:       io.NopCloser(strings.NewReader(`[{"code":"000001","orgId":"gssz0000001"}]`)),
+			Header:     make(http.Header),
+		}, nil
+	})}
+
+	security, err := resolveSecurityWithClient(context.Background(), httpClient, "https://example.com", "sz000001")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := security.stock(); got != "000001,gssz0000001" {
+		t.Errorf("stock = %q", got)
+	}
+}
+
+func TestSplitStock(t *testing.T) {
 	tests := []struct {
-		stock string
-		want  string
+		stock      string
+		wantMarket string
+		wantCode   string
+		wantErr    bool
 	}{
-		{stock: "sz000001", want: "000001,gssz0000001"},
-		{stock: "sh600547", want: "600547,gssh0600547"},
+		{stock: "SZ000001", wantMarket: "sz", wantCode: "000001"},
+		{stock: "sh600547", wantMarket: "sh", wantCode: "600547"},
+		{stock: "000001", wantErr: true},
 	}
 	for _, test := range tests {
-		if got := cninfoStock(test.stock); got != test.want {
-			t.Errorf("cninfoStock(%q) = %q, want %q", test.stock, got, test.want)
+		market, code, err := splitStock(test.stock)
+		if (err != nil) != test.wantErr {
+			t.Errorf("splitStock(%q) error = %v", test.stock, err)
+		}
+		if market != test.wantMarket || code != test.wantCode {
+			t.Errorf("splitStock(%q) = (%q, %q)", test.stock, market, code)
 		}
 	}
 }

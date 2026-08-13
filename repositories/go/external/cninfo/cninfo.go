@@ -145,31 +145,101 @@ type QueryResponse struct {
 // QueryAnnualReportSummaries 查询指定股票的全部年度报告摘要。
 // stock 的格式为“市场前缀 + 证券代码”，例如“sz000001”或“sh600547”。
 func QueryAnnualReportSummaries(ctx context.Context, stock string) ([]Report, error) {
-	return queryAnnualReportSummariesWithClient(ctx, http.DefaultClient, defaultBaseURL, cninfoStock(stock))
+	security, err := resolveSecurity(ctx, stock)
+	if err != nil {
+		return nil, err
+	}
+	return queryAnnualReportSummariesWithClient(ctx, http.DefaultClient, defaultBaseURL, security.stock())
 }
 
 // QueryLatestReport 查询指定股票最新的定期报告，包含年度、半年度、一季度和三季度报告。
 // stock 的格式为“市场前缀 + 证券代码”，例如“sz000001”或“sh600547”。
 // 未查询到公告时返回 nil, nil。
 func QueryLatestReport(ctx context.Context, stock string) (*Report, error) {
-	return queryLatestReportWithClient(ctx, http.DefaultClient, defaultBaseURL, cninfoStock(stock))
+	security, err := resolveSecurity(ctx, stock)
+	if err != nil {
+		return nil, err
+	}
+	return queryLatestReportWithClient(ctx, http.DefaultClient, defaultBaseURL, security.stock())
 }
 
-// cninfoStock 将常用股票代码转换为巨潮资讯接口所需的“证券代码,组织机构 ID”格式。
-func cninfoStock(stock string) string {
-	if len(stock) < 3 {
-		return stock
+type security struct {
+	code  string
+	orgID string
+}
+
+func (s security) stock() string {
+	return s.code + "," + s.orgID
+}
+
+type securitySearchResult struct {
+	Code  string `json:"code"`
+	OrgID string `json:"orgId"`
+}
+
+func resolveSecurity(ctx context.Context, stock string) (security, error) {
+	return resolveSecurityWithClient(ctx, http.DefaultClient, defaultBaseURL, stock)
+}
+
+func resolveSecurityWithClient(ctx context.Context, httpClient *http.Client, baseURL, stock string) (security, error) {
+	market, code, err := splitStock(stock)
+	if err != nil {
+		return security{}, err
 	}
 
-	market, code := strings.ToLower(stock[:2]), stock[2:]
-	switch market {
-	case "sz":
-		return code + ",gssz0" + code
-	case "sh":
-		return code + ",gssh0" + code
-	default:
-		return stock
+	params := url.Values{
+		"keyWord": {code},
+		"maxNum":  {"10"},
 	}
+	httpRequest, err := http.NewRequestWithContext(ctx, http.MethodPost, baseURL+"/new/information/topSearch/query?"+params.Encode(), nil)
+	if err != nil {
+		return security{}, fmt.Errorf("http.NewRequestWithContext: %w", err)
+	}
+
+	response, err := httpClient.Do(httpRequest)
+	if err != nil {
+		return security{}, fmt.Errorf("http.Client.Do: %w", err)
+	}
+	defer response.Body.Close()
+
+	if response.StatusCode < http.StatusOK || response.StatusCode >= http.StatusMultipleChoices {
+		body, _ := io.ReadAll(io.LimitReader(response.Body, 4<<10))
+		return security{}, fmt.Errorf("unexpected status %s: %s", response.Status, string(body))
+	}
+
+	var results []securitySearchResult
+	if err := json.NewDecoder(response.Body).Decode(&results); err != nil {
+		return security{}, fmt.Errorf("json.Decoder.Decode: %w", err)
+	}
+
+	orgIDPrefix := "gssz"
+	if market == "sh" {
+		orgIDPrefix = "gssh"
+	}
+	for _, result := range results {
+		if result.Code == code && strings.HasPrefix(result.OrgID, orgIDPrefix) {
+			return security{code: result.Code, orgID: result.OrgID}, nil
+		}
+	}
+	return security{}, fmt.Errorf("security not found: %s", stock)
+}
+
+func splitStock(stock string) (market, code string, err error) {
+	stock = strings.ToLower(strings.TrimSpace(stock))
+	if len(stock) != 8 {
+		return "", "", fmt.Errorf("invalid stock: %s", stock)
+	}
+
+	market, code = stock[:2], stock[2:]
+	if market != "sz" && market != "sh" {
+		return "", "", fmt.Errorf("invalid stock market: %s", market)
+	}
+	for _, char := range code {
+		if char < '0' || char > '9' {
+			return "", "", fmt.Errorf("invalid stock code: %s", code)
+		}
+	}
+	return market, code, nil
 }
 
 // queryAnnouncements fetches historical announcements matching options.
