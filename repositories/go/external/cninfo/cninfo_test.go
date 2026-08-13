@@ -102,7 +102,7 @@ func TestQueryLatestReport(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if got := form.Get("pageSize"); got != "1" {
+		if got := form.Get("pageSize"); got != "30" {
 			t.Errorf("pageSize = %q", got)
 		}
 		if got := form.Get("category"); got != financialReportCategories {
@@ -117,7 +117,7 @@ func TestQueryLatestReport(t *testing.T) {
 		return &http.Response{
 			StatusCode: http.StatusOK,
 			Status:     "200 OK",
-			Body:       io.NopCloser(strings.NewReader(`{"announcements":[{"announcementTitle":"2025年第三季度报告","adjunctUrl":"finalpage/2026-10-30/1225022886.PDF"}],"totalAnnouncement":26}`)),
+			Body:       io.NopCloser(strings.NewReader(`{"announcements":[{"announcementTitle":"2025年年度报告摘要","adjunctUrl":"finalpage/2026-04-30/1225261225.PDF"},{"announcementTitle":"2026年第一季度报告","adjunctUrl":"finalpage/2026-04-30/1225261226.PDF"},{"announcementTitle":"2025年年度报告（英文版）","adjunctUrl":"finalpage/2026-06-17/1225374514.PDF"}],"totalAnnouncement":3}`)),
 			Header:     make(http.Header),
 		}, nil
 	})}
@@ -126,8 +126,41 @@ func TestQueryLatestReport(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if report == nil || report.Title != "2025年第三季度报告" || report.URL != "https://static.cninfo.com.cn/finalpage/2026-10-30/1225022886.PDF" {
+	if report == nil || report.Title != "2026年第一季度报告" || report.URL != "https://static.cninfo.com.cn/finalpage/2026-04-30/1225261226.PDF" {
 		t.Fatalf("report = %#v", report)
+	}
+}
+
+func TestIsEnglishVersionReport(t *testing.T) {
+	tests := []struct {
+		title string
+		want  bool
+	}{
+		{title: "2025年年度报告（英文版）", want: true},
+		{title: "2025 Annual Report (English Version)", want: true},
+		{title: "2026年一季度报告", want: false},
+	}
+	for _, test := range tests {
+		if got := isEnglishVersionReport(test.title); got != test.want {
+			t.Errorf("isEnglishVersionReport(%q) = %t", test.title, got)
+		}
+	}
+}
+
+func TestReportPeriod(t *testing.T) {
+	tests := []struct {
+		title string
+		want  int
+	}{
+		{title: "中国船舶工业股份有限公司2025年年度报告摘要", want: 2025*4 + 4},
+		{title: "中国船舶工业股份有限公司2026年第一季度报告", want: 2026*4 + 1},
+		{title: "中国船舶2025年半年度报告", want: 2025*4 + 2},
+	}
+	for _, test := range tests {
+		got, ok := reportPeriod(test.title)
+		if !ok || got != test.want {
+			t.Errorf("reportPeriod(%q) = (%d, %t)", test.title, got, ok)
+		}
 	}
 }
 

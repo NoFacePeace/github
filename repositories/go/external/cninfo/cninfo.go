@@ -12,6 +12,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 )
@@ -24,6 +25,7 @@ const (
 
 const (
 	annualReportSummaryPageSize = 30
+	latestReportPageSize        = 30
 	staticFileBaseURL           = "https://static.cninfo.com.cn/"
 	categoryAnnualReport        = "category_ndbg_szsh"
 	categorySemiAnnualReport    = "category_bndbg_szsh"
@@ -32,6 +34,8 @@ const (
 	financialReportCategories   = categoryAnnualReport + ";" + categorySemiAnnualReport + ";" + categoryFirstQuarterReport + ";" + categoryThirdQuarterReport
 	annualReportSummaryKeyword  = "年度报告摘要"
 )
+
+var reportYearPattern = regexp.MustCompile(`(\d{4})年`)
 
 // queryOption 用于配置公告查询的表单参数。
 type queryOption func(url.Values)
@@ -332,23 +336,82 @@ func queryAnnouncements(ctx context.Context, options ...queryOption) (*QueryResp
 }
 
 func queryLatestReportWithClient(ctx context.Context, httpClient *http.Client, baseURL, stock string) (*Report, error) {
-	response, err := queryAnnouncementsWithClient(ctx, httpClient, baseURL,
-		withStock(stock),
-		withCategory(financialReportCategories),
-		withPageSize(1),
-	)
-	if err != nil {
-		return nil, err
+	announcementsCount := 0
+	var latestAnnouncement *Announcement
+	latestPeriod := 0
+	for pageNum := 1; ; pageNum++ {
+		response, err := queryAnnouncementsWithClient(ctx, httpClient, baseURL,
+			withStock(stock),
+			withCategory(financialReportCategories),
+			withPageSize(latestReportPageSize),
+			withPageNum(pageNum),
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, announcement := range response.Announcements {
+			period, ok := reportPeriod(announcement.AnnouncementTitle)
+			if !ok || isEnglishVersionReport(announcement.AnnouncementTitle) {
+				continue
+			}
+			if latestAnnouncement == nil ||
+				period > latestPeriod ||
+				period == latestPeriod && isReportSummary(latestAnnouncement.AnnouncementTitle) && !isReportSummary(announcement.AnnouncementTitle) {
+				announcement := announcement
+				latestAnnouncement = &announcement
+				latestPeriod = period
+			}
+		}
+		announcementsCount += len(response.Announcements)
+		if len(response.Announcements) == 0 ||
+			response.TotalAnnouncement > 0 && announcementsCount >= response.TotalAnnouncement ||
+			!response.HasMore && len(response.Announcements) < latestReportPageSize {
+			break
+		}
 	}
-	if len(response.Announcements) == 0 {
+	if latestAnnouncement == nil {
 		return nil, nil
 	}
-
-	announcement := response.Announcements[0]
 	return &Report{
-		Title: announcement.AnnouncementTitle,
-		URL:   staticFileBaseURL + announcement.AdjunctURL,
+		Title: latestAnnouncement.AnnouncementTitle,
+		URL:   staticFileBaseURL + latestAnnouncement.AdjunctURL,
 	}, nil
+}
+
+func isEnglishVersionReport(title string) bool {
+	title = strings.ToLower(title)
+	return strings.Contains(title, "英文版") || strings.Contains(title, "english version")
+}
+
+func isReportSummary(title string) bool {
+	return strings.Contains(title, "摘要")
+}
+
+func reportPeriod(title string) (int, bool) {
+	matches := reportYearPattern.FindStringSubmatch(title)
+	if len(matches) != 2 {
+		return 0, false
+	}
+	year, err := strconv.Atoi(matches[1])
+	if err != nil {
+		return 0, false
+	}
+
+	quarter := 0
+	switch {
+	case strings.Contains(title, "第一季度报告"):
+		quarter = 1
+	case strings.Contains(title, "半年度报告"):
+		quarter = 2
+	case strings.Contains(title, "第三季度报告"):
+		quarter = 3
+	case strings.Contains(title, "年度报告"):
+		quarter = 4
+	default:
+		return 0, false
+	}
+	return year*4 + quarter, true
 }
 
 func queryAnnualReportSummariesWithClient(ctx context.Context, httpClient *http.Client, baseURL, stock string) ([]Report, error) {
