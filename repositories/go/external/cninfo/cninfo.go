@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 )
 
 const defaultBaseURL = "https://www.cninfo.com.cn"
@@ -141,16 +142,33 @@ type QueryResponse struct {
 }
 
 // QueryAnnualReportSummaries 查询指定股票的全部年度报告摘要。
-// stock 的格式为“证券代码,组织机构 ID”，例如“000001,gssz0000001”。
+// stock 的格式为“市场前缀 + 证券代码”，例如“sz000001”或“sh600547”。
 func QueryAnnualReportSummaries(ctx context.Context, stock string) ([]Report, error) {
-	return queryAnnualReportSummariesWithClient(ctx, http.DefaultClient, defaultBaseURL, stock)
+	return queryAnnualReportSummariesWithClient(ctx, http.DefaultClient, defaultBaseURL, cninfoStock(stock))
 }
 
 // QueryLatestReport 查询指定股票最新的定期报告，包含年度、半年度、一季度和三季度报告。
-// stock 的格式为“证券代码,组织机构 ID”，例如“000001,gssz0000001”。
+// stock 的格式为“市场前缀 + 证券代码”，例如“sz000001”或“sh600547”。
 // 未查询到公告时返回 nil, nil。
 func QueryLatestReport(ctx context.Context, stock string) (*Report, error) {
-	return queryLatestReportWithClient(ctx, http.DefaultClient, defaultBaseURL, stock)
+	return queryLatestReportWithClient(ctx, http.DefaultClient, defaultBaseURL, cninfoStock(stock))
+}
+
+// cninfoStock 将常用股票代码转换为巨潮资讯接口所需的“证券代码,组织机构 ID”格式。
+func cninfoStock(stock string) string {
+	if len(stock) < 3 {
+		return stock
+	}
+
+	market, code := strings.ToLower(stock[:2]), stock[2:]
+	switch market {
+	case "sz":
+		return code + ",gssz0" + code
+	case "sh":
+		return code + ",gssh0" + code
+	default:
+		return stock
+	}
 }
 
 // queryAnnouncements fetches historical announcements matching options.

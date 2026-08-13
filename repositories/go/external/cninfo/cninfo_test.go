@@ -78,7 +78,7 @@ func TestQueryAnnualReportSummaries(t *testing.T) {
 		}, nil
 	})}
 
-	summaries, err := queryAnnualReportSummariesWithClient(context.Background(), httpClient, "https://example.com", "000001,gssz0000001")
+	summaries, err := queryAnnualReportSummariesWithClient(context.Background(), httpClient, "https://example.com", cninfoStock("sz000001"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -114,12 +114,27 @@ func TestQueryLatestReport(t *testing.T) {
 		}, nil
 	})}
 
-	report, err := queryLatestReportWithClient(context.Background(), httpClient, "https://example.com", "000001,gssz0000001")
+	report, err := queryLatestReportWithClient(context.Background(), httpClient, "https://example.com", cninfoStock("sz000001"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	if report == nil || report.Title != "2025年第三季度报告" || report.URL != "https://static.cninfo.com.cn/finalpage/2026-10-30/1225022886.PDF" {
 		t.Fatalf("report = %#v", report)
+	}
+}
+
+func TestCNINFOStock(t *testing.T) {
+	tests := []struct {
+		stock string
+		want  string
+	}{
+		{stock: "sz000001", want: "000001,gssz0000001"},
+		{stock: "sh600547", want: "600547,gssh0600547"},
+	}
+	for _, test := range tests {
+		if got := cninfoStock(test.stock); got != test.want {
+			t.Errorf("cninfoStock(%q) = %q, want %q", test.stock, got, test.want)
+		}
 	}
 }
 

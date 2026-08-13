@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 
+	cninfotools "github.com/NoFacePeace/github/repositories/go/tools/cninfo"
 	financetools "github.com/NoFacePeace/github/repositories/go/tools/finance"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
@@ -30,6 +31,8 @@ func main() {
 	mcp.AddTool(server, &mcp.Tool{Name: "greet", Description: "say hi"}, SayHi)
 	mcp.AddTool(server, financetools.ListStocksToolMeta, financetools.ListStocksTool)
 	mcp.AddTool(server, financetools.GetKlineSinceToolMeta, financetools.GetKlineSinceTool)
+	mcp.AddTool(server, cninfotools.GetLatestReportToolMeta, cninfotools.GetLatestReportTool)
+	mcp.AddTool(server, cninfotools.GetAnnualReportSummariesToolMeta, cninfotools.GetAnnualReportSummariesTool)
 	// Run the server over stdin/stdout, until the client disconnects.
 	if err := server.Run(context.Background(), &mcp.StdioTransport{}); err != nil {
 		log.Fatal(err)
