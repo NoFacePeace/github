@@ -17,6 +17,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 )
 
 const (
@@ -48,6 +49,11 @@ func QueryReports(ctx context.Context, stock string) ([]Report, error) {
 		return nil, err
 	}
 	return queryReportsWithClient(ctx, http.DefaultClient, defaultBaseURL, security.stock())
+}
+
+// QueryTodayReports 查询当天披露的全部定期报告。
+func QueryTodayReports(ctx context.Context) ([]Report, error) {
+	return queryReportsByDateWithClient(ctx, http.DefaultClient, defaultBaseURL, time.Now().Format(time.DateOnly))
 }
 
 // GetReport 获取指定报告的本地 PDF 路径。
@@ -472,7 +478,7 @@ func queryLatestReportWithClient(ctx context.Context, httpClient *http.Client, b
 		return nil, nil
 	}
 	return &Report{
-		Title: latestAnnouncement.AnnouncementTitle,
+		Title: reportTitleWithSecurityName(*latestAnnouncement),
 		ID:    latestAnnouncement.AdjunctURL,
 	}, nil
 }
@@ -529,7 +535,7 @@ func queryAnnualReportSummariesWithClient(ctx context.Context, httpClient *http.
 
 		for _, announcement := range response.Announcements {
 			summaries = append(summaries, Report{
-				Title: announcement.AnnouncementTitle,
+				Title: reportTitleWithSecurityName(announcement),
 				ID:    announcement.AdjunctURL,
 			})
 		}
@@ -561,6 +567,43 @@ func queryReportsWithClient(ctx context.Context, httpClient *http.Client, baseUR
 		}
 	}
 	return append([]Report{*latestReport}, annualReportSummaries...), nil
+}
+
+func queryReportsByDateWithClient(ctx context.Context, httpClient *http.Client, baseURL, date string) ([]Report, error) {
+	reports := make([]Report, 0)
+	announcementsCount := 0
+	for pageNum := 1; ; pageNum++ {
+		response, err := queryAnnouncementsWithClient(ctx, httpClient, baseURL,
+			withCategory(financialReportCategories),
+			withDateRange(date+"~"+date),
+			withPageSize(latestReportPageSize),
+			withPageNum(pageNum),
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, announcement := range response.Announcements {
+			reports = append(reports, Report{
+				Title: reportTitleWithSecurityName(announcement),
+				ID:    announcement.AdjunctURL,
+			})
+		}
+		announcementsCount += len(response.Announcements)
+		if len(response.Announcements) == 0 ||
+			response.TotalAnnouncement > 0 && announcementsCount >= response.TotalAnnouncement ||
+			!response.HasMore && len(response.Announcements) < latestReportPageSize {
+			break
+		}
+	}
+	return reports, nil
+}
+
+func reportTitleWithSecurityName(announcement Announcement) string {
+	if announcement.SecName == "" || strings.Contains(announcement.AnnouncementTitle, announcement.SecName) {
+		return announcement.AnnouncementTitle
+	}
+	return announcement.SecName + " - " + announcement.AnnouncementTitle
 }
 
 func queryAnnouncementsWithClient(ctx context.Context, httpClient *http.Client, baseURL string, options ...queryOption) (*QueryResponse, error) {

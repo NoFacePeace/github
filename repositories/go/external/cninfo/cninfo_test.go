@@ -78,7 +78,7 @@ func TestQueryAnnualReportSummaries(t *testing.T) {
 		return &http.Response{
 			StatusCode: http.StatusOK,
 			Status:     "200 OK",
-			Body:       io.NopCloser(strings.NewReader(`{"announcements":[{"announcementId":"2","announcementTitle":"2024年年度报告摘要","adjunctUrl":"finalpage/2025-03-15/1212345678.PDF"}],"totalAnnouncement":1}`)),
+			Body:       io.NopCloser(strings.NewReader(`{"announcements":[{"announcementId":"2","announcementTitle":"2024年年度报告摘要","secName":"平安银行","adjunctUrl":"finalpage/2025-03-15/1212345678.PDF"}],"totalAnnouncement":1}`)),
 			Header:     make(http.Header),
 		}, nil
 	})}
@@ -87,7 +87,7 @@ func TestQueryAnnualReportSummaries(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(summaries) != 1 || summaries[0].Title != "2024年年度报告摘要" || summaries[0].ID != "finalpage/2025-03-15/1212345678.PDF" {
+	if len(summaries) != 1 || summaries[0].Title != "平安银行 - 2024年年度报告摘要" || summaries[0].ID != "finalpage/2025-03-15/1212345678.PDF" {
 		t.Fatalf("summaries = %#v", summaries)
 	}
 }
@@ -119,7 +119,7 @@ func TestQueryLatestReport(t *testing.T) {
 		return &http.Response{
 			StatusCode: http.StatusOK,
 			Status:     "200 OK",
-			Body:       io.NopCloser(strings.NewReader(`{"announcements":[{"announcementTitle":"2025年年度报告摘要","adjunctUrl":"finalpage/2026-04-30/1225261225.PDF"},{"announcementTitle":"2026年第一季度报告","adjunctUrl":"finalpage/2026-04-30/1225261226.PDF"},{"announcementTitle":"2026年第一季度报告摘要","adjunctUrl":"finalpage/2026-04-30/1225261227.PDF"},{"announcementTitle":"2025年年度报告（英文版）","adjunctUrl":"finalpage/2026-06-17/1225374514.PDF"}],"totalAnnouncement":31,"hasMore":true}`)),
+			Body:       io.NopCloser(strings.NewReader(`{"announcements":[{"announcementTitle":"2025年年度报告摘要","adjunctUrl":"finalpage/2026-04-30/1225261225.PDF"},{"announcementTitle":"2026年第一季度报告","secName":"平安银行","adjunctUrl":"finalpage/2026-04-30/1225261226.PDF"},{"announcementTitle":"2026年第一季度报告摘要","secName":"平安银行","adjunctUrl":"finalpage/2026-04-30/1225261227.PDF"},{"announcementTitle":"2025年年度报告（英文版）","adjunctUrl":"finalpage/2026-06-17/1225374514.PDF"}],"totalAnnouncement":31,"hasMore":true}`)),
 			Header:     make(http.Header),
 		}, nil
 	})}
@@ -128,7 +128,7 @@ func TestQueryLatestReport(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if report == nil || report.Title != "2026年第一季度报告摘要" || report.ID != "finalpage/2026-04-30/1225261227.PDF" {
+	if report == nil || report.Title != "平安银行 - 2026年第一季度报告摘要" || report.ID != "finalpage/2026-04-30/1225261227.PDF" {
 		t.Fatalf("report = %#v", report)
 	}
 	if requests != 1 {
@@ -192,6 +192,47 @@ func TestQueryReportsPrependsLatestNonAnnualReport(t *testing.T) {
 		t.Fatal(err)
 	}
 	if len(reports) != 2 || reports[0].ID != "finalpage/2026-08-15/2026-half.PDF" || reports[1].ID != "finalpage/2026-03-20/2025.PDF" {
+		t.Fatalf("reports = %#v", reports)
+	}
+}
+
+func TestQueryReportsByDate(t *testing.T) {
+	requests := 0
+	httpClient := &http.Client{Transport: roundTripper(func(request *http.Request) (*http.Response, error) {
+		requests++
+		body, err := io.ReadAll(request.Body)
+		if err != nil {
+			t.Fatal(err)
+		}
+		form, err := url.ParseQuery(string(body))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got, want := form.Get("category"), financialReportCategories; got != want {
+			t.Errorf("category = %q, want %q", got, want)
+		}
+		if got, want := form.Get("seDate"), "2026-08-15~2026-08-15"; got != want {
+			t.Errorf("seDate = %q, want %q", got, want)
+		}
+		switch form.Get("pageNum") {
+		case "1":
+			return jsonResponse(`{"announcements":[{"announcementTitle":"2026年半年度报告摘要","secName":"贵州茅台","adjunctUrl":"finalpage/2026-08-15/half-year.PDF"}],"totalAnnouncement":2,"hasMore":true}`)
+		case "2":
+			return jsonResponse(`{"announcements":[{"announcementTitle":"2026年第一季度报告","adjunctUrl":"finalpage/2026-08-15/first-quarter.PDF"}],"totalAnnouncement":2,"hasMore":false}`)
+		default:
+			t.Fatalf("unexpected page number %q", form.Get("pageNum"))
+			return nil, nil
+		}
+	})}
+
+	reports, err := queryReportsByDateWithClient(context.Background(), httpClient, "https://example.com", "2026-08-15")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if requests != 2 {
+		t.Errorf("requests = %d, want 2", requests)
+	}
+	if len(reports) != 2 || reports[0].Title != "贵州茅台 - 2026年半年度报告摘要" || reports[0].ID != "finalpage/2026-08-15/half-year.PDF" || reports[1].ID != "finalpage/2026-08-15/first-quarter.PDF" {
 		t.Fatalf("reports = %#v", reports)
 	}
 }
