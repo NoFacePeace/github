@@ -1,0 +1,4 @@
+interface:
+  display_name: "Analyze Stock"
+  short_description: "Analyze A-share filings and update valuations"
+  default_prompt: "Use $analyze-stock to analyze a stock and update its row in stocks.md."
