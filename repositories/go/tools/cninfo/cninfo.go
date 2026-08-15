@@ -8,52 +8,56 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
-type GetLatestReportToolInput struct {
+type QueryReportsToolInput struct {
 	Stock string `json:"stock" jsonschema:"the stock code with market prefix, e.g. sz000001 or sh600547"`
 }
 
-type GetLatestReportToolOutput struct {
-	Report *cninfo.Report `json:"report" jsonschema:"the latest periodic report title and document URL, or null when no report is found"`
+type QueryReportsToolOutput struct {
+	Reports []cninfo.Report `json:"reports" jsonschema:"the latest report followed by annual report summaries"`
 }
 
-type GetAnnualReportSummariesToolInput struct {
-	Stock string `json:"stock" jsonschema:"the stock code with market prefix, e.g. sz000001 or sh600547"`
+type GetReportToolInput struct {
+	ReportID string `json:"reportId" jsonschema:"the CNINFO report ID, e.g. finalpage/2026-08-15/1225475343.PDF"`
 }
 
-type GetAnnualReportSummariesToolOutput struct {
-	Reports []cninfo.Report `json:"reports" jsonschema:"all annual report summary titles and document URLs for the stock"`
+type GetReportToolOutput struct {
+	ReportID string `json:"reportId" jsonschema:"the requested CNINFO report ID"`
+	Path     string `json:"path" jsonschema:"the local PDF path"`
 }
 
-var GetLatestReportToolMeta = &mcp.Tool{
-	Name:        "get_latest_report",
-	Description: "get the title and document URL of the latest annual, semiannual, first-quarter, or third-quarter report for an A-share stock",
+var QueryReportsToolMeta = &mcp.Tool{
+	Name:        "query_reports",
+	Description: "get the latest periodic report and annual report summaries for an A-share stock",
 }
 
-var GetAnnualReportSummariesToolMeta = &mcp.Tool{
-	Name:        "get_annual_report_summaries",
-	Description: "get the titles and document URLs of all annual report summaries for an A-share stock",
+var GetReportToolMeta = &mcp.Tool{
+	Name:        "get_report",
+	Description: "download a CNINFO report PDF to the local cache and return its path",
 }
 
-func GetLatestReportTool(ctx context.Context, req *mcp.CallToolRequest, input GetLatestReportToolInput) (
+func QueryReportsTool(ctx context.Context, req *mcp.CallToolRequest, input QueryReportsToolInput) (
 	*mcp.CallToolResult,
-	GetLatestReportToolOutput,
+	QueryReportsToolOutput,
 	error,
 ) {
-	report, err := cninfo.QueryLatestReport(ctx, input.Stock)
+	reports, err := cninfo.QueryReports(ctx, input.Stock)
 	if err != nil {
-		return nil, GetLatestReportToolOutput{}, fmt.Errorf("get latest report: %w", err)
+		return nil, QueryReportsToolOutput{}, fmt.Errorf("query reports: %w", err)
 	}
-	return nil, GetLatestReportToolOutput{Report: report}, nil
+	return nil, QueryReportsToolOutput{Reports: reports}, nil
 }
 
-func GetAnnualReportSummariesTool(ctx context.Context, req *mcp.CallToolRequest, input GetAnnualReportSummariesToolInput) (
+func GetReportTool(ctx context.Context, req *mcp.CallToolRequest, input GetReportToolInput) (
 	*mcp.CallToolResult,
-	GetAnnualReportSummariesToolOutput,
+	GetReportToolOutput,
 	error,
 ) {
-	reports, err := cninfo.QueryAnnualReportSummaries(ctx, input.Stock)
+	reportPath, err := cninfo.GetReport(ctx, input.ReportID)
 	if err != nil {
-		return nil, GetAnnualReportSummariesToolOutput{}, fmt.Errorf("get annual report summaries: %w", err)
+		return nil, GetReportToolOutput{}, fmt.Errorf("get report: %w", err)
 	}
-	return nil, GetAnnualReportSummariesToolOutput{Reports: reports}, nil
+	return nil, GetReportToolOutput{
+		ReportID: input.ReportID,
+		Path:     reportPath,
+	}, nil
 }

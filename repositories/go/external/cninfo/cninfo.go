@@ -4,6 +4,7 @@ package cninfo
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -11,6 +12,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -36,6 +38,27 @@ const (
 )
 
 var reportYearPattern = regexp.MustCompile(`(\d{4})年`)
+
+// QueryReports 查询指定股票的最新定期报告和全部年度报告摘要。
+// 最新报告已包含在年度报告摘要中时，返回年度报告摘要；否则将最新报告放在结果首位。
+// stock 的格式为“市场前缀 + 证券代码”，例如“sz000001”或“sh600547”。
+func QueryReports(ctx context.Context, stock string) ([]Report, error) {
+	security, err := resolveSecurity(ctx, stock)
+	if err != nil {
+		return nil, err
+	}
+	return queryReportsWithClient(ctx, http.DefaultClient, defaultBaseURL, security.stock())
+}
+
+// GetReport 获取指定报告的本地 PDF 路径。
+// reportID 的格式为 CNINFO 返回的相对文件路径，例如“finalpage/2026-08-15/1225475343.PDF”。
+func GetReport(ctx context.Context, reportID string) (string, error) {
+	cacheFilePath, err := reportCacheFilePath(reportID)
+	if err != nil {
+		return "", err
+	}
+	return getReportWithCache(ctx, http.DefaultClient, staticFileBaseURL, cacheFilePath, reportID)
+}
 
 // queryOption 用于配置公告查询的表单参数。
 type queryOption func(url.Values)
@@ -140,10 +163,10 @@ type Announcement struct {
 	Important           bool   `json:"important"`
 }
 
-// Report 是报告的标题和文件地址。
+// Report 是报告的标题和文件 ID。
 type Report struct {
-	Title string
-	URL   string
+	Title string `json:"title"`
+	ID    string `json:"id"`
 }
 
 // QueryResponse is the historical-announcements API response.
@@ -151,27 +174,6 @@ type QueryResponse struct {
 	Announcements     []Announcement `json:"announcements"`
 	TotalAnnouncement int            `json:"totalAnnouncement"`
 	HasMore           bool           `json:"hasMore"`
-}
-
-// QueryAnnualReportSummaries 查询指定股票的全部年度报告摘要。
-// stock 的格式为“市场前缀 + 证券代码”，例如“sz000001”或“sh600547”。
-func QueryAnnualReportSummaries(ctx context.Context, stock string) ([]Report, error) {
-	security, err := resolveSecurity(ctx, stock)
-	if err != nil {
-		return nil, err
-	}
-	return queryAnnualReportSummariesWithClient(ctx, http.DefaultClient, defaultBaseURL, security.stock())
-}
-
-// QueryLatestReport 查询指定股票最新的定期报告，包含年度、半年度、一季度和三季度报告。
-// stock 的格式为“市场前缀 + 证券代码”，例如“sz000001”或“sh600547”。
-// 未查询到公告时返回 nil, nil。
-func QueryLatestReport(ctx context.Context, stock string) (*Report, error) {
-	security, err := resolveSecurity(ctx, stock)
-	if err != nil {
-		return nil, err
-	}
-	return queryLatestReportWithClient(ctx, http.DefaultClient, defaultBaseURL, security.stock())
 }
 
 type security struct {
@@ -330,44 +332,140 @@ func splitStock(stock string) (market, code string, err error) {
 	return market, code, nil
 }
 
+func getReportWithCache(ctx context.Context, httpClient *http.Client, baseURL, cacheFilePath, reportID string) (string, error) {
+	fileInfo, err := os.Stat(cacheFilePath)
+	switch {
+	case err == nil:
+		if !fileInfo.Mode().IsRegular() {
+			return "", fmt.Errorf("cached report is not a regular file: %s", cacheFilePath)
+		}
+		return cacheFilePath, nil
+	case !errors.Is(err, os.ErrNotExist):
+		return "", fmt.Errorf("os.Stat: %w", err)
+	}
+
+	body, err := getReportWithClient(ctx, httpClient, baseURL, reportID)
+	if err != nil {
+		return "", err
+	}
+	if err := writeReportCache(cacheFilePath, body); err != nil {
+		return "", err
+	}
+	return cacheFilePath, nil
+}
+
+func getReportWithClient(ctx context.Context, httpClient *http.Client, baseURL, reportID string) ([]byte, error) {
+	reportURL, err := reportDownloadURL(baseURL, reportID)
+	if err != nil {
+		return nil, err
+	}
+	httpRequest, err := http.NewRequestWithContext(ctx, http.MethodGet, reportURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("http.NewRequestWithContext: %w", err)
+	}
+
+	response, err := httpClient.Do(httpRequest)
+	if err != nil {
+		return nil, fmt.Errorf("http.Client.Do: %w", err)
+	}
+	defer response.Body.Close()
+
+	if response.StatusCode < http.StatusOK || response.StatusCode >= http.StatusMultipleChoices {
+		body, _ := io.ReadAll(io.LimitReader(response.Body, 4<<10))
+		return nil, fmt.Errorf("unexpected status %s: %s", response.Status, string(body))
+	}
+	body, err := io.ReadAll(response.Body)
+	if err != nil {
+		return nil, fmt.Errorf("io.ReadAll: %w", err)
+	}
+	return body, nil
+}
+
+func reportCacheFilePath(reportID string) (string, error) {
+	reportID, err := validateReportID(reportID)
+	if err != nil {
+		return "", err
+	}
+	cacheDirectory, err := os.UserCacheDir()
+	if err != nil {
+		return "", fmt.Errorf("os.UserCacheDir: %w", err)
+	}
+	reportIDHash := sha256.Sum256([]byte(reportID))
+	return filepath.Join(cacheDirectory, "cninfo", "reports", fmt.Sprintf("%x.pdf", reportIDHash)), nil
+}
+
+func writeReportCache(cacheFilePath string, body []byte) error {
+	if err := os.MkdirAll(filepath.Dir(cacheFilePath), 0o755); err != nil {
+		return fmt.Errorf("os.MkdirAll: %w", err)
+	}
+	tempFile, err := os.CreateTemp(filepath.Dir(cacheFilePath), ".report-*")
+	if err != nil {
+		return fmt.Errorf("os.CreateTemp: %w", err)
+	}
+	tempFilePath := tempFile.Name()
+	defer os.Remove(tempFilePath)
+
+	if _, err := tempFile.Write(body); err != nil {
+		tempFile.Close()
+		return fmt.Errorf("os.File.Write: %w", err)
+	}
+	if err := tempFile.Close(); err != nil {
+		return fmt.Errorf("os.File.Close: %w", err)
+	}
+	if err := os.Rename(tempFilePath, cacheFilePath); err != nil {
+		return fmt.Errorf("os.Rename: %w", err)
+	}
+	return nil
+}
+
+func reportDownloadURL(baseURL, reportID string) (string, error) {
+	reportID, err := validateReportID(reportID)
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimRight(baseURL, "/") + "/" + reportID, nil
+}
+
+func validateReportID(reportID string) (string, error) {
+	if reportID != strings.TrimSpace(reportID) ||
+		strings.ContainsAny(reportID, `\?#%`) ||
+		path.Clean(reportID) != reportID ||
+		!strings.HasPrefix(reportID, "finalpage/") ||
+		!strings.HasSuffix(strings.ToLower(reportID), ".pdf") {
+		return "", fmt.Errorf("invalid report ID")
+	}
+	return reportID, nil
+}
+
 // queryAnnouncements fetches historical announcements matching options.
 func queryAnnouncements(ctx context.Context, options ...queryOption) (*QueryResponse, error) {
 	return queryAnnouncementsWithClient(ctx, http.DefaultClient, defaultBaseURL, options...)
 }
 
 func queryLatestReportWithClient(ctx context.Context, httpClient *http.Client, baseURL, stock string) (*Report, error) {
-	announcementsCount := 0
+	response, err := queryAnnouncementsWithClient(ctx, httpClient, baseURL,
+		withStock(stock),
+		withCategory(financialReportCategories),
+		withPageSize(latestReportPageSize),
+		withPageNum(1),
+	)
+	if err != nil {
+		return nil, err
+	}
+
 	var latestAnnouncement *Announcement
 	latestPeriod := 0
-	for pageNum := 1; ; pageNum++ {
-		response, err := queryAnnouncementsWithClient(ctx, httpClient, baseURL,
-			withStock(stock),
-			withCategory(financialReportCategories),
-			withPageSize(latestReportPageSize),
-			withPageNum(pageNum),
-		)
-		if err != nil {
-			return nil, err
+	for _, announcement := range response.Announcements {
+		period, ok := reportPeriod(announcement.AnnouncementTitle)
+		if !ok || isEnglishVersionReport(announcement.AnnouncementTitle) {
+			continue
 		}
-
-		for _, announcement := range response.Announcements {
-			period, ok := reportPeriod(announcement.AnnouncementTitle)
-			if !ok || isEnglishVersionReport(announcement.AnnouncementTitle) {
-				continue
-			}
-			if latestAnnouncement == nil ||
-				period > latestPeriod ||
-				period == latestPeriod && isReportSummary(latestAnnouncement.AnnouncementTitle) && !isReportSummary(announcement.AnnouncementTitle) {
-				announcement := announcement
-				latestAnnouncement = &announcement
-				latestPeriod = period
-			}
-		}
-		announcementsCount += len(response.Announcements)
-		if len(response.Announcements) == 0 ||
-			response.TotalAnnouncement > 0 && announcementsCount >= response.TotalAnnouncement ||
-			!response.HasMore && len(response.Announcements) < latestReportPageSize {
-			break
+		if latestAnnouncement == nil ||
+			period > latestPeriod ||
+			period == latestPeriod && !isReportSummary(latestAnnouncement.AnnouncementTitle) && isReportSummary(announcement.AnnouncementTitle) {
+			announcement := announcement
+			latestAnnouncement = &announcement
+			latestPeriod = period
 		}
 	}
 	if latestAnnouncement == nil {
@@ -375,7 +473,7 @@ func queryLatestReportWithClient(ctx context.Context, httpClient *http.Client, b
 	}
 	return &Report{
 		Title: latestAnnouncement.AnnouncementTitle,
-		URL:   staticFileBaseURL + latestAnnouncement.AdjunctURL,
+		ID:    latestAnnouncement.AdjunctURL,
 	}, nil
 }
 
@@ -432,7 +530,7 @@ func queryAnnualReportSummariesWithClient(ctx context.Context, httpClient *http.
 		for _, announcement := range response.Announcements {
 			summaries = append(summaries, Report{
 				Title: announcement.AnnouncementTitle,
-				URL:   staticFileBaseURL + announcement.AdjunctURL,
+				ID:    announcement.AdjunctURL,
 			})
 		}
 		announcementsCount += len(response.Announcements)
@@ -443,6 +541,26 @@ func queryAnnualReportSummariesWithClient(ctx context.Context, httpClient *http.
 		}
 	}
 	return summaries, nil
+}
+
+func queryReportsWithClient(ctx context.Context, httpClient *http.Client, baseURL, stock string) ([]Report, error) {
+	latestReport, err := queryLatestReportWithClient(ctx, httpClient, baseURL, stock)
+	if err != nil {
+		return nil, err
+	}
+	annualReportSummaries, err := queryAnnualReportSummariesWithClient(ctx, httpClient, baseURL, stock)
+	if err != nil {
+		return nil, err
+	}
+	if latestReport == nil {
+		return annualReportSummaries, nil
+	}
+	for _, report := range annualReportSummaries {
+		if report.ID == latestReport.ID {
+			return annualReportSummaries, nil
+		}
+	}
+	return append([]Report{*latestReport}, annualReportSummaries...), nil
 }
 
 func queryAnnouncementsWithClient(ctx context.Context, httpClient *http.Client, baseURL string, options ...queryOption) (*QueryResponse, error) {

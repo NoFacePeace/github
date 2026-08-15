@@ -31,8 +31,8 @@ func main() {
 	mcp.AddTool(server, &mcp.Tool{Name: "greet", Description: "say hi"}, SayHi)
 	mcp.AddTool(server, financetools.ListStocksToolMeta, financetools.ListStocksTool)
 	mcp.AddTool(server, financetools.GetKlineSinceToolMeta, financetools.GetKlineSinceTool)
-	mcp.AddTool(server, cninfotools.GetLatestReportToolMeta, cninfotools.GetLatestReportTool)
-	mcp.AddTool(server, cninfotools.GetAnnualReportSummariesToolMeta, cninfotools.GetAnnualReportSummariesTool)
+	mcp.AddTool(server, cninfotools.QueryReportsToolMeta, cninfotools.QueryReportsTool)
+	mcp.AddTool(server, cninfotools.GetReportToolMeta, cninfotools.GetReportTool)
 	// Run the server over stdin/stdout, until the client disconnects.
 	if err := server.Run(context.Background(), &mcp.StdioTransport{}); err != nil {
 		log.Fatal(err)

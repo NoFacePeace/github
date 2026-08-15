@@ -87,13 +87,15 @@ func TestQueryAnnualReportSummaries(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(summaries) != 1 || summaries[0].Title != "2024年年度报告摘要" || summaries[0].URL != "https://static.cninfo.com.cn/finalpage/2025-03-15/1212345678.PDF" {
+	if len(summaries) != 1 || summaries[0].Title != "2024年年度报告摘要" || summaries[0].ID != "finalpage/2025-03-15/1212345678.PDF" {
 		t.Fatalf("summaries = %#v", summaries)
 	}
 }
 
 func TestQueryLatestReport(t *testing.T) {
+	requests := 0
 	httpClient := &http.Client{Transport: roundTripper(func(request *http.Request) (*http.Response, error) {
+		requests++
 		body, err := io.ReadAll(request.Body)
 		if err != nil {
 			t.Fatal(err)
@@ -117,7 +119,7 @@ func TestQueryLatestReport(t *testing.T) {
 		return &http.Response{
 			StatusCode: http.StatusOK,
 			Status:     "200 OK",
-			Body:       io.NopCloser(strings.NewReader(`{"announcements":[{"announcementTitle":"2025年年度报告摘要","adjunctUrl":"finalpage/2026-04-30/1225261225.PDF"},{"announcementTitle":"2026年第一季度报告","adjunctUrl":"finalpage/2026-04-30/1225261226.PDF"},{"announcementTitle":"2025年年度报告（英文版）","adjunctUrl":"finalpage/2026-06-17/1225374514.PDF"}],"totalAnnouncement":3}`)),
+			Body:       io.NopCloser(strings.NewReader(`{"announcements":[{"announcementTitle":"2025年年度报告摘要","adjunctUrl":"finalpage/2026-04-30/1225261225.PDF"},{"announcementTitle":"2026年第一季度报告","adjunctUrl":"finalpage/2026-04-30/1225261226.PDF"},{"announcementTitle":"2026年第一季度报告摘要","adjunctUrl":"finalpage/2026-04-30/1225261227.PDF"},{"announcementTitle":"2025年年度报告（英文版）","adjunctUrl":"finalpage/2026-06-17/1225374514.PDF"}],"totalAnnouncement":31,"hasMore":true}`)),
 			Header:     make(http.Header),
 		}, nil
 	})}
@@ -126,8 +128,154 @@ func TestQueryLatestReport(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if report == nil || report.Title != "2026年第一季度报告" || report.URL != "https://static.cninfo.com.cn/finalpage/2026-04-30/1225261226.PDF" {
+	if report == nil || report.Title != "2026年第一季度报告摘要" || report.ID != "finalpage/2026-04-30/1225261227.PDF" {
 		t.Fatalf("report = %#v", report)
+	}
+	if requests != 1 {
+		t.Errorf("requests = %d, want 1", requests)
+	}
+}
+
+func TestQueryReportsDoesNotDuplicateLatestAnnualReport(t *testing.T) {
+	httpClient := &http.Client{Transport: roundTripper(func(request *http.Request) (*http.Response, error) {
+		body, err := io.ReadAll(request.Body)
+		if err != nil {
+			t.Fatal(err)
+		}
+		form, err := url.ParseQuery(string(body))
+		if err != nil {
+			t.Fatal(err)
+		}
+		switch form.Get("category") {
+		case financialReportCategories:
+			return jsonResponse(`{"announcements":[{"announcementTitle":"2025年年度报告摘要","adjunctUrl":"finalpage/2026-03-20/2025.PDF"}],"totalAnnouncement":1}`)
+		case categoryAnnualReport:
+			return jsonResponse(`{"announcements":[{"announcementTitle":"2025年年度报告摘要","adjunctUrl":"finalpage/2026-03-20/2025.PDF"},{"announcementTitle":"2024年年度报告摘要","adjunctUrl":"finalpage/2025-03-20/2024.PDF"}],"totalAnnouncement":2}`)
+		default:
+			t.Fatalf("unexpected category %q", form.Get("category"))
+			return nil, nil
+		}
+	})}
+
+	reports, err := queryReportsWithClient(context.Background(), httpClient, "https://example.com", "000001,gssz0000001")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(reports) != 2 || reports[0].ID != "finalpage/2026-03-20/2025.PDF" || reports[1].ID != "finalpage/2025-03-20/2024.PDF" {
+		t.Fatalf("reports = %#v", reports)
+	}
+}
+
+func TestQueryReportsPrependsLatestNonAnnualReport(t *testing.T) {
+	httpClient := &http.Client{Transport: roundTripper(func(request *http.Request) (*http.Response, error) {
+		body, err := io.ReadAll(request.Body)
+		if err != nil {
+			t.Fatal(err)
+		}
+		form, err := url.ParseQuery(string(body))
+		if err != nil {
+			t.Fatal(err)
+		}
+		switch form.Get("category") {
+		case financialReportCategories:
+			return jsonResponse(`{"announcements":[{"announcementTitle":"2026年半年度报告摘要","adjunctUrl":"finalpage/2026-08-15/2026-half.PDF"}],"totalAnnouncement":1}`)
+		case categoryAnnualReport:
+			return jsonResponse(`{"announcements":[{"announcementTitle":"2025年年度报告摘要","adjunctUrl":"finalpage/2026-03-20/2025.PDF"}],"totalAnnouncement":1}`)
+		default:
+			t.Fatalf("unexpected category %q", form.Get("category"))
+			return nil, nil
+		}
+	})}
+
+	reports, err := queryReportsWithClient(context.Background(), httpClient, "https://example.com", "000001,gssz0000001")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(reports) != 2 || reports[0].ID != "finalpage/2026-08-15/2026-half.PDF" || reports[1].ID != "finalpage/2026-03-20/2025.PDF" {
+		t.Fatalf("reports = %#v", reports)
+	}
+}
+
+func TestGetReport(t *testing.T) {
+	httpClient := &http.Client{Transport: roundTripper(func(request *http.Request) (*http.Response, error) {
+		if request.Method != http.MethodGet {
+			t.Errorf("method = %s, want GET", request.Method)
+		}
+		if got, want := request.URL.String(), "https://example.com/finalpage/2026-08-15/1225475343.PDF"; got != want {
+			t.Errorf("URL = %q, want %q", got, want)
+		}
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Status:     "200 OK",
+			Body:       io.NopCloser(strings.NewReader("%PDF-1.7")),
+			Header:     make(http.Header),
+		}, nil
+	})}
+
+	report, err := getReportWithClient(context.Background(), httpClient, "https://example.com", "finalpage/2026-08-15/1225475343.PDF")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got, want := string(report), "%PDF-1.7"; got != want {
+		t.Errorf("report = %q, want %q", got, want)
+	}
+}
+
+func TestGetReportRejectsInvalidID(t *testing.T) {
+	httpClient := &http.Client{Transport: roundTripper(func(request *http.Request) (*http.Response, error) {
+		t.Fatal("unexpected request")
+		return nil, nil
+	})}
+
+	_, err := getReportWithClient(context.Background(), httpClient, "https://example.com", "../secret.pdf")
+	if err == nil {
+		t.Fatal("getReportWithClient returned nil error")
+	}
+}
+
+func TestGetReportWithCacheReturnsCachedReport(t *testing.T) {
+	cacheFilePath := filepath.Join(t.TempDir(), "report.pdf")
+	if err := os.WriteFile(cacheFilePath, []byte("%PDF-cached"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	httpClient := &http.Client{Transport: roundTripper(func(request *http.Request) (*http.Response, error) {
+		t.Fatal("unexpected download")
+		return nil, nil
+	})}
+
+	reportPath, err := getReportWithCache(context.Background(), httpClient, "https://example.com", cacheFilePath, "finalpage/2026-08-15/1225475343.PDF")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got, want := reportPath, cacheFilePath; got != want {
+		t.Errorf("report path = %q, want %q", got, want)
+	}
+}
+
+func TestGetReportWithCacheDownloadsMissingReport(t *testing.T) {
+	cacheFilePath := filepath.Join(t.TempDir(), "report.pdf")
+	httpClient := &http.Client{Transport: roundTripper(func(request *http.Request) (*http.Response, error) {
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Status:     "200 OK",
+			Body:       io.NopCloser(strings.NewReader("%PDF-downloaded")),
+			Header:     make(http.Header),
+		}, nil
+	})}
+
+	reportPath, err := getReportWithCache(context.Background(), httpClient, "https://example.com", cacheFilePath, "finalpage/2026-08-15/1225475343.PDF")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got, want := reportPath, cacheFilePath; got != want {
+		t.Errorf("report path = %q, want %q", got, want)
+	}
+	cachedReport, err := os.ReadFile(cacheFilePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got, want := string(cachedReport), "%PDF-downloaded"; got != want {
+		t.Errorf("cached report = %q, want %q", got, want)
 	}
 }
 
@@ -282,4 +430,13 @@ type roundTripper func(*http.Request) (*http.Response, error)
 
 func (fn roundTripper) RoundTrip(request *http.Request) (*http.Response, error) {
 	return fn(request)
+}
+
+func jsonResponse(body string) (*http.Response, error) {
+	return &http.Response{
+		StatusCode: http.StatusOK,
+		Status:     "200 OK",
+		Body:       io.NopCloser(strings.NewReader(body)),
+		Header:     make(http.Header),
+	}, nil
 }
