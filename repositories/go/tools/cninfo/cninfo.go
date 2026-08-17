@@ -16,7 +16,11 @@ type QueryReportsToolOutput struct {
 	Reports []cninfo.Report `json:"reports" jsonschema:"the latest report followed by annual report summaries"`
 }
 
-type QueryTodayReportsToolOutput struct {
+type QueryReportsByDateToolInput struct {
+	Date string `json:"date,omitempty" jsonschema:"the disclosure date in YYYY-MM-DD format; defaults to today when omitted"`
+}
+
+type QueryReportsByDateToolOutput struct {
 	Reports []cninfo.Report `json:"reports" jsonschema:"all periodic reports disclosed today"`
 }
 
@@ -34,9 +38,9 @@ var QueryReportsToolMeta = &mcp.Tool{
 	Description: "get the latest periodic report and annual report summaries for an A-share stock",
 }
 
-var QueryTodayReportsToolMeta = &mcp.Tool{
-	Name:        "query_today_reports",
-	Description: "get all periodic reports disclosed today",
+var QueryReportsByDateToolMeta = &mcp.Tool{
+	Name:        "query_reports_by_date",
+	Description: "get all periodic reports disclosed on a date; defaults to today",
 }
 
 var GetReportToolMeta = &mcp.Tool{
@@ -56,16 +60,16 @@ func QueryReportsTool(ctx context.Context, req *mcp.CallToolRequest, input Query
 	return nil, QueryReportsToolOutput{Reports: reports}, nil
 }
 
-func QueryTodayReportsTool(ctx context.Context, req *mcp.CallToolRequest, input struct{}) (
+func QueryReportsByDateTool(ctx context.Context, req *mcp.CallToolRequest, input QueryReportsByDateToolInput) (
 	*mcp.CallToolResult,
-	QueryTodayReportsToolOutput,
+	QueryReportsByDateToolOutput,
 	error,
 ) {
-	reports, err := cninfo.QueryTodayReports(ctx)
+	reports, err := cninfo.QueryReportsByDate(ctx, input.Date)
 	if err != nil {
-		return nil, QueryTodayReportsToolOutput{}, fmt.Errorf("query today reports: %w", err)
+		return nil, QueryReportsByDateToolOutput{}, fmt.Errorf("query reports by date: %w", err)
 	}
-	return nil, QueryTodayReportsToolOutput{Reports: reports}, nil
+	return nil, QueryReportsByDateToolOutput{Reports: reports}, nil
 }
 
 func GetReportTool(ctx context.Context, req *mcp.CallToolRequest, input GetReportToolInput) (

@@ -51,9 +51,14 @@ func QueryReports(ctx context.Context, stock string) ([]Report, error) {
 	return queryReportsWithClient(ctx, http.DefaultClient, defaultBaseURL, security.stock())
 }
 
-// QueryTodayReports 查询当天披露的全部定期报告。
-func QueryTodayReports(ctx context.Context) ([]Report, error) {
-	return queryReportsByDateWithClient(ctx, http.DefaultClient, defaultBaseURL, time.Now().Format(time.DateOnly))
+// QueryReportsByDate 查询指定日期披露的全部定期报告。
+// date 的格式为“2006-01-02”；为空时使用当天日期。
+func QueryReportsByDate(ctx context.Context, date string) ([]Report, error) {
+	date, err := reportDate(date, time.Now())
+	if err != nil {
+		return nil, err
+	}
+	return queryReportsByDateWithClient(ctx, http.DefaultClient, defaultBaseURL, date)
 }
 
 // GetReport 获取指定报告的本地 PDF 路径。
@@ -604,6 +609,17 @@ func reportTitleWithSecurityName(announcement Announcement) string {
 		return announcement.AnnouncementTitle
 	}
 	return announcement.SecName + " - " + announcement.AnnouncementTitle
+}
+
+func reportDate(date string, now time.Time) (string, error) {
+	date = strings.TrimSpace(date)
+	if date == "" {
+		return now.Format(time.DateOnly), nil
+	}
+	if _, err := time.Parse(time.DateOnly, date); err != nil {
+		return "", fmt.Errorf("invalid report date %q: %w", date, err)
+	}
+	return date, nil
 }
 
 func queryAnnouncementsWithClient(ctx context.Context, httpClient *http.Client, baseURL string, options ...queryOption) (*QueryResponse, error) {

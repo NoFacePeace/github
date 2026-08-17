@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestQueryAnnouncements(t *testing.T) {
@@ -234,6 +235,28 @@ func TestQueryReportsByDate(t *testing.T) {
 	}
 	if len(reports) != 2 || reports[0].Title != "贵州茅台 - 2026年半年度报告摘要" || reports[0].ID != "finalpage/2026-08-15/half-year.PDF" || reports[1].ID != "finalpage/2026-08-15/first-quarter.PDF" {
 		t.Fatalf("reports = %#v", reports)
+	}
+}
+
+func TestReportDate(t *testing.T) {
+	now := time.Date(2026, time.August, 16, 12, 0, 0, 0, time.UTC)
+	tests := []struct {
+		date    string
+		want    string
+		wantErr bool
+	}{
+		{date: "", want: "2026-08-16"},
+		{date: " 2026-08-15 ", want: "2026-08-15"},
+		{date: "2026/08/15", wantErr: true},
+	}
+	for _, test := range tests {
+		got, err := reportDate(test.date, now)
+		if (err != nil) != test.wantErr {
+			t.Errorf("reportDate(%q) error = %v", test.date, err)
+		}
+		if got != test.want {
+			t.Errorf("reportDate(%q) = %q, want %q", test.date, got, test.want)
+		}
 	}
 }
 
