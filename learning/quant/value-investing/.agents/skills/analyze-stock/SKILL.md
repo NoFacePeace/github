@@ -1,85 +1,90 @@
 ---
 name: analyze-stock
-description: Analyze a specified A-share company from its latest and historical financial reports, apply the valuation models configured by industry in this repository's README.md, and update that company's analysis columns in stocks.md. Use when the user asks to analyze, value, refresh, or review a stock in this value-investing project.
+description: 基于指定 A 股公司的最新及历史财报，应用本仓库 README.md 中按行业配置的估值模型，并更新 stocks.md 中该公司的分析列。适用于用户要求在本价值投资项目中分析、估值、刷新或复核股票时。
 ---
 
-# Analyze Stock
+# 股票分析
 
-Analyze one stock at a time. Treat the work as research support, not personalized investment advice.
+一次只分析一只股票。分析仅作为研究支持，不构成个性化投资建议。
 
-## Workflow
+## 工作流程
 
-1. Resolve the company.
-   - Read `stocks.md` and find the row by the user-supplied company name or stock code.
-   - Confirm that exactly one row matches. Ask for clarification rather than editing an ambiguous row.
-   - Do not add a company or alter the columns through `最新价（元）`; update only the cells to the right of that column unless the user explicitly requests otherwise.
+1. 确认公司。
+   - 读取 `stocks.md`，按用户提供的公司名称或股票代码找到对应行。
+   - 确认只匹配到一行。若存在歧义，应要求澄清，不能直接编辑。
+   - 除非用户明确要求，不得新增公司，也不得修改 `最新价（元）` 及其左侧列；仅更新其右侧单元格。
 
-2. Load the repository framework.
-   - Read `README.md` before making classifications or calculations.
-   - Classify the company using a category defined in `README.md`. State the classification and why it fits.
-   - Use that category's specified primary model, cross-validation models, and minimum history requirement.
-   - If no applicable category or model exists in `README.md`, do not invent one or copy a model from another category. Report the gap and leave valuation-result cells unchanged. Update only factual fields that can be supported without the missing framework when the user asks for them.
+2. 加载仓库框架。
+   - 在分类或计算前先阅读 `README.md`。
+   - 使用 `README.md` 已定义的分类对公司归类，并说明匹配原因。
+   - 采用该分类指定的主模型、交叉验证模型和最低历史年限要求。
+   - 若 `README.md` 没有适用分类或模型，不得自行创造模型，也不得挪用其他分类的模型。应说明框架缺口，并保持估值结果单元格不变；用户要求时，仅更新无需依赖缺失框架即可验证的事实性字段。
 
-3. Gather source data.
-   - Start with the local MCP report archive described in [Local Report MCP](#local-report-mcp). Use its filings as the preferred primary source for A-share periodic reports.
-   - Prefer primary disclosures: the issuer's annual, interim, and quarterly reports; exchange announcements; and CNINFO filings for A-share companies.
-   - Retrieve the most recently available report and the number of annual reports required by the selected category. Use the newest interim or quarterly report as the forecast anchor when the category requires it.
-   - Use a reliable, date-stamped market-data source for the latest share price only if the user asks to refresh `最新价（元）`; otherwise preserve the existing value in `stocks.md`.
-   - Record every material source with its report period, publication date, access date, and URL in the response. Distinguish reported figures from estimates.
-   - Do not fill gaps with unaudited third-party estimates when a primary filing is available. If data cannot be verified, mark the affected conclusion as unavailable.
+3. 收集来源数据。
+   - 先使用下文的[本地报告 MCP](#本地报告-mcp)报告归档，将其中的定期报告作为 A 股财报的优先一手来源。
+   - 优先采用公司年报、中报、季报、交易所公告及巨潮资讯 A 股披露等一手材料。
+   - 获取最新可得报告，以及所选分类要求数量的历史年报；若分类要求，应以最新中报或季报作为预测锚点。
+   - 只有用户要求刷新 `最新价（元）` 时，才可用有日期标记的可靠行情来源更新股价；否则保留 `stocks.md` 中已有数值。
+   - 在回复中记录每个重要来源的报告期、披露日期、访问日期和 URL，并区分已披露数据与估计数据。
+   - 存在一手披露时，不得以未经审计的第三方预测填补缺口。无法验证时，应将受影响结论标注为不可得。
 
-4. Normalize the financials.
-   - Build a compact historical table covering the required years. Include the inputs needed by the selected models and meaningful per-share figures.
-   - Remove or separately disclose non-recurring gains/losses, material asset disposals, impairments, fair-value changes, and other items that would distort sustainable earnings or ROE.
-   - State material accounting changes, major share-count changes, and any restatements.
-   - Define Bear, Base, and Bull assumptions explicitly. Keep assumptions internally consistent across primary and cross-check models.
+4. 财务数据归一化。
+   - 建立覆盖要求年限的简明历史表，包含所选模型所需的输入和有意义的每股指标。
+   - 剔除或单独披露非经常性损益、重大资产处置、减值、公允价值变动等会扭曲可持续盈利或 ROE 的项目。
+   - 说明重要会计变更、重大股本变动及任何追溯重述。
+   - 明确 Bear、Base、Bull 情景假设，并保证主模型与交叉模型之间口径一致。
+   - Base 应代表分析师判断的最可能经营路径，而非保守情景；下行情景放入 Bear，上行执行情况放入 Bull。
+   - 数据允许时，应从收入、利润率、税率、折旧、资本开支和营运资本等经营驱动因素推导预测自由现金流，而不是套用未解释的现金流增速。
+   - 历史年限不足、现金转换波动或会计口径不确定性，应通过估值可信度和所需安全边际表达；不得为弥补不确定性而暗中压低 Base 假设。
 
-5. Value the company.
-   - Apply the README primary model first, following its stated inputs and history length.
-   - Run every cross-validation model named for the category. State the model, key assumptions, and result in a concise form suitable for `stocks.md`.
-   - Compare the results. Explain material divergence and lower confidence when models disagree, source data are incomplete, or assumptions are unusually sensitive.
-   - Derive target-price scenarios, safety margin versus the `stocks.md` latest price, and buy/hold/reduce/overvaluation ranges from the modeled outputs. Do not present an unsupported point estimate as certain.
-   - Assess Buffett and Graham frameworks separately. Tie each conclusion to durable economics, leverage, earnings quality, capital allocation, valuation, and downside protection rather than a generic label.
+5. 进行估值。
+   - 按 README 要求的输入与历史年限，先应用该分类的主模型。
+   - 运行该分类规定的所有交叉验证模型，并以适合 `stocks.md` 的简洁形式说明模型、关键假设与结果。
+   - 比较各模型结果。模型分歧较大、来源不完整或假设异常敏感时，应解释原因并降低可信度。
+   - 对 FCFF 模型，应分别识别超额现金或高流动性投资、有息负债、租赁负债和少数股东权益，并明确将企业价值桥接至股权价值；资产负债表已提供充分信息时，不得默认净现金为零。
+   - 从模型结果推导目标价情景、相对 `stocks.md` 最新价的安全边际，以及买入、持有、减仓和高估区间。不得将缺乏支持的点估值表述为确定结论。
+   - 分别评估巴菲特和格雷厄姆框架，结论应联系持久经济性、杠杆、盈利质量、资本配置、估值和下行保护，而非泛泛贴标签。
 
-6. Update `stocks.md`.
-   - Preserve the Markdown table structure, header order, company name, code, total market value, and latest-price cells.
-   - Update all applicable cells after `最新价（元）` for the matched row:
+6. 更新 `stocks.md`。
+   - 保持 Markdown 表格结构、表头顺序、公司名称、代码、总市值和最新价单元格不变。
+   - 更新匹配行中 `最新价（元）` 之后所有适用单元格：
      `行业分类`, `企业质量判断`, `正常化年度净利润`, `情景年度净利润预测（Bear/Base/Bull）`, `主情景目标价（Bear/Base/Bull）`, `交叉估值1（模型与结果）`, `交叉估值2（模型与结果）`, `市场隐含预期（增长/ROE）`, `估值可信度（高/中/低）`, `所需安全边际`, `理想买入价`, `安全买入价`, `持有区间`, `减仓价`, `高估区间起点`, `巴菲特框架判断`, `格雷厄姆框架判断`, and `最新财报期末`.
-   - Use concise Chinese text. Put units and currency in cells where helpful. Keep scenario order consistently `Bear/Base/Bull`.
-   - Do not use Markdown table pipes inside a cell. Use Chinese punctuation or semicolons instead.
-   - When a category is unavailable in `README.md`, do not overwrite prior valuation fields with guesses.
+   - 使用简洁中文；必要时在单元格中写明单位与货币。情景顺序始终保持 `Bear/Base/Bull`。
+   - 单元格内不得使用 Markdown 表格竖线，应用中文标点或分号替代。
+   - 当 `README.md` 中没有可用分类时，不得用猜测覆盖既有估值字段。
 
-7. Validate and report.
-   - Confirm the table still has the same number of columns in its header, separator, and edited row.
-   - Re-read the edited row and confirm the latest financial-report period agrees with the source.
-   - In the final response, summarize the classification, latest report used, main and cross-check valuation ranges, confidence, largest risks, and exactly which row was updated.
+7. 验证并汇报。
+   - 确认表头、分隔行和编辑行的列数保持一致。
+   - 重新读取编辑行，确认最新财报期末与来源一致。
+   - 最终回复应概述分类、采用的最新报告、主模型和交叉估值区间、可信度、最大风险及具体更新的行。
 
-## Bank Category
+## 银行分类
 
-For the `银行` category currently configured in `README.md`:
+对于 `README.md` 当前配置的 `银行` 分类：
 
-- Use `PB-ROE（基于可持续 ROE）` as the primary model.
-- Cross-check with `Forward PE（基于一致预期）` and `股息折现模型（DDM）`.
-- Use ten years of annual history, with the latest three years and most recent quarterly report serving as the forecast anchor.
-- Evaluate sustainable ROE using profitability, credit costs, capital adequacy, leverage, asset quality, provisioning, net-interest margin, fee income, and dividend capacity. Do not extrapolate a one-off ROE.
-- State PB, sustainable ROE, cost of equity, payout ratio or retention assumptions, and the relevant per-share book value or earnings inputs.
+- 以 `PB-ROE（基于可持续 ROE）` 为主模型。
+- 以 `Forward PE（基于一致预期）` 和 `股息折现模型（DDM）` 交叉验证。
+- 使用十年年报历史，以最近三年和最新季报作为预测锚点。
+- 从盈利能力、信用成本、资本充足率、杠杆、资产质量、拨备、净息差、手续费收入和分红能力评估可持续 ROE；不得外推一次性 ROE。
+- 说明 PB、可持续 ROE、股权成本、派息率或留存率假设，以及相关每股净资产或每股盈利输入。
 
-## Local Report MCP
+## 本地报告 MCP
 
-Use these local MCP tools for financial-report discovery and retrieval:
+使用下列本地 MCP 工具发现和获取财报：
 
-1. Call `query_reports(stock)` with the `stocks.md` code including its market prefix, such as `sh601398`.
-   - Use the returned list to identify the latest periodic report and the annual reports needed for the category's historical window.
-   - Retain each required `reportId`, report period, and publication date.
+1. 使用带市场前缀的 `stocks.md` 代码调用 `query_reports(stock)`，例如 `sh601398`。
+   - 利用返回列表识别最新定期报告，以及该分类历史窗口所需的年报。
+   - 保留每份所需报告的 `reportId`、报告期和披露日期。
 
-2. Call `get_report(reportId)` for every report selected in the prior step.
-   - It downloads the CNINFO PDF to the local cache and returns the local file path.
-   - Read the returned PDF path with the available PDF-reading tools; do not invent a path or assume a report was downloaded.
+2. 对上一步选定的每份报告调用 `get_report(reportId)`。
+   - 工具会把巨潮资讯 PDF 下载到本地缓存，并返回本地文件路径。
+   - 使用可用 PDF 阅读工具读取返回的路径；不得虚构路径或假设报告已下载。
 
-3. If `query_reports` does not provide enough historical annual reports for the model's required window, retrieve the missing primary filings from CNINFO or the issuer/exchange and state the shortfall. Do not reduce the required history without disclosing it.
+3. 若 `query_reports` 未提供模型所需窗口内足够的历史年报，应从巨潮资讯或公司/交易所获取缺失的一手披露，并说明缺口；不得在不披露的情况下缩短要求的历史年限。
 
-## Quality Bar
+## 质量要求
 
-- Show calculations sufficiently for another analyst to reproduce the result.
-- Use `数据不足` or `未验证` rather than guessing.
-- Never claim real-time prices, consensus, or filings without checking a dated source during the current task.
+- 展示足够的计算过程，使另一位分析师可以复现结果。
+- 数据不足时使用 `数据不足` 或 `未验证`，不得猜测。
+- 未在当前任务中核对带日期来源时，不得声称实时价格、一致预期或最新披露。
+- 完成前验证 Base 代表中性情景，且在同一经营驱动因素上不得比 Bear 更严格。保守性应通过情景分离、可信度与安全边际体现，而非通过未披露的方式压低 Base。
