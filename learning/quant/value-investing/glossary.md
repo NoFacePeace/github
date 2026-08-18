@@ -1,9 +1,18 @@
 # 术语表
 
-| 术语 | 英文/缩写 | 说明 |
-| --- | --- | --- |
-| 市净率 | Price-to-Book Ratio（PB） | 股价与每股净资产的比率，常用于银行等金融机构估值。 |
-| 市盈率 | Price-to-Earnings Ratio（PE） | 股价与过去 12 个月实际每股收益的比率，也称 TTM PE。 |
-| 归一化市盈率 | Normalized Price-to-Earnings Ratio（Normalized PE） | 基于跨周期正常化净利润或每股收益计算的市盈率，用于降低周期高低点对估值的影响。 |
-| 预期市盈率 | Forward Price-to-Earnings Ratio（Forward PE） | 股价与未来盈利预测的比率。 |
-| 股息折现模型 | Dividend Discount Model（DDM） | 通过预期股息的现值估计股票内在价值的模型。 |
+| 分类 | 术语 | 英文/缩写 | 说明 |
+| --- | --- | --- | --- |
+| 指标 | 市净率 | Price-to-Book Ratio（PB） | 股价与每股净资产的比率，常用于银行等金融机构估值。 |
+| 指标 | 每股收益 | Earnings Per Share（EPS） | 归母净利润除以总股本，表示每股股票对应的归母净利润，是 PE 的分母；可按 TTM、预测、正常化或中周期口径计算。 |
+| 指标 | 市盈率 | Price-to-Earnings Ratio（PE） | 股价与每股收益的比率，是市盈率估值倍数的通用名称。 |
+| 指标 | 滚动市盈率 | Trailing Twelve Months Price-to-Earnings Ratio（TTM PE） | 股价与过去 12 个月实际每股收益的比率。 |
+| 指标 | 正常化市盈率 | Normalized Price-to-Earnings Ratio（Normalized PE） | 基于跨周期正常化净利润或每股收益计算的市盈率，用于降低周期高低点对估值的影响。 |
+| 指标 | 中周期市盈率 | Mid-cycle Price-to-Earnings Ratio（Mid-cycle PE） | 股价与基于行业周期中枢假设推导的每股收益的比率，常用于资源、化工等强周期行业。 |
+| 指标 | 预期市盈率 | Forward Price-to-Earnings Ratio（Forward PE） | 股价与未来盈利预测的比率。 |
+| 指标 | 市盈率相对盈利增长比率 | Price/Earnings to Growth Ratio（PEG） | 市盈率除以预期盈利增长率，用于判断估值是否与公司的增长速度相匹配。 |
+| 指标 | 净资产收益率 | Return on Equity（ROE） | 归母净利润除以平均归母股东权益，衡量公司运用股东净资产创造利润的效率。 |
+| 估值方法 | 市盈率相对估值法 | Price-to-Earnings Relative Valuation | 基于选定口径的每股收益和合理 PE 倍数推导目标价，常以行业可比或自身历史估值区间确定合理倍数。 |
+| 估值模型 | 市净率-净资产收益率估值 | Price-to-Book Return on Equity（PB-ROE） | 以可持续 ROE、长期增长率和股权成本推导合理 PB，再乘以每股净资产估算目标价，常用于银行等金融企业。 |
+| 估值模型 | 股息折现模型 | Dividend Discount Model（DDM） | 通过预期股息的现值估计股票内在价值的模型。 |
+
+> 指标用于描述估值、盈利或增长；估值方法说明如何使用指标、情景或可比对象进行估值；估值模型则将明确假设代入公式，推导企业价值或目标价。
