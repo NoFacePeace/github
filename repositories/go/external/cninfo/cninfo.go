@@ -27,21 +27,20 @@ const (
 )
 
 const (
-	annualReportSummaryPageSize = 30
-	latestReportPageSize        = 30
-	staticFileBaseURL           = "https://static.cninfo.com.cn/"
-	categoryAnnualReport        = "category_ndbg_szsh"
-	categorySemiAnnualReport    = "category_bndbg_szsh"
-	categoryFirstQuarterReport  = "category_yjdbg_szsh"
-	categoryThirdQuarterReport  = "category_sjdbg_szsh"
-	financialReportCategories   = categoryAnnualReport + ";" + categorySemiAnnualReport + ";" + categoryFirstQuarterReport + ";" + categoryThirdQuarterReport
-	annualReportSummaryKeyword  = "年度报告摘要"
+	annualReportPageSize       = 30
+	latestReportPageSize       = 30
+	staticFileBaseURL          = "https://static.cninfo.com.cn/"
+	categoryAnnualReport       = "category_ndbg_szsh"
+	categorySemiAnnualReport   = "category_bndbg_szsh"
+	categoryFirstQuarterReport = "category_yjdbg_szsh"
+	categoryThirdQuarterReport = "category_sjdbg_szsh"
+	financialReportCategories  = categoryAnnualReport + ";" + categorySemiAnnualReport + ";" + categoryFirstQuarterReport + ";" + categoryThirdQuarterReport
 )
 
 var reportYearPattern = regexp.MustCompile(`(\d{4})年`)
 
-// QueryReports 查询指定股票的最新定期报告和全部年度报告摘要。
-// 最新报告已包含在年度报告摘要中时，返回年度报告摘要；否则将最新报告放在结果首位。
+// QueryReports 查询指定股票的最新定期报告和全部年度报告（不含摘要）。
+// 最新报告已包含在年度报告中时，返回年度报告；否则将最新报告放在结果首位。
 // stock 的格式为“市场前缀 + 证券代码”，例如“sz000001”或“sh600547”。
 func QueryReports(ctx context.Context, stock string) ([]Report, error) {
 	security, err := resolveSecurity(ctx, stock)
@@ -468,12 +467,10 @@ func queryLatestReportWithClient(ctx context.Context, httpClient *http.Client, b
 	latestPeriod := 0
 	for _, announcement := range response.Announcements {
 		period, ok := reportPeriod(announcement.AnnouncementTitle)
-		if !ok || isEnglishVersionReport(announcement.AnnouncementTitle) {
+		if !ok || isEnglishVersionReport(announcement.AnnouncementTitle) || isReportSummary(announcement.AnnouncementTitle) {
 			continue
 		}
-		if latestAnnouncement == nil ||
-			period > latestPeriod ||
-			period == latestPeriod && !isReportSummary(latestAnnouncement.AnnouncementTitle) && isReportSummary(announcement.AnnouncementTitle) {
+		if latestAnnouncement == nil || period > latestPeriod {
 			announcement := announcement
 			latestAnnouncement = &announcement
 			latestPeriod = period
@@ -495,6 +492,11 @@ func isEnglishVersionReport(title string) bool {
 
 func isReportSummary(title string) bool {
 	return strings.Contains(title, "摘要")
+}
+
+func isAnnualReportSummary(title string) bool {
+	period, ok := reportPeriod(title)
+	return ok && period%4 == 0 && isReportSummary(title)
 }
 
 func reportPeriod(title string) (int, bool) {
@@ -523,15 +525,14 @@ func reportPeriod(title string) (int, bool) {
 	return year*4 + quarter, true
 }
 
-func queryAnnualReportSummariesWithClient(ctx context.Context, httpClient *http.Client, baseURL, stock string) ([]Report, error) {
-	summaries := make([]Report, 0)
+func queryAnnualReportsWithClient(ctx context.Context, httpClient *http.Client, baseURL, stock string) ([]Report, error) {
+	reports := make([]Report, 0)
 	announcementsCount := 0
 	for pageNum := 1; ; pageNum++ {
 		response, err := queryAnnouncementsWithClient(ctx, httpClient, baseURL,
 			withStock(stock),
 			withCategory(categoryAnnualReport),
-			withSearchKey(annualReportSummaryKeyword),
-			withPageSize(annualReportSummaryPageSize),
+			withPageSize(annualReportPageSize),
 			withPageNum(pageNum),
 		)
 		if err != nil {
@@ -539,7 +540,10 @@ func queryAnnualReportSummariesWithClient(ctx context.Context, httpClient *http.
 		}
 
 		for _, announcement := range response.Announcements {
-			summaries = append(summaries, Report{
+			if isAnnualReportSummary(announcement.AnnouncementTitle) || isEnglishVersionReport(announcement.AnnouncementTitle) {
+				continue
+			}
+			reports = append(reports, Report{
 				Title: reportTitleWithSecurityName(announcement),
 				ID:    announcement.AdjunctURL,
 			})
@@ -547,11 +551,11 @@ func queryAnnualReportSummariesWithClient(ctx context.Context, httpClient *http.
 		announcementsCount += len(response.Announcements)
 		if len(response.Announcements) == 0 ||
 			response.TotalAnnouncement > 0 && announcementsCount >= response.TotalAnnouncement ||
-			!response.HasMore && len(response.Announcements) < annualReportSummaryPageSize {
+			!response.HasMore && len(response.Announcements) < annualReportPageSize {
 			break
 		}
 	}
-	return summaries, nil
+	return reports, nil
 }
 
 func queryReportsWithClient(ctx context.Context, httpClient *http.Client, baseURL, stock string) ([]Report, error) {
@@ -559,19 +563,19 @@ func queryReportsWithClient(ctx context.Context, httpClient *http.Client, baseUR
 	if err != nil {
 		return nil, err
 	}
-	annualReportSummaries, err := queryAnnualReportSummariesWithClient(ctx, httpClient, baseURL, stock)
+	annualReports, err := queryAnnualReportsWithClient(ctx, httpClient, baseURL, stock)
 	if err != nil {
 		return nil, err
 	}
-	if latestReport == nil {
-		return annualReportSummaries, nil
+	if latestReport == nil || isAnnualReportSummary(latestReport.Title) {
+		return annualReports, nil
 	}
-	for _, report := range annualReportSummaries {
+	for _, report := range annualReports {
 		if report.ID == latestReport.ID {
-			return annualReportSummaries, nil
+			return annualReports, nil
 		}
 	}
-	return append([]Report{*latestReport}, annualReportSummaries...), nil
+	return append([]Report{*latestReport}, annualReports...), nil
 }
 
 func queryReportsByDateWithClient(ctx context.Context, httpClient *http.Client, baseURL, date string) ([]Report, error) {

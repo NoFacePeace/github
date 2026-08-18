@@ -57,7 +57,7 @@ func TestQueryAnnouncements(t *testing.T) {
 	}
 }
 
-func TestQueryAnnualReportSummaries(t *testing.T) {
+func TestQueryAnnualReportsFiltersSummaries(t *testing.T) {
 	httpClient := &http.Client{Transport: roundTripper(func(request *http.Request) (*http.Response, error) {
 		body, err := io.ReadAll(request.Body)
 		if err != nil {
@@ -70,7 +70,7 @@ func TestQueryAnnualReportSummaries(t *testing.T) {
 		if got := form.Get("category"); got != categoryAnnualReport {
 			t.Errorf("category = %q", got)
 		}
-		if got := form.Get("searchkey"); got != annualReportSummaryKeyword {
+		if got := form.Get("searchkey"); got != "" {
 			t.Errorf("searchkey = %q", got)
 		}
 		if got := form.Get("stock"); got != "000001,gssz0000001" {
@@ -79,17 +79,17 @@ func TestQueryAnnualReportSummaries(t *testing.T) {
 		return &http.Response{
 			StatusCode: http.StatusOK,
 			Status:     "200 OK",
-			Body:       io.NopCloser(strings.NewReader(`{"announcements":[{"announcementId":"2","announcementTitle":"2024年年度报告摘要","secName":"平安银行","adjunctUrl":"finalpage/2025-03-15/1212345678.PDF"}],"totalAnnouncement":1}`)),
+			Body:       io.NopCloser(strings.NewReader(`{"announcements":[{"announcementId":"2","announcementTitle":"2024年年度报告摘要","secName":"平安银行","adjunctUrl":"finalpage/2025-03-15/1212345678.PDF"},{"announcementId":"3","announcementTitle":"2024年年度报告","secName":"平安银行","adjunctUrl":"finalpage/2025-03-15/1212345679.PDF"},{"announcementId":"4","announcementTitle":"2024年年度报告（英文版）","secName":"平安银行","adjunctUrl":"finalpage/2025-03-15/1212345680.PDF"}],"totalAnnouncement":3}`)),
 			Header:     make(http.Header),
 		}, nil
 	})}
 
-	summaries, err := queryAnnualReportSummariesWithClient(context.Background(), httpClient, "https://example.com", "000001,gssz0000001")
+	reports, err := queryAnnualReportsWithClient(context.Background(), httpClient, "https://example.com", "000001,gssz0000001")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(summaries) != 1 || summaries[0].Title != "平安银行 - 2024年年度报告摘要" || summaries[0].ID != "finalpage/2025-03-15/1212345678.PDF" {
-		t.Fatalf("summaries = %#v", summaries)
+	if len(reports) != 1 || reports[0].Title != "平安银行 - 2024年年度报告" || reports[0].ID != "finalpage/2025-03-15/1212345679.PDF" {
+		t.Fatalf("reports = %#v", reports)
 	}
 }
 
@@ -129,7 +129,7 @@ func TestQueryLatestReport(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if report == nil || report.Title != "平安银行 - 2026年第一季度报告摘要" || report.ID != "finalpage/2026-04-30/1225261227.PDF" {
+	if report == nil || report.Title != "平安银行 - 2026年第一季度报告" || report.ID != "finalpage/2026-04-30/1225261226.PDF" {
 		t.Fatalf("report = %#v", report)
 	}
 	if requests != 1 {
@@ -149,9 +149,9 @@ func TestQueryReportsDoesNotDuplicateLatestAnnualReport(t *testing.T) {
 		}
 		switch form.Get("category") {
 		case financialReportCategories:
-			return jsonResponse(`{"announcements":[{"announcementTitle":"2025年年度报告摘要","adjunctUrl":"finalpage/2026-03-20/2025.PDF"}],"totalAnnouncement":1}`)
+			return jsonResponse(`{"announcements":[{"announcementTitle":"2025年年度报告摘要","adjunctUrl":"finalpage/2026-03-20/2025-summary.PDF"},{"announcementTitle":"2025年年度报告","adjunctUrl":"finalpage/2026-03-20/2025.PDF"}],"totalAnnouncement":2}`)
 		case categoryAnnualReport:
-			return jsonResponse(`{"announcements":[{"announcementTitle":"2025年年度报告摘要","adjunctUrl":"finalpage/2026-03-20/2025.PDF"},{"announcementTitle":"2024年年度报告摘要","adjunctUrl":"finalpage/2025-03-20/2024.PDF"}],"totalAnnouncement":2}`)
+			return jsonResponse(`{"announcements":[{"announcementTitle":"2025年年度报告摘要","adjunctUrl":"finalpage/2026-03-20/2025-summary.PDF"},{"announcementTitle":"2025年年度报告","adjunctUrl":"finalpage/2026-03-20/2025.PDF"},{"announcementTitle":"2024年年度报告","adjunctUrl":"finalpage/2025-03-20/2024.PDF"}],"totalAnnouncement":3}`)
 		default:
 			t.Fatalf("unexpected category %q", form.Get("category"))
 			return nil, nil
@@ -179,9 +179,9 @@ func TestQueryReportsPrependsLatestNonAnnualReport(t *testing.T) {
 		}
 		switch form.Get("category") {
 		case financialReportCategories:
-			return jsonResponse(`{"announcements":[{"announcementTitle":"2026年半年度报告摘要","adjunctUrl":"finalpage/2026-08-15/2026-half.PDF"}],"totalAnnouncement":1}`)
+			return jsonResponse(`{"announcements":[{"announcementTitle":"2026年半年度报告摘要","adjunctUrl":"finalpage/2026-08-15/2026-half-summary.PDF"},{"announcementTitle":"2026年半年度报告","adjunctUrl":"finalpage/2026-08-15/2026-half.PDF"}],"totalAnnouncement":2}`)
 		case categoryAnnualReport:
-			return jsonResponse(`{"announcements":[{"announcementTitle":"2025年年度报告摘要","adjunctUrl":"finalpage/2026-03-20/2025.PDF"}],"totalAnnouncement":1}`)
+			return jsonResponse(`{"announcements":[{"announcementTitle":"2025年年度报告摘要","adjunctUrl":"finalpage/2026-03-20/2025-summary.PDF"},{"announcementTitle":"2025年年度报告","adjunctUrl":"finalpage/2026-03-20/2025.PDF"}],"totalAnnouncement":2}`)
 		default:
 			t.Fatalf("unexpected category %q", form.Get("category"))
 			return nil, nil
