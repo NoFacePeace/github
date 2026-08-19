@@ -11,7 +11,11 @@
 | 指标 | 预期市盈率 | Forward Price-to-Earnings Ratio（Forward PE） | 股价与未来盈利预测的比率。 |
 | 指标 | 市盈率相对盈利增长比率 | Price/Earnings to Growth Ratio（PEG） | 市盈率除以预期盈利增长率，用于判断估值是否与公司的增长速度相匹配。 |
 | 指标 | 净资产收益率 | Return on Equity（ROE） | 归母净利润除以平均归母股东权益，衡量公司运用股东净资产创造利润的效率。 |
+| 指标 | 公司自由现金流 | Free Cash Flow to Firm（FCFF） | 公司满足再投资需求后、在支付债务相关义务前可供全部资本提供者支配的自由现金流；常用于 FCFF DCF 和 EV/FCFF 等企业价值口径。 |
+| 指标 | 股权自由现金流 | Free Cash Flow to Equity（FCFE） | 公司在满足再投资和债务相关义务后，可供股东支配的自由现金流；常用于 FCFE DCF 和 P/FCF 等股权价值口径。 |
 | 估值方法 | 市盈率相对估值法 | Price-to-Earnings Relative Valuation | 基于选定口径的每股收益和合理 PE 倍数推导目标价，常以行业可比或自身历史估值区间确定合理倍数。 |
+| 估值方法 | 现金流折现估值 | Discounted Cash Flow（DCF） | 将预测自由现金流按对应折现率折现并加总终值现值，用于估算企业价值或股权价值；按现金流口径分为 FCFF DCF 和 FCFE DCF。 |
+| 估值方法 | 两阶段现金流折现估值 | Two-stage Discounted Cash Flow（Two-stage DCF） | 将预测期分为明确预测阶段与终值阶段：前一阶段逐年预测现金流并按折现率折现，后一阶段以永续增长率计算终值并折现，常用于成长型公司。 |
 | 估值模型 | 市净率-净资产收益率估值 | Price-to-Book Return on Equity（PB-ROE） | 以可持续 ROE、长期增长率和股权成本推导合理 PB，再乘以每股净资产估算目标价，常用于银行等金融企业。 |
 | 估值模型 | 股息折现模型 | Dividend Discount Model（DDM） | 通过预期股息的现值估计股票内在价值的模型。 |
 
