@@ -11,6 +11,9 @@
 | 指标 | 预期市盈率 | Forward Price-to-Earnings Ratio（Forward PE） | 股价与未来盈利预测的比率。 |
 | 指标 | 市盈率相对盈利增长比率 | Price/Earnings to Growth Ratio（PEG） | 市盈率除以预期盈利增长率，用于判断估值是否与公司的增长速度相匹配。 |
 | 指标 | 净资产收益率 | Return on Equity（ROE） | 归母净利润除以平均归母股东权益，衡量公司运用股东净资产创造利润的效率。 |
+| 指标 | 息税前利润 | Earnings Before Interest and Taxes（EBIT） | 扣除经营成本和费用、但尚未扣除利息费用及所得税的利润；在 FCFF DCF 中通常以 EBIT ×（1 - 所得税率）计算税后经营利润。 |
+| 指标 | 加权平均资本成本 | Weighted Average Cost of Capital（WACC） | 按股权和有息债务在资本结构中的权重计算的平均资金成本；常用公式为 WACC = 股权成本 × 股权权重 + 税后债务成本 × 债务权重，是 FCFF DCF 的常用折现率。 |
+| 指标 | 企业价值 | Enterprise Value（EV） | 企业经营资产对全部资本提供者的价值；通常按 EV = 股权价值 + 有息负债 - 现金及等价物计算，在 FCFF DCF 中等于预测自由现金流现值之和。 |
 | 指标 | 公司自由现金流 | Free Cash Flow to Firm（FCFF） | 公司满足再投资需求后、在支付债务相关义务前可供全部资本提供者支配的自由现金流；常用于 FCFF DCF 和 EV/FCFF 等企业价值口径。 |
 | 指标 | 股权自由现金流 | Free Cash Flow to Equity（FCFE） | 公司在满足再投资和债务相关义务后，可供股东支配的自由现金流；常用于 FCFE DCF 和 P/FCF 等股权价值口径。 |
 | 估值方法 | 市盈率相对估值法 | Price-to-Earnings Relative Valuation | 基于选定口径的每股收益和合理 PE 倍数推导目标价，常以行业可比或自身历史估值区间确定合理倍数。 |
