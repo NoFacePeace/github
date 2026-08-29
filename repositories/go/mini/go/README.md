@@ -1,5 +1,6 @@
 # Go 底层原理学习
 
-## 核心数据结构
+## 数据结构
 
-1. [slice](./slice.md)
+1. [array](./array.md)
+2. [slice](./slice.md)
