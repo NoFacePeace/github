@@ -124,3 +124,31 @@ newLen > oldCap
 3. 分配新的底层数组。
 4. 将旧元素复制到新的底层数组。
 5. 返回包含新数组指针、新长度和新容量的 slice，再写入本次追加的元素。
+
+### 3.3 容量计算
+
+标准扩容路径通过 `runtime.nextslicecap` 计算候选容量：
+
+```text
+如果 newLen > 2 × oldCap：
+    candidateCap = newLen
+
+否则，如果 oldCap < 256：
+    candidateCap = 2 × oldCap
+
+否则：
+    candidateCap += (candidateCap + 3 × 256) >> 2
+    重复计算，直到 candidateCap >= newLen
+```
+
+当容量从 `256` 开始增长时，该公式的增长倍数从 `2` 平滑过渡，并随容量增大逐渐趋近 `1.25`。
+
+候选容量还需要转换为字节数，并通过 `roundupsize` 向上取整到内存分配器支持的规格：
+
+```text
+requestedBytes = candidateCap × elementSize
+allocatedBytes = roundupsize(requestedBytes)
+actualCap      = allocatedBytes / elementSize
+```
+
+因此，最终容量可能大于 `nextslicecap` 计算的候选容量，并受元素大小和内存分配规格影响。
