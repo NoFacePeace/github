@@ -13,6 +13,7 @@
 ## Go 源码
 
 - Go 官方源码位于 `/Users/haotao.chen/Desktop/repositories/go`，上游仓库为 `https://github.com/golang/go.git`。
+- 当前工作区源码为 Go 1.28 开发版；版本信息仅在本文件维护，其他项目文档不重复记录。
 - 学习 Go 原理时，优先以该工作区源码为准，不要默认使用本机已安装 `GOROOT` 中的源码。
 - 引用具体实现前，检查该仓库当前的分支、提交和 `src/internal/goversion/goversion.go`，以确认开发版本。
 - 除非用户明确要求，仅将该仓库作为只读学习资料，不修改源码，并保留其现有本地改动。
