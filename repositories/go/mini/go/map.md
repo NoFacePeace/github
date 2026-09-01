@@ -219,18 +219,7 @@ runtime 通过 `MapType` 中的 offset 和 stride 统一访问两种布局。slo
 - group 大小以及 key/elem 的 offset、stride。
 - key 或 elem 是否间接存储等标志。
 
-哈希被拆成 H1 和 H2：
-
-```text
-hash
-┌──────────────────────── H1 ───────────────────────┬── H2 ──┐
-│             directory 与 group 探测               │ 低 7 位 │
-└───────────────────────────────────────────────────┴─────────┘
-```
-
-```text
-hash(key, seed) → directory → table → probe group → match H2 → compare key → elem
-```
+`MapType` 提供完整 hash 和 key 比较能力；hash 如何拆成 H1、H2 并参与查找，见第 4.2 节。
 
 ## 3. 创建与初始化
 
@@ -317,6 +306,8 @@ make(map[string]int, 2)
 → table/group 探测
 ```
 
+### 4.1 整体流程
+
 完整 map 的查找流程：
 
 1. 使用 key、类型哈希函数和 `seed` 计算 hash。
@@ -326,7 +317,59 @@ make(map[string]int, 2)
 5. 只对候选 full slot 执行完整 key 比较。
 6. 找到相同 key 时返回 elem；遇到 empty 时结束查找。
 
-### 4.1 三角数探测
+### 4.2 H1 与 H2
+
+H1 和 H2 不是两个哈希函数，而是同一个 hash 的两部分。在 64 位平台上：
+
+```text
+hash
+┌──────────────────────── H1 ───────────────────────┬── H2 ──┐
+│                      高 57 位                     │ 低 7 位 │
+└───────────────────────────────────────────────────┴─────────┘
+```
+
+```go
+H1 = hash >> 7
+H2 = hash & 0x7f
+```
+
+- H1 负责定位：其中的最高位选择 table，相关低位选择初始 group 并构造探测序列。
+- H2 负责过滤：作为 7 位短指纹保存在 full slot 对应的 control byte 中。
+
+查找时，runtime 将目标 H2 与一个 group 的 8 个 control byte 批量匹配，只对 H2 相同的候选 slot 执行完整 key 比较。H2 只有 128 种取值，相同不代表 key 相等；最终仍需调用 `Equal`。
+
+control byte 的最高位用于区分状态，剩余 7 位才能保存 H2：
+
+```text
+empty:   1000_0000
+deleted: 1111_1110
+full:    0hhh_hhhh
+```
+
+```text
+H1 → 选择 table 和探测 group
+H2 → 筛选 group 中的候选 slot
+Equal → 最终确认 key
+```
+
+### 4.3 选择 Table
+
+完整 map 通过 directory 选择 table。directory 长度为 `1 << globalDepth`，runtime 取 hash 最高 `globalDepth` 位作为索引：
+
+```text
+globalDepth = 3
+hash 前缀   = 010...
+directoryIndex = 0b010 = 2
+table = directory[2]
+```
+
+- `dirLen == 0`：小 map 直接使用单个 group，没有 table。
+- `dirLen == 1`：直接选择 `directory[0]`。
+- `dirLen > 1`：使用 hash 高位计算 directory 索引。
+
+多个连续 directory 项可能指向同一个 table，但查找只读取计算出的那一项。选择 table 是直接索引，不执行探测；三角数探测只发生在选定 table 的 group 数组内部。
+
+### 4.4 三角数探测
 
 探测步长依次为 `+1、+2、+3`，累计偏移是三角数：
 
@@ -340,7 +383,7 @@ p(i) = H1 + i × (i + 1) / 2 mod groupCount
 
 group 数量为 2 的幂时，该序列能够访问所有 group。它保留一定缓存局部性，同时降低线性探测在连续写入冲突时形成主聚集的程度。
 
-### 4.2 终止条件
+### 4.5 终止条件
 
 - `full`：可能是目标 key，需要比较 H2 和完整 key。
 - `deleted`：目标 key 可能在后续 group，不能停止。
@@ -348,7 +391,7 @@ group 数量为 2 的幂时，该序列能够访问所有 group。它保留一�
 
 元素地址可能在写入、删除或扩容后变化，所以 Go 不允许直接取得 `m[key]` 的地址。
 
-## 5. 写入与冲突
+## 5. 写入
 
 写入由 `runtime.mapassign` 等入口完成，核心是在执行查找的同时记录可用位置。
 
