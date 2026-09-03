@@ -19,3 +19,4 @@ Go 源代码 → 编译期 → 目标文件 → 链接期 → 可执行文件 �
 1. [array](./array.md)
 2. [slice](./slice.md)
 3. [map](./map.md)
+4. [string](./string.md)
