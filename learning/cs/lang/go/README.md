@@ -20,3 +20,7 @@ Go 源代码 → 编译期 → 目标文件 → 链接期 → 可执行文件 �
 2. [slice](./slice.md)
 3. [map](./map.md)
 4. [string](./string.md)
+
+## 3. 语言机制
+
+1. [interface](./interface.md)
