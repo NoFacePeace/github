@@ -8,7 +8,9 @@ schedule:
 
 sources_file: ./sources.yaml
 output_directory: ./summaries
-date_scope: previous_day
+date_scope: rolling_24_hours
+window_hours: 24
+date_timezone: Asia/Shanghai
 language: zh-CN
 deduplicate: true
 notification_policy: meaningful_change_failure_or_action_required
@@ -19,6 +21,6 @@ output:
   overwrite_same_date: true
 
 instructions: |
-  读取 sources_file 中 sources 列表的名称和 URL，逐一读取这些来源，筛选前一天发布的资讯或帖子，分别整理并合并成简洁的中文概要。注明统计日期和来源，尽量合并重复内容；如果配置文件不可访问、格式错误，或某个来源/前一天没有可用内容，明确说明。
+  读取 sources_file 中 sources 列表的名称和 URL，逐一读取这些来源，筛选执行时刻往前 24 小时内发布的资讯或帖子，分别整理并合并成简洁的中文概要。时间窗口按北京时间计算，不按自然日切割。注明统计时间窗口和来源，尽量合并重复内容；如果配置文件不可访问、格式错误，或某个来源/过去 24 小时内没有可用内容，明确说明。
 
-  每次运行结束时，将最终摘要（包括统计日期、来源、标题、链接、简要要点以及来源失败说明）保存到 output_directory/YYYY-MM-DD.md，其中日期使用北京时间的前一天日期。同一天重复运行时更新或覆盖该日期文件，避免重复追加。保存成功后在输出中给出文件路径；保存失败时也要明确说明。除目标摘要文件外，不修改 task.yaml、sources.yaml 或其他文件。
+  每次运行结束时，将最终摘要（包括统计时间窗口、来源、标题、链接、简要要点以及来源失败说明）保存到 output_directory/YYYY-MM-DD.md，其中 YYYY-MM-DD 使用北京时间的运行日期。同一天重复运行时更新或覆盖该日期文件，避免重复追加。保存成功后在输出中给出文件路径；保存失败时也要明确说明。除目标摘要文件外，不修改 task.yaml、sources.yaml 或其他文件。
