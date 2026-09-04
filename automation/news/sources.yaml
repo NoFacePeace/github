@@ -1,0 +1,13 @@
+sources:
+  - name: LocalLLaMA
+    url: https://www.reddit.com/r/LocalLLaMA/.rss
+  - name: OpenAI News
+    url: https://openai.com/news/rss.xml
+  - name: Anthropic News
+    url: https://www.anthropic.com/news
+  - name: Hugging Face Blog
+    url: https://huggingface.co/blog/feed.xml
+  - name: GitHub Trending Daily
+    url: https://github.com/trending?since=daily
+  - name: Hacker News
+    url: https://news.ycombinator.com/rss
