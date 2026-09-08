@@ -64,3 +64,13 @@ RBAC 负责授权，不负责登录认证。权限检查必须在服务端执行
 #### 1.6.1 OpenID Connect（OIDC）
 
 #### 1.6.2 SAML 2.0
+
+## 2. 传输安全
+
+### 2.1 TLS
+
+- [TLS 学习笔记](tls.md)：SSL/TLS 演进、版本差异、证书验证、握手、会话恢复及双向认证。
+
+## 3. 密码学
+
+- [密码学学习笔记](cryptography.md)：RSA、DH、ECDH、DHE、ECDHE 的用途、协商原理、前向保密及选择思路。
