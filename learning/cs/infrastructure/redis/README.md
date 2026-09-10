@@ -183,68 +183,7 @@ Redis 根据元素数量、元素大小和内容选择编码，在内存占用�
 
 ## 4. 数据结构
 
-本章从存储结构出发，学习内存布局、查找与更新过程，以及扩容和空间优化。同一种结构可以被多个数据类型复用。
-
-### 4.1 结构总览
-
-| 数据结构 | 核心特点 | 主要关联 |
-| --- | --- | --- |
-| SDS | 带长度和容量信息的动态字符串 | String，以及键名、字段名等字符串数据 |
-| 字典（dict） | 基于哈希表的键值映射 | 数据库键空间、Hash、Set、ZSet |
-| 整数集合（intset） | 有序、紧凑存储整数 | Set |
-| listpack | 在连续内存中紧凑存储多个元素 | List、Hash、Set、ZSet、Stream |
-| quicklist | 将多个节点组织成双向链表，节点通常持有 listpack | List |
-| 跳表（skiplist） | 通过多层索引支持有序查找 | ZSet |
-| 基数树（rax） | 压缩公共前缀的树形索引 | Stream 的消息块索引及内部管理结构 |
-
-### 4.2 SDS：动态字符串
-
-- **作用**：保存二进制安全的字符串，显式记录长度，避免获取长度时扫描整个字符串。
-- **学习重点**：不同长度的头部布局、已用长度与可用容量、扩容策略，以及与 C 字符串的关系。
-- **关联类型**：String 的 `raw`、`embstr` 编码使用 SDS；两种编码的对象与字符串内存分配方式不同。
-- **源码入口**：[sds.h](https://github.com/redis/redis/blob/7.2.16/src/sds.h)、[sds.c](https://github.com/redis/redis/blob/7.2.16/src/sds.c)。
-
-### 4.3 字典：哈希表
-
-- **作用**：通过哈希函数定位桶，支持平均 O(1) 的查找、插入和删除。
-- **学习重点**：桶与条目的组织、哈希冲突处理、负载因子、扩缩容，以及渐进式 rehash 如何分摊迁移成本。
-- **关联类型**：Hash 存储字段和值，Set 存储成员，ZSet 借助字典按成员查分数；数据库本身也使用字典管理键。
-- **源码入口**：[dict.h](https://github.com/redis/redis/blob/7.2.16/src/dict.h)、[dict.c](https://github.com/redis/redis/blob/7.2.16/src/dict.c)。
-
-### 4.4 intset：整数集合
-
-- **作用**：在连续内存中按顺序存储不重复的整数，减少通用哈希表的额外开销。
-- **学习重点**：二分查找、插入与删除时的数据移动，以及 16、32、64 位整数存储宽度的升级。
-- **关联类型**：Set 的一种底层编码。intset 内部的整数宽度升级与 Set 转为其他编码是两个不同过程。
-- **源码入口**：[intset.h](https://github.com/redis/redis/blob/7.2.16/src/intset.h)、[intset.c](https://github.com/redis/redis/blob/7.2.16/src/intset.c)。
-
-### 4.5 listpack：紧凑列表
-
-- **作用**：把多个整数或字符串元素存入一段连续内存，减少逐个分配对象和保存指针的开销。
-- **学习重点**：头部、元素编码、反向遍历所需的长度信息，以及插入、删除时的内存移动。
-- **关联类型**：Hash、Set、ZSet 可直接使用 listpack；quicklist 和 Stream 则将它作为内部存储单元。
-- **源码入口**：[listpack.h](https://github.com/redis/redis/blob/7.2.16/src/listpack.h)、[listpack.c](https://github.com/redis/redis/blob/7.2.16/src/listpack.c)。
-
-### 4.6 quicklist：分块双向链表
-
-- **作用**：将数据分散到多个双向链接的节点，在紧凑存储和局部修改成本之间取舍；普通节点持有 listpack，大元素也可独立存储。
-- **学习重点**：节点布局、两端操作、节点分裂与合并、容量限制，以及中间节点的压缩策略。
-- **关联类型**：List。quicklist 是组织节点的外层结构，listpack 是节点内的存储结构。
-- **源码入口**：[quicklist.h](https://github.com/redis/redis/blob/7.2.16/src/quicklist.h)、[quicklist.c](https://github.com/redis/redis/blob/7.2.16/src/quicklist.c)。
-
-### 4.7 skiplist：跳表
-
-- **作用**：用多层前向指针加速有序查找，查找、插入和删除的期望复杂度为 O(log N)。
-- **学习重点**：随机层高、按分数及成员排序、跨度（span）如何支持排名计算，以及范围遍历。
-- **关联类型**：ZSet 的非 listpack 编码同时使用跳表和字典，分别支持有序访问与按成员查找。
-- **源码入口**：[t_zset.c](https://github.com/redis/redis/blob/7.2.16/src/t_zset.c)，重点关注 `zslCreate`、`zslInsert`、`zslDelete` 和 `zslGetRank`。
-
-### 4.8 rax：基数树
-
-- **作用**：按键的字节序列建立索引，压缩公共前缀和单一路径，支持有序遍历。
-- **学习重点**：压缩节点布局、路径匹配、插入时的节点分裂、删除与迭代器。
-- **关联类型**：Stream 使用 rax 索引消息块，消息块内部通过 listpack 保存消息；消费者组的部分管理结构也使用 rax。
-- **源码入口**：[rax.h](https://github.com/redis/redis/blob/7.2.16/src/rax.h)、[rax.c](https://github.com/redis/redis/blob/7.2.16/src/rax.c)。
+参见 [Redis 数据结构](data-structures.md)，包含 SDS、字典、intset、listpack、quicklist、跳表和 rax 的作用、学习重点及源码入口。
 
 ## 5. 缓存应用与常见问题
 
