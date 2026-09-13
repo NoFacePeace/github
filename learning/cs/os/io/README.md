@@ -1,6 +1,6 @@
-# I/O 与设备管理学习笔记
+# I/O 学习笔记
 
-I/O（Input/Output，输入/输出）指系统与外部设备之间的数据交换，例如读取文件、写入磁盘以及通过网络收发数据。设备管理关注操作系统如何通过驱动、中断和 DMA 等机制控制硬件设备。
+I/O（Input/Output，输入/输出）指系统与外部设备之间的数据交换，例如读取文件、写入磁盘以及通过网络收发数据。
 
 ## 1. 学习内容
 
@@ -9,7 +9,6 @@ I/O（Input/Output，输入/输出）指系统与外部设备之间的数据交�
 - I/O 模型：阻塞 I/O、非阻塞 I/O、I/O 多路复用与异步 I/O。
 - 文件 I/O：页缓存、缓冲 I/O、直接 I/O 与数据持久化。
 - 网络 I/O：Socket、收发缓冲区与事件通知。
-- 设备管理：设备驱动、中断、DMA 与网络设备收包机制。
 - 性能分析：吞吐量、延迟、系统调用开销与数据拷贝。
 
 ## 2. 专题文档
@@ -18,8 +17,5 @@ I/O（Input/Output，输入/输出）指系统与外部设备之间的数据交�
 - [I/O 模型](io-models.md)：同步与异步、阻塞与非阻塞，以及五种经典 I/O 模型。
 - [文件 I/O](file-io.md)：Page Cache、用户态缓冲、写回与持久化，以及 mmap 和 Direct I/O。
 - [网络 I/O](network-io.md)：`skb`、Socket 缓冲区以及数据从网卡到应用程序的路径。
-- [设备驱动](device-driver.md)：操作系统如何初始化和控制硬件设备。
-- [中断管理](interrupt.md)：硬中断、softirq、`ksoftirqd` 与 workqueue。
-- [网络设备收包](network-receive.md)：RX Ring、Packet Descriptor、DMA 与 NAPI。
 
 [返回操作系统学习目录](../README.md)
