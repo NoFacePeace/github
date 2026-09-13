@@ -297,6 +297,27 @@ echo "hello" > mypipe
 
 这些场景通常应分别考虑消息队列、管道、共享内存、条件变量、互斥锁或信号量。尤其要注意，**信号是事件通知机制，信号量是资源计数和同步机制**，二者名称相近但用途不同。
 
+#### 5.2.5 相关系统调用与接口
+
+信号相关接口可以按照“发送信号、配置处理方式、屏蔽和等待信号、设置定时器”进行理解。严格来说，下面有些是 C 标准库或 POSIX 线程库接口，它们通常在内部封装或调用对应的系统调用。Linux 内核中的部分信号系统调用带有 `rt_` 前缀，例如 `rt_sigaction`；这里的 `rt` 表示支持扩展后的实时信号集合，并不等同于用户态的 `sigaction()` 函数名。
+
+| 接口 | 类型 | 典型参数 | 作用 |
+| --- | --- | --- | --- |
+| `kill(pid, sig)` | POSIX 接口 | `pid`：进程或进程组 ID；`sig`：信号编号 | 向指定进程或进程组发送信号 |
+| `tgkill(tgid, tid, sig)` | Linux 系统调用 | `tgid`：进程 ID；`tid`：线程 ID；`sig`：信号编号 | 根据进程 ID 和线程 ID 向指定线程发送信号 |
+| `raise(sig)` | C/POSIX 接口 | `sig`：信号编号 | 向当前进程发送信号 |
+| `pthread_kill(thread, sig)` | POSIX 线程接口 | `thread`：目标线程 ID；`sig`：信号编号 | 向同一进程内的指定线程发送信号 |
+| `signal(sig, handler)` | C 标准库接口 | `sig`：信号编号；`handler`：处理函数 | 以简单方式设置某种信号的处理方式 |
+| `sigaction(sig, act, oldact)` | POSIX 接口 | `sig`：信号编号；`act`：新配置；`oldact`：保存旧配置的位置 | 详细设置处理函数、屏蔽信号和处理选项，通常优先于 `signal` |
+| `rt_sigaction(sig, act, oldact, sigsetsize)` | Linux 系统调用 | `sig`：信号编号；`act`：新配置；`oldact`：保存旧配置的位置；`sigsetsize`：信号集合大小 | `sigaction()` 在 Linux 内核中的底层实现接口 |
+| `sigprocmask(how, set, oldset)` | POSIX 接口 | `how`：添加、删除或替换；`set`：信号集合；`oldset`：保存旧集合的位置 | 修改当前线程的信号屏蔽字；多线程程序通常使用 `pthread_sigmask` |
+| `pthread_sigmask(how, set, oldset)` | POSIX 线程接口 | `how`：添加、删除或替换；`set`：信号集合；`oldset`：保存旧集合的位置 | 修改当前线程的信号屏蔽字 |
+| `sigpending(set)` | POSIX 接口 | `set`：保存 pending 信号集合的位置 | 获取当前处于 pending 状态的信号 |
+| `sigsuspend(mask)` | POSIX 接口 | `mask`：临时使用的信号屏蔽集合 | 临时修改屏蔽字并等待信号，常用于原子地等待事件 |
+| `sigwait(set, sig)` / `sigwaitinfo(set, info)` | POSIX 接口 | `set`：等待的信号集合；`sig` 或 `info`：保存结果的位置 | 以同步方式等待信号，适合由专用线程统一处理信号 |
+| `alarm(seconds)` | POSIX 接口 | `seconds`：延迟秒数 | 设置一次性定时器，到期后发送 `SIGALRM` |
+| `setitimer(which, value, oldvalue)` | POSIX 接口 | `which`：定时器类型；`value`：新定时器值；`oldvalue`：保存旧值的位置 | 设置更灵活的间隔定时器，到期后发送指定信号 |
+
 ### 5.3 消息队列
 
 消息队列是由内核维护的消息列表，发送进程将一条完整消息放入队列，接收进程再按消息取出。它和管道的主要区别是：管道传递连续的字节流，而消息队列保留每条消息的边界。
