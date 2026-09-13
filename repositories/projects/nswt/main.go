@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 )
 
@@ -13,7 +15,7 @@ func main() {
 	action := flag.String("action", "flow", "action to run: flow, ciphercode, or asyncrush")
 	packetPath := flag.String("packet", "", "path to the packet JSON file")
 	configPath := flag.String("config", "config.json", "path to the flow config JSON file")
-	timeout := flag.Duration("timeout", 30*time.Second, "total flow timeout")
+	timeout := flag.Duration("timeout", 30*time.Second, "HTTP request timeout")
 	flag.Parse()
 
 	if *action != "flow" && *action != "ciphercode" && *action != "asyncrush" {
@@ -27,8 +29,13 @@ func main() {
 		}
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), *timeout)
-	defer cancel()
+	ctx, stop := signal.NotifyContext(
+		context.Background(),
+		os.Interrupt,
+		syscall.SIGTERM,
+	)
+	defer stop()
+	client := &http.Client{Timeout: *timeout}
 
 	params, err := loadPacketRequest(*packetPath)
 	if err != nil {
@@ -37,13 +44,13 @@ func main() {
 
 	switch *action {
 	case "ciphercode":
-		result, err := ciphercode(ctx, http.DefaultClient, params)
+		result, err := ciphercode(ctx, client, params)
 		if err != nil {
 			exitf("request ciphercode: %v", err)
 		}
 		fmt.Println(formatCiphercodeResponse(result))
 	case "asyncrush":
-		result, err := asyncRush(ctx, http.DefaultClient, params)
+		result, err := asyncRush(ctx, client, params)
 		if err != nil {
 			exitf("request async rush: %v", err)
 		}
@@ -53,7 +60,7 @@ func main() {
 		if err != nil {
 			exitf("load config: %v", err)
 		}
-		result, err := runRushFlow(ctx, http.DefaultClient, params, options)
+		result, err := runRushFlow(ctx, client, params, options)
 		if err != nil {
 			exitf("run rush flow: %v", err)
 		}

@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestRunRushFlow(t *testing.T) {
@@ -59,7 +60,7 @@ func TestRunRushFlow(t *testing.T) {
 			`{"batchid":"dag323566n47qqad5hug","batchcode":"zEWP3wnPkiGyRZE5cNSwanWwWHR6rY2Y2cDn","sign":"e6bd9440e0103343a32999e87c156f63"}`,
 		),
 	}
-	result, err := runRushFlow(
+	result, err := runRushFlowNow(
 		context.Background(),
 		client,
 		cipherParams,
@@ -77,5 +78,15 @@ func TestRunRushFlow(t *testing.T) {
 	if result.AsyncRush.Code != 300001 ||
 		!strings.Contains(result.AsyncRush.Msg, "抢光") {
 		t.Fatalf("async rush result = %+v", result.AsyncRush)
+	}
+}
+
+func TestRushReleaseTime(t *testing.T) {
+	now := time.Date(2026, time.September, 13, 9, 30, 0, 0, shanghaiLocation)
+	got := rushReleaseTime(now)
+	want := time.Date(2026, time.September, 13, 12, 0, 0, 0, shanghaiLocation)
+
+	if !got.Equal(want) {
+		t.Fatalf("rushReleaseTime() = %s, want %s", got, want)
 	}
 }

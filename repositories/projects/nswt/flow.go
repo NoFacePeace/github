@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 )
 
 const (
@@ -14,6 +15,8 @@ const (
 	transportPublicKeyPath = ".local/keys/transport-public.pem"
 	safePublicKeyPath      = ".local/keys/safe-public.pem"
 )
+
+var shanghaiLocation = time.FixedZone("Asia/Shanghai", 8*60*60)
 
 type ciphercodeRequest struct {
 	BatchID   string `json:"batchid"`
@@ -33,6 +36,18 @@ type rushFlowResult struct {
 }
 
 func runRushFlow(
+	ctx context.Context,
+	client *http.Client,
+	cipherParams requestParams,
+	options rushFlowOptions,
+) (rushFlowResult, error) {
+	if err := waitUntilRushRelease(ctx); err != nil {
+		return rushFlowResult{}, err
+	}
+	return runRushFlowNow(ctx, client, cipherParams, options)
+}
+
+func runRushFlowNow(
 	ctx context.Context,
 	client *http.Client,
 	cipherParams requestParams,
@@ -138,6 +153,38 @@ func runRushFlow(
 		Ciphercode: cipherResult,
 		AsyncRush:  asyncResult,
 	}, nil
+}
+
+func waitUntilRushRelease(ctx context.Context) error {
+	now := time.Now().In(shanghaiLocation)
+	release := rushReleaseTime(now)
+	if !now.Before(release) {
+		return nil
+	}
+
+	timer := time.NewTimer(release.Sub(now))
+	defer timer.Stop()
+
+	select {
+	case <-timer.C:
+		return nil
+	case <-ctx.Done():
+		return fmt.Errorf("wait for 12:00 release: %w", ctx.Err())
+	}
+}
+
+func rushReleaseTime(now time.Time) time.Time {
+	localNow := now.In(shanghaiLocation)
+	return time.Date(
+		localNow.Year(),
+		localNow.Month(),
+		localNow.Day(),
+		12,
+		0,
+		0,
+		0,
+		shanghaiLocation,
+	)
 }
 
 func parseCiphercodeRequest(body []byte) (ciphercodeRequest, error) {
