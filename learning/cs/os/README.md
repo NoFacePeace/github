@@ -39,10 +39,7 @@
 
 ## 5. 设备管理
 
-- [设备管理学习目录](device-management/README.md)：设备驱动、中断、DMA 与网络设备。
-- [设备驱动](device-management/device-driver.md)：操作系统如何初始化和控制硬件设备。
-- [中断管理](device-management/interrupt.md)：硬中断、softirq、`ksoftirqd` 与 workqueue。
-- [网络设备收包](device-management/network-receive.md)：RX Ring、Packet Descriptor、DMA 与 NAPI。
+- [设备管理](device-management.md)：设备分类、设备访问路径、设备文件与常见 I/O 机制。
 
 ## 6. 学习方式
 
