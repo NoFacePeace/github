@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"strings"
 	"sync/atomic"
@@ -69,7 +70,7 @@ func TestRunRushFlow(t *testing.T) {
 		context.Background(),
 		client,
 		cipherParams,
-		rushFlowOptions{ReleaseTime: time.Now().Add(-time.Second)},
+		rushFlowOptions{ReleaseTime: time.Now().Add(time.Second)},
 	)
 	if err != nil {
 		t.Fatalf("runRushFlow() error = %v", err)
@@ -96,16 +97,48 @@ func TestRushReleaseTime(t *testing.T) {
 	}
 }
 
-func TestCiphercodeAdvances(t *testing.T) {
-	want := [...]time.Duration{
-		50 * time.Millisecond,
-		40 * time.Millisecond,
-		30 * time.Millisecond,
-		20 * time.Millisecond,
-		10 * time.Millisecond,
-		0,
-	}
-	if ciphercodeAdvances != want {
-		t.Fatalf("ciphercode advances = %v, want %v", ciphercodeAdvances, want)
+func TestCiphercodeSerialRetry(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		body    string
+		expired bool
+		cancel  bool
+		want    int
+	}{
+		{"limit", `{"code":300010,"data":null}`, false, false, 6},
+		{"expired", `{"code":300010,"data":null}`, true, false, 1},
+		{"other error", `{"code":300006,"data":null}`, false, false, 1},
+		{"success", `{"code":0,"data":{"ciphercode":"test","safesalt":"test"}}`, false, false, 1},
+		{"cancel", `{"code":300010,"data":null}`, false, true, 1},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+			calls := 0
+			client := &http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
+				calls++
+				if tc.cancel {
+					cancel()
+				}
+				return jsonResponse(tc.body), nil
+			})}
+			deadline := time.Now().Add(time.Second)
+			if tc.expired {
+				deadline = time.Now().Add(-time.Second)
+			}
+			_, err := requestCiphercodeUntilOpen(ctx, client, requestParams{
+				URL: "https://example.test/ciphercode",
+			}, deadline)
+			if tc.cancel {
+				if !errors.Is(err, context.Canceled) {
+					t.Fatalf("error = %v, want cancellation", err)
+				}
+			} else if err != nil {
+				t.Fatal(err)
+			}
+			if calls != tc.want {
+				t.Fatalf("calls = %d, want %d", calls, tc.want)
+			}
+		})
 	}
 }

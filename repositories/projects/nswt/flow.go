@@ -14,18 +14,13 @@ const (
 	miniProgramAppID       = "wx9f30f1cea85e1e8c"
 	transportPublicKeyPath = ".local/keys/transport-public.pem"
 	safePublicKeyPath      = ".local/keys/safe-public.pem"
+	ciphercodeAdvance      = 50 * time.Millisecond
+	ciphercodeRetryDelay   = 10 * time.Millisecond
+	ciphercodeRetryGrace   = 500 * time.Millisecond
+	ciphercodeMaxAttempts  = 6
 )
 
 var shanghaiLocation = time.FixedZone("Asia/Shanghai", 8*60*60)
-
-var ciphercodeAdvances = [...]time.Duration{
-	50 * time.Millisecond,
-	40 * time.Millisecond,
-	30 * time.Millisecond,
-	20 * time.Millisecond,
-	10 * time.Millisecond,
-	0,
-}
 
 type ciphercodeRequest struct {
 	BatchID   string `json:"batchid"`
@@ -55,7 +50,7 @@ func runRushFlow(
 	release := rushReleaseTime(now)
 	if err := waitUntilRequestTime(
 		ctx,
-		release.Add(-ciphercodeAdvances[0]),
+		release.Add(-ciphercodeAdvance),
 	); err != nil {
 		return rushFlowResult{}, err
 	}
@@ -82,11 +77,11 @@ func runRushFlowNow(
 	if options.ReleaseTime.IsZero() {
 		cipherResult, err = ciphercode(ctx, client, cipherParams)
 	} else {
-		cipherResult, err = requestCiphercodeMultiPath(
+		cipherResult, err = requestCiphercodeUntilOpen(
 			ctx,
 			client,
 			cipherParams,
-			options.ReleaseTime,
+			options.ReleaseTime.Add(ciphercodeRetryGrace),
 		)
 	}
 	if err != nil {
@@ -181,72 +176,32 @@ func runRushFlowNow(
 	}, nil
 }
 
-type ciphercodeOutcome struct {
-	Result  ciphercodeResponse
-	Advance time.Duration
-	Err     error
-}
-
-func requestCiphercodeMultiPath(
+func requestCiphercodeUntilOpen(
 	ctx context.Context,
 	client *http.Client,
 	params requestParams,
-	release time.Time,
+	retryUntil time.Time,
 ) (ciphercodeResponse, error) {
-	requestCtx, cancel := context.WithCancel(ctx)
-	defer cancel()
-
-	outcomes := make(chan ciphercodeOutcome, len(ciphercodeAdvances))
-	for _, advance := range ciphercodeAdvances {
-		go func() {
-			if err := waitUntilRequestTime(
-				requestCtx,
-				release.Add(-advance),
-			); err != nil {
-				outcomes <- ciphercodeOutcome{Advance: advance, Err: err}
-				return
-			}
-			result, err := ciphercode(requestCtx, client, params)
-			outcomes <- ciphercodeOutcome{
-				Result:  result,
-				Advance: advance,
-				Err:     err,
-			}
-		}()
-	}
-
-	var fallback ciphercodeResponse
-	var fallbackSet bool
-	var firstErr error
-	for range ciphercodeAdvances {
-		select {
-		case <-ctx.Done():
+	for attempt := 1; ; attempt++ {
+		if err := ctx.Err(); err != nil {
+			return ciphercodeResponse{}, err
+		}
+		result, err := ciphercode(ctx, client, params)
+		if err != nil || result.Code != 300010 || attempt >= ciphercodeMaxAttempts {
+			return result, err
+		}
+		next := time.Now().Add(ciphercodeRetryDelay)
+		if !next.Before(retryUntil) {
+			return result, nil
+		}
+		if err := waitUntilRequestTime(ctx, next); err != nil {
 			return ciphercodeResponse{}, ctx.Err()
-		case outcome := <-outcomes:
-			if outcome.Err != nil {
-				if firstErr == nil {
-					firstErr = outcome.Err
-				}
-				continue
-			}
-			if !fallbackSet || outcome.Advance == 0 {
-				fallback = outcome.Result
-				fallbackSet = true
-			}
-			if outcome.Result.Code == 0 && outcome.Result.Data != nil {
-				cancel()
-				return outcome.Result, nil
-			}
+		}
+		// Recheck after waiting in case scheduling resumed beyond the retry window.
+		if !time.Now().Before(retryUntil) {
+			return result, nil
 		}
 	}
-
-	if fallbackSet {
-		return fallback, nil
-	}
-	if firstErr != nil {
-		return ciphercodeResponse{}, firstErr
-	}
-	return ciphercodeResponse{}, fmt.Errorf("all ciphercode requests failed")
 }
 
 func waitUntilRequestTime(ctx context.Context, target time.Time) error {
