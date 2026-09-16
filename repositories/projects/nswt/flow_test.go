@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -11,19 +12,23 @@ import (
 func TestRunRushFlow(t *testing.T) {
 	const cookie = "session=shared-cookie"
 
-	callCount := 0
+	var callCount atomic.Int32
 	client := &http.Client{
 		Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
-			callCount++
-			switch callCount {
-			case 1:
+			callNumber := int(callCount.Add(1))
+			switch callNumber {
+			case 1, 2, 3, 4, 5:
 				if got := req.Header.Get("Cookie"); got != cookie {
 					t.Errorf("ciphercode Cookie = %q, want %q", got, cookie)
 				}
 				return jsonResponse(
+					`{"code":300010,"msg":"抢券未开始","data":null}`,
+				), nil
+			case 6:
+				return jsonResponse(
 					`{"code":0,"msg":"成功","data":{"ciphercode":"2279","safesalt":"iroO"}}`,
 				), nil
-			case 2:
+			case 7:
 				if got := req.Header.Get("Cookie"); got != cookie {
 					t.Errorf("asyncRush Cookie = %q, want %q", got, cookie)
 				}
@@ -43,7 +48,7 @@ func TestRunRushFlow(t *testing.T) {
 					`{"code":300001,"msg":"该场券已被抢光了～","data":null}`,
 				), nil
 			default:
-				t.Fatalf("unexpected request #%d", callCount)
+				t.Fatalf("unexpected request #%d", callNumber)
 				return nil, nil
 			}
 		}),
@@ -64,13 +69,13 @@ func TestRunRushFlow(t *testing.T) {
 		context.Background(),
 		client,
 		cipherParams,
-		rushFlowOptions{},
+		rushFlowOptions{ReleaseTime: time.Now().Add(-time.Second)},
 	)
 	if err != nil {
 		t.Fatalf("runRushFlow() error = %v", err)
 	}
-	if callCount != 2 {
-		t.Fatalf("request count = %d, want 2", callCount)
+	if got := callCount.Load(); got != 7 {
+		t.Fatalf("request count = %d, want 7", got)
 	}
 	if result.Ciphercode.Data == nil || result.Ciphercode.Data.Ciphercode != "2279" {
 		t.Fatalf("ciphercode result = %+v", result.Ciphercode)
@@ -88,5 +93,19 @@ func TestRushReleaseTime(t *testing.T) {
 
 	if !got.Equal(want) {
 		t.Fatalf("rushReleaseTime() = %s, want %s", got, want)
+	}
+}
+
+func TestCiphercodeAdvances(t *testing.T) {
+	want := [...]time.Duration{
+		50 * time.Millisecond,
+		40 * time.Millisecond,
+		30 * time.Millisecond,
+		20 * time.Millisecond,
+		10 * time.Millisecond,
+		0,
+	}
+	if ciphercodeAdvances != want {
+		t.Fatalf("ciphercode advances = %v, want %v", ciphercodeAdvances, want)
 	}
 }

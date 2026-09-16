@@ -18,6 +18,15 @@ const (
 
 var shanghaiLocation = time.FixedZone("Asia/Shanghai", 8*60*60)
 
+var ciphercodeAdvances = [...]time.Duration{
+	50 * time.Millisecond,
+	40 * time.Millisecond,
+	30 * time.Millisecond,
+	20 * time.Millisecond,
+	10 * time.Millisecond,
+	0,
+}
+
 type ciphercodeRequest struct {
 	BatchID   string `json:"batchid"`
 	BatchCode string `json:"batchcode"`
@@ -25,9 +34,10 @@ type ciphercodeRequest struct {
 }
 
 type rushFlowOptions struct {
-	TemplateID  string `json:"templateid"`
-	CollectType int    `json:"collecttype"`
-	Mobile      string `json:"mobile"`
+	TemplateID  string    `json:"templateid"`
+	CollectType int       `json:"collecttype"`
+	Mobile      string    `json:"mobile"`
+	ReleaseTime time.Time `json:"-"`
 }
 
 type rushFlowResult struct {
@@ -41,9 +51,15 @@ func runRushFlow(
 	cipherParams requestParams,
 	options rushFlowOptions,
 ) (rushFlowResult, error) {
-	if err := waitUntilRushRelease(ctx); err != nil {
+	now := time.Now().In(shanghaiLocation)
+	release := rushReleaseTime(now)
+	if err := waitUntilRequestTime(
+		ctx,
+		release.Add(-ciphercodeAdvances[0]),
+	); err != nil {
 		return rushFlowResult{}, err
 	}
+	options.ReleaseTime = release
 	return runRushFlowNow(ctx, client, cipherParams, options)
 }
 
@@ -62,7 +78,17 @@ func runRushFlowNow(
 		return rushFlowResult{}, fmt.Errorf("ciphercode packet is missing Cookie")
 	}
 
-	cipherResult, err := ciphercode(ctx, client, cipherParams)
+	var cipherResult ciphercodeResponse
+	if options.ReleaseTime.IsZero() {
+		cipherResult, err = ciphercode(ctx, client, cipherParams)
+	} else {
+		cipherResult, err = requestCiphercodeMultiPath(
+			ctx,
+			client,
+			cipherParams,
+			options.ReleaseTime,
+		)
+	}
 	if err != nil {
 		return rushFlowResult{}, fmt.Errorf("request ciphercode: %w", err)
 	}
@@ -155,21 +181,88 @@ func runRushFlowNow(
 	}, nil
 }
 
-func waitUntilRushRelease(ctx context.Context) error {
-	now := time.Now().In(shanghaiLocation)
-	release := rushReleaseTime(now)
-	if !now.Before(release) {
+type ciphercodeOutcome struct {
+	Result  ciphercodeResponse
+	Advance time.Duration
+	Err     error
+}
+
+func requestCiphercodeMultiPath(
+	ctx context.Context,
+	client *http.Client,
+	params requestParams,
+	release time.Time,
+) (ciphercodeResponse, error) {
+	requestCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	outcomes := make(chan ciphercodeOutcome, len(ciphercodeAdvances))
+	for _, advance := range ciphercodeAdvances {
+		go func() {
+			if err := waitUntilRequestTime(
+				requestCtx,
+				release.Add(-advance),
+			); err != nil {
+				outcomes <- ciphercodeOutcome{Advance: advance, Err: err}
+				return
+			}
+			result, err := ciphercode(requestCtx, client, params)
+			outcomes <- ciphercodeOutcome{
+				Result:  result,
+				Advance: advance,
+				Err:     err,
+			}
+		}()
+	}
+
+	var fallback ciphercodeResponse
+	var fallbackSet bool
+	var firstErr error
+	for range ciphercodeAdvances {
+		select {
+		case <-ctx.Done():
+			return ciphercodeResponse{}, ctx.Err()
+		case outcome := <-outcomes:
+			if outcome.Err != nil {
+				if firstErr == nil {
+					firstErr = outcome.Err
+				}
+				continue
+			}
+			if !fallbackSet || outcome.Advance == 0 {
+				fallback = outcome.Result
+				fallbackSet = true
+			}
+			if outcome.Result.Code == 0 && outcome.Result.Data != nil {
+				cancel()
+				return outcome.Result, nil
+			}
+		}
+	}
+
+	if fallbackSet {
+		return fallback, nil
+	}
+	if firstErr != nil {
+		return ciphercodeResponse{}, firstErr
+	}
+	return ciphercodeResponse{}, fmt.Errorf("all ciphercode requests failed")
+}
+
+func waitUntilRequestTime(ctx context.Context, target time.Time) error {
+	delay := time.Until(target)
+	if delay <= 0 {
 		return nil
 	}
 
-	timer := time.NewTimer(release.Sub(now))
+	timer := time.NewTimer(delay)
 	defer timer.Stop()
 
 	select {
 	case <-timer.C:
 		return nil
 	case <-ctx.Done():
-		return fmt.Errorf("wait for 12:00 release: %w", ctx.Err())
+		return ctx.Err()
 	}
 }
 
