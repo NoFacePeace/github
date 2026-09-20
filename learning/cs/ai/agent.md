@@ -201,3 +201,7 @@ Agent 产品除了关注使用量，还应关注任务是否真正完成：
 | --- | --- | --- |
 | [Microsoft Copilot Studio](https://learn.microsoft.com/microsoft-copilot-studio) | 创建、发布、评测和治理企业 Agent 的平台 | 连接知识、工具和 MCP，构建业务 Agent 与自动化流程 |
 | [ServiceNow AI Agents](https://www.servicenow.com/products/ai-agents.html) | 面向 IT、客服、HR 和业务流程的企业 Agent 平台 | 处理工单、协调工作流、执行业务操作和管理多 Agent 协作 |
+
+## 9. Harness
+
+Harness 是运行 Agent 的支架和执行环境，负责连接模型与工具、管理上下文和控制任务执行过程。详细内容见 [Harness](harness.md)。
