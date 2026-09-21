@@ -202,6 +202,12 @@ Agent 产品除了关注使用量，还应关注任务是否真正完成：
 | [Microsoft Copilot Studio](https://learn.microsoft.com/microsoft-copilot-studio) | 创建、发布、评测和治理企业 Agent 的平台 | 连接知识、工具和 MCP，构建业务 Agent 与自动化流程 |
 | [ServiceNow AI Agents](https://www.servicenow.com/products/ai-agents.html) | 面向 IT、客服、HR 和业务流程的企业 Agent 平台 | 处理工单、协调工作流、执行业务操作和管理多 Agent 协作 |
 
-## 9. Harness
+## 9. 开源工具
+
+### 9.1 Graphify
+
+[Graphify](https://github.com/Graphify-Labs/graphify) 是面向 AI 编程助手的开源代码与文档知识图谱工具。它使用 Tree-sitter 解析代码中的函数、类、导入和调用关系，并结合模型理解文档等非代码内容，生成可查询的项目关系图，帮助 Agent 理解代码库、分析调用链和评估改动影响。
+
+## 10. Harness
 
 Harness 是运行 Agent 的支架和执行环境，负责连接模型与工具、管理上下文和控制任务执行过程。详细内容见 [Harness](harness.md)。
