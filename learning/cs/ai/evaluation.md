@@ -37,9 +37,60 @@ Agent 评测通常分为三层：
 | 评测框架 | 编写数据集、指标、断言和回归测试 | DeepEval、Promptfoo、OpenAI Evals、Inspect AI |
 | Trace 与评测平台 | 记录运行轨迹，管理数据集，进行实验对比和线上监控 | LangSmith、Braintrust |
 
-## 4. 主流工具
+## 4. Terminal-Bench 2.0
 
-### 4.1 Harbor
+### 4.1 基本概念
+
+[Terminal-Bench 2.0](https://github.com/harbor-framework/terminal-bench-2)（简称 TB 2.0）是面向终端环境 Agent 的 Benchmark，用来评估 Agent 能否在容器化环境中完成真实、复杂的工程任务。论文版本包含 89 个任务，任务类型包括调试异步代码、处理数据、组装蛋白质合成方案和修复安全漏洞等。
+
+TB 2.0 的重点不是让 Agent 生成一段代码，而是让它在一个可操作的环境中完成任务。Agent 可以自行选择命令、工具和执行路径，最后由测试脚本或验证器检查任务结果。
+
+### 4.2 评测内容
+
+一个 Terminal-Bench 任务通常包含：
+
+- 面向 Agent 的自然语言任务描述。
+- 预先准备好的容器和文件系统环境。
+- Agent 可以使用的终端命令、代码和依赖。
+- 用于判断最终状态的测试脚本或验证器。
+- 用于复现任务的任务配置和运行约束。
+
+评测时通常记录每个任务是否通过，并汇总为任务成功率。除了最终结果，也可以结合执行轨迹分析 Agent 的命令使用、错误恢复、循环和资源消耗。
+
+### 4.3 与 Harbor 的关系
+
+TB 2.0 是**题目集和评分标准**，Harbor 是**运行题目和 Agent 的 Harness**：
+
+| 角色 | 作用 |
+| --- | --- |
+| Terminal-Bench 2.0 | 提供任务、环境要求和结果验证 |
+| Harbor | 创建环境、启动 Agent、收集执行结果和运行评测 |
+| Agent | 在终端环境中执行任务的被测对象 |
+| 模型 | 为 Agent 提供推理和决策能力 |
+
+例如，下面的命令表示使用 Harbor 运行 Terminal-Bench 2.0：
+
+```bash
+harbor run \
+  --dataset terminal-bench@2.0 \
+  --agent claude-code \
+  --model anthropic/claude-opus-4-1
+```
+
+其中 `terminal-bench@2.0` 表示明确选择 Terminal-Bench 2.0 数据集。版本号会影响任务内容和结果，比较不同 Agent 时应保持 Benchmark 版本、模型、Harness、运行预算和环境一致。
+
+Terminal-Bench 2.0 后续已有 2.1 修订版。复现旧结果时应继续使用 2.0；进行新的对比时，应先确认使用的版本，并避免混合不同版本的分数。
+
+**官方资源**：
+
+- [Terminal-Bench 2.0](https://github.com/harbor-framework/terminal-bench-2)
+- [Terminal-Bench 2.0 论文](https://arxiv.org/abs/2601.11868)
+- [Harbor 运行 Terminal-Bench 文档](https://github.com/harbor-framework/docs/blob/main/examples/terminal-bench.mdx)
+- [Terminal-Bench 2.1 版本说明](https://github.com/harbor-framework/terminal-bench-docs/blob/main/content/blog/terminal-bench-2-1.mdx)
+
+## 5. 主流工具
+
+### 5.1 Harbor
 
 [Harbor](https://github.com/harbor-framework/harbor) 是由 Terminal-Bench 团队维护的 Agent 评测和优化框架，重点是统一运行环境、任务数据集、Agent 适配器和结果验证器。它可以在本地 Docker 或云环境中运行 Claude Code、OpenHands、Codex CLI、Aider 等 Agent，并执行 Terminal-Bench、SWE-bench 等任务集。
 
@@ -57,7 +108,7 @@ Agent 评测通常分为三层：
 - [Harbor GitHub](https://github.com/harbor-framework/harbor)
 - [Harbor 文档](https://www.harborframework.com/docs)
 
-### 4.2 DeepEval
+### 5.2 DeepEval
 
 [DeepEval](https://deepeval.com/) 是 Python 评测框架，支持通过 pytest 编写 Agent 评测，并对 Agent 的最终结果、工具调用、子 Agent 和其他组件进行评估。它适合把评测接入本地开发和 CI/CD。
 
@@ -74,7 +125,7 @@ Agent 评测通常分为三层：
 - [DeepEval 官网](https://deepeval.com/)
 - [Agent 评测文档](https://deepeval.com/docs/getting-started-agents)
 
-### 4.3 Promptfoo
+### 5.3 Promptfoo
 
 [Promptfoo](https://www.promptfoo.dev/) 是配置化的 LLM 和 Agent 评测工具，通常使用 YAML 定义模型、Prompt、测试用例和断言，再通过 CLI 执行评测。它适合快速比较不同模型、Prompt、Provider 和 Agent 版本。
 
@@ -91,7 +142,7 @@ Agent 评测通常分为三层：
 - [Promptfoo 官网](https://www.promptfoo.dev/)
 - [Getting Started](https://www.promptfoo.dev/docs/getting-started/)
 
-### 4.4 OpenAI Evals
+### 5.4 OpenAI Evals
 
 [OpenAI Evals](https://github.com/openai/evals) 是用于评估 LLM 和 LLM 系统的开源框架，同时提供可复用的 Benchmark Registry。它支持使用公开数据集，也支持为自己的业务数据编写自定义评测和模型评分器。
 
@@ -108,7 +159,7 @@ Agent 评测通常分为三层：
 - [OpenAI Evals GitHub](https://github.com/openai/evals)
 - [OpenAI Evals](https://evals.openai.com/)
 
-### 4.5 Inspect AI
+### 5.5 Inspect AI
 
 [Inspect AI](https://inspect.aisi.org.uk/) 是面向 AI 系统评测的开源框架，使用 Dataset、Solver 和 Scorer 组织一次评测，并支持 Agent、工具调用和沙箱环境。它适合研究型评测、代码任务、安全测试和需要自定义执行器的场景。
 
@@ -125,7 +176,7 @@ Agent 评测通常分为三层：
 - [Inspect AI 文档](https://inspect.aisi.org.uk/)
 - [Inspect AI GitHub](https://github.com/UKGovernmentBEIS/inspect_ai)
 
-### 4.6 LangSmith
+### 5.6 LangSmith
 
 [LangSmith](https://www.langchain.com/langsmith/evaluation) 是 LangChain 生态的 Agent 和 LLM 评测平台，支持数据集、离线评测、Trace、人工标注、启发式检查、LLM Judge、成对比较和线上评测。
 
@@ -142,7 +193,7 @@ Agent 评测通常分为三层：
 - [LangSmith 评测](https://www.langchain.com/langsmith/evaluation)
 - [LangSmith 评测文档](https://docs.langchain.com/langsmith/evaluation)
 
-### 4.7 Braintrust
+### 5.7 Braintrust
 
 [Braintrust](https://www.braintrust.dev/) 是面向 AI 应用和 Agent 的托管评测平台，支持在代码或界面中定义任务和测试用例，并将 Trace、数据集、评分器和实验结果关联起来。
 
@@ -159,7 +210,7 @@ Agent 评测通常分为三层：
 - [Braintrust 官网](https://www.braintrust.dev/)
 - [Agent 评测文档](https://www.braintrust.dev/learn/ai-agent-evaluation/v0)
 
-## 5. 选型建议
+## 6. 选型建议
 
 可以按 Agent 类型和工程目标选择：
 
