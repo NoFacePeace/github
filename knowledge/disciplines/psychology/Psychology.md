@@ -1,3 +1,7 @@
+---
+color: "#9B8AC4"
+---
+
 # Psychology
 
 - [心理现象](phenomena/PsychologicalPhenomena.md)

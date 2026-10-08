@@ -1,3 +1,7 @@
+---
+color: "#9B8AC4"
+---
+
 # 暴露与反应预防（ERP）
 
 暴露与反应预防（Exposure and Response Prevention，ERP）是[认知行为疗法（CBT）](CBT.md)体系中常用的一种治疗方法，主要用于强迫症，帮助人们减少对强迫行为的依赖，学习面对焦虑和不确定性。
