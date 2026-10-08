@@ -1,3 +1,7 @@
+---
+color: "#5B6CDA"
+---
+
 # Messaging
 
 消息中间件。

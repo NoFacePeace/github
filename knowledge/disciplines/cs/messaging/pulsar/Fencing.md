@@ -1,3 +1,7 @@
+---
+color: "#5B6CDA"
+---
+
 # Fencing
 
 Fencing 是隔离旧写入者的机制。在 Pulsar 中，需要区分底层 BookKeeper 的 ledger fencing 与 Producer 的 fencing。

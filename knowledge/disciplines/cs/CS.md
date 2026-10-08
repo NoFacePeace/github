@@ -1,3 +1,7 @@
+---
+color: "#5B6CDA"
+---
+
 # CS
 
 计算机科学（Computer Science）。
