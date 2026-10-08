@@ -4,6 +4,9 @@ temp
 repositories/go/projects/cron/config.yaml
 node_modules
 
+# Obsidian 本地仓库配置。
+knowledge/.obsidian/
+
 # Claude Code 本地产物（worktree / 会话 / 任务缓存），不入库。
 # skills / agents / commands / settings.json 等共享配置不受影响，可正常提交。
 **/.claude/worktrees/
