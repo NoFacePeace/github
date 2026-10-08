@@ -1,4 +1,5 @@
 ---
+color: "#4A90D9"
 tags:
   - tools
 ---
