@@ -93,4 +93,4 @@ curl -sS -o /dev/null \
 
 默认情况下，收到 HTTP 404 或 500 并不一定让 `curl` 返回非零退出码；脚本需要将 HTTP 错误视为失败时，可添加 `--fail`。
 
-[返回命令速查](../Commands.md)
+[返回网络命令目录](Network.md)
