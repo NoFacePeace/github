@@ -25,6 +25,7 @@ typedef struct zskiplistNode {
 | `ele` | 保存成员字符串，使用 SDS。 |
 | `score` | 保存分数，节点先按分数排序，分数相同时按成员字节序排序。 |
 | `backward` | 指向底层前驱；第一个业务节点为 `NULL`，用于倒序遍历。 |
+| [level\[\]](level-array.md) | 柔性数组，每个元素保存节点在一层的前向指针与跨度。 |
 | `level[i].forward` | 指向第 i 层的后继节点；没有后继时为 `NULL`。 |
 | `level[i].span` | 记录该层连接跨越的底层元素数量，用于排名计算和按排名定位。 |
 
