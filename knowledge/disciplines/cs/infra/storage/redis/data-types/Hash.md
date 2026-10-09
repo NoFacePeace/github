@@ -20,5 +20,5 @@ listpack 或哈希表，编码选择与字段数量、字段和值的大小有�
 
 实现说明以 Redis 7.2 为基线。
 
-[返回数据类型目录](Data Types.md)
+[返回数据类型目录](DataTypes.md)
 

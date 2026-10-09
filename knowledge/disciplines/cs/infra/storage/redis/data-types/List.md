@@ -20,5 +20,5 @@ Redis 7.2 中主要使用 quicklist，节点通常以 listpack 存储元素。
 
 实现说明以 Redis 7.2 为基线。
 
-[返回数据类型目录](Data Types.md)
+[返回数据类型目录](DataTypes.md)
 

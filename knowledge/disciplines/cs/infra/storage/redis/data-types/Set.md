@@ -20,5 +20,5 @@ Redis 7.2 中可使用 intset、listpack 或哈希表，编码选择与成员内
 
 实现说明以 Redis 7.2 为基线。
 
-[返回数据类型目录](Data Types.md)
+[返回数据类型目录](DataTypes.md)
 

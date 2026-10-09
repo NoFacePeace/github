@@ -20,5 +20,5 @@ listpack，或跳表与哈希表的组合；哈希表支持按成员查找分数
 
 实现说明以 Redis 7.2 为基线。
 
-[返回数据类型目录](Data Types.md)
+[返回数据类型目录](DataTypes.md)
 
