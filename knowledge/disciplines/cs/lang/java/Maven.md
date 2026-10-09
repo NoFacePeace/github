@@ -46,4 +46,23 @@ mvn clean install -Dmaven.test.skip=true
 
 上述测试跳过行为适用于 Maven 常用的测试插件；自定义插件或项目配置可能影响实际行为。
 
+### 2.2 构建并跳过测试及代码检查
+
+```sh
+mvn clean install -DskipTests -Dcheckstyle.skip=true -Dlicense.skip -Dspotbugs.skip=true
+```
+
+在清理、构建并安装到本地仓库的同时，通过 Maven 属性请求跳过以下步骤：
+
+| 参数 | 作用 |
+| --- | --- |
+| `-DskipTests` | 跳过测试运行，通常仍编译测试代码 |
+| `-Dcheckstyle.skip=true` | 跳过 Checkstyle 检查，例如命名、缩进和代码格式 |
+| `-Dlicense.skip` | 请求跳过许可证相关检查，例如文件头声明，具体取决于使用的插件 |
+| `-Dspotbugs.skip=true` | 跳过 SpotBugs 静态分析，例如潜在空指针和资源使用问题 |
+
+`-D` 用于设置 Maven 属性。`-Dlicense.skip` 省略了赋值，通常等价于 `-Dlicense.skip=true`；也可以显式写出 `=true`。
+
+这些跳过属性需要项目中的对应插件支持并读取才会生效，具体以 `pom.xml`、父 POM 和插件配置为准。此命令可用于快速构建本地产物，跳过检查不代表相关问题已解决，编译或其他构建步骤仍可能失败。
+
 [返回 Java 目录](Java.md)
