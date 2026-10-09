@@ -1,4 +1,4 @@
-# Environment Variables
+# Env
 
 记录 Java 开发环境常用的环境变量。
 

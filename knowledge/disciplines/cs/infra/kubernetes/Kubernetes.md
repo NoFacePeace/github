@@ -14,6 +14,6 @@ Kubernetes 可以运行 Docker 构建的兼容镜像，但不要求安装 Docker
 
 ## 2. 环境变量
 
-- [环境变量](environment-variables/EnvironmentVariables.md)：Kubernetes 客户端常用环境变量。
+- [环境变量](env/Env.md)：Kubernetes 客户端常用环境变量。
 
 [返回基础设施目录](../Infra.md)

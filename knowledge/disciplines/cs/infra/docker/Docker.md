@@ -12,7 +12,7 @@ Docker 是用于构建镜像、运行和管理容器的工具平台。
 
 ## 2. 环境变量
 
-- [环境变量](environment-variables/EnvironmentVariables.md)：Docker 客户端常用环境变量。
+- [环境变量](env/Env.md)：Docker 客户端常用环境变量。
 
 ## 3. 相关工具
 

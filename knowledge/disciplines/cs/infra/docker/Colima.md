@@ -150,6 +150,6 @@ docker context use colima
 export DOCKER_HOST="unix://${HOME}/.colima/default/docker.sock"
 ```
 
-变量含义、生效范围、与 Docker context 的关系及取消方法，见 [DOCKER_HOST](environment-variables/DOCKER_HOST.md)。
+变量含义、生效范围、与 Docker context 的关系及取消方法，见 [DOCKER_HOST](env/DOCKER_HOST.md)。
 
 [返回 Docker 目录](Docker.md)
