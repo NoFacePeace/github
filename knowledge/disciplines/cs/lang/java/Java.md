@@ -6,9 +6,9 @@ color: "#5B6CDA"
 
 Java 是一门运行在 JVM（Java 虚拟机）上的编程语言。JDK 提供编译、运行和调试 Java 程序所需的工具。
 
-## 1. 配置
+## 1. 环境变量
 
-- [Java 环境配置](Configuration.md)：JAVA_HOME、PATH 及 JDK 版本切换。
+- [环境变量](environment-variables/EnvironmentVariables.md)：Java 开发环境常用环境变量。
 
 ## 2. 构建工具
 

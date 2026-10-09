@@ -2,11 +2,11 @@
 color: "#5B6CDA"
 ---
 
-# Java 环境配置
+# JAVA_HOME
 
-记录 Java 开发环境中的 JDK 路径与命令行配置。
+`JAVA_HOME` 是用于指定 JDK 安装目录的环境变量。
 
-## 1. 配置
+## 1. 设置
 
 ### 1.1 JAVA_HOME
 
@@ -52,4 +52,4 @@ java -version
 javac -version
 ```
 
-[返回 Java 目录](Java.md)
+[返回环境变量目录](EnvironmentVariables.md)
