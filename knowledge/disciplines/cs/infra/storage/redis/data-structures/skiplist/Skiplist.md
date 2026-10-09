@@ -16,6 +16,7 @@ color: "#5B6CDA"
 ## 2. 结构笔记
 
 - [zskiplist](zskiplist.md)：跳表整体结构、字段与节点连接关系。
+- [zskiplistNode](zskiplistNode.md)：节点字段、层高、前向指针与跨度。
 
 ## 3. 源码入口
 

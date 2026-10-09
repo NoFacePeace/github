@@ -4,7 +4,7 @@ color: "#5B6CDA"
 
 # zskiplist
 
-`zskiplist` 是 Redis 跳表的整体管理结构，保存头尾节点、元素数量和当前有效层数。它通过 `header` 和 `tail` 指针连接 [zskiplistNode](zskiplistNode.md) 节点；节点之间通过各层的前向指针连接。
+`zskiplist` 是 Redis 跳表的整体管理结构，保存头尾节点、元素数量和当前有效层数。它通过 `header` 和 `tail` 指针连接 `zskiplistNode` 节点；节点之间通过各层的前向指针连接。
 
 ## 1. 结构定义
 
@@ -20,7 +20,7 @@ typedef struct zskiplist {
 
 | 字段 | 作用 |
 | --- | --- |
-| `header` | 头哨兵节点，不保存业务元素；它的各层前向指针提供查找入口。 |
+| [header](header.md) | 指向头哨兵节点，不保存业务元素；它的各层前向指针提供查找入口。 |
 | `tail` | 指向最后一个业务节点；空表时为 `NULL`，可作为倒序遍历入口。 |
 | `length` | 业务节点数量，不包含头哨兵。 |
 | `level` | 当前有效层数，至少为 1；不等于每个节点的层高。 |

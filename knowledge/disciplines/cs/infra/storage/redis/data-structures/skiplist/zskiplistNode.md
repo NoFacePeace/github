@@ -4,7 +4,7 @@ color: "#5B6CDA"
 
 # zskiplistNode
 
-`zskiplistNode` 是 Redis 跳表的节点结构，保存成员字符串、分数、底层后退指针，以及各层的前向指针和跨度。整体管理结构见 [zskiplist](zskiplist.md)。
+`zskiplistNode` 是 Redis 跳表的节点结构，保存成员字符串、分数、底层后退指针，以及各层的前向指针和跨度。
 
 ## 1. 结构定义
 
@@ -78,4 +78,4 @@ sizeof(zskiplistNode) + level * sizeof(struct zskiplistLevel)
 - [server.h](https://github.com/redis/redis/blob/7.2.16/src/server.h)：`zskiplistNode`、`ZSKIPLIST_MAXLEVEL` 和 `ZSKIPLIST_P`。
 - [t_zset.c](https://github.com/redis/redis/blob/7.2.16/src/t_zset.c)：`zslCreateNode`、`zslRandomLevel`、`zslInsert`、`zslDeleteNode` 和 `zslUpdateScore`。
 
-[返回整体结构](zskiplist.md)
+[返回跳表目录](Skiplist.md)
