@@ -2,8 +2,8 @@
 color: "#5B6CDA"
 ---
 
-# Agent
+# AI Agent
 
-智能体（Agent）。
+人工智能智能体（AI Agent）。
 
 - [开发框架](frameworks/AgentFrameworks.md)

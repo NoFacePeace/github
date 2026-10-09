@@ -26,7 +26,7 @@ Work 可以在云端环境执行；桌面应用在相应能力启用时，还可
 
 ## 3. 相关知识
 
-- [Agent](../disciplines/cs/ai/agent/Agent.md)：智能体通用知识入口。
+- [AI Agent](../disciplines/cs/ai/agent/AIAgent.md)：智能体通用知识入口。
 
 ## 4. 参考资料
 
