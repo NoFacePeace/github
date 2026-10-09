@@ -13,12 +13,16 @@ color: "#5B6CDA"
 - 底层 backward 指针与 tail 指针支持倒序遍历。
 - 插入、删除和分数更新时的连接与跨度维护。
 
-## 2. 源码入口
+## 2. 结构笔记
+
+- [zskiplist](zskiplist.md)：跳表整体结构、字段与节点连接关系。
+
+## 3. 源码入口
 
 学习基线：Redis 7.2.16。
 
 - [server.h](https://github.com/redis/redis/blob/7.2.16/src/server.h)
 - [t_zset.c](https://github.com/redis/redis/blob/7.2.16/src/t_zset.c)
 
-[返回数据结构目录](DataStructures.md)
+[返回数据结构目录](../DataStructures.md)
 

@@ -15,7 +15,7 @@ color: "#5B6CDA"
 | [Intset](Intset.md)（整数集合） | 在连续内存中按升序存储不重复的整数，以紧凑布局减少内存开销。 |
 | [Listpack](Listpack.md)（紧凑列表） | 在一段连续内存中编码整数和字符串，减少单独分配元素及保存指针的开销。 |
 | [Quicklist](Quicklist.md)（分块双向链表） | 将多个节点组织成双向链表，普通节点持有 listpack，大元素也可以存放在独立的普通数据节点中。 |
-| [Skiplist](Skiplist.md)（跳表） | 通过随机层高建立多层索引，支持期望 O(log n) 的查找、插入和删除；最坏情况下可退化为 O(n)。 |
+| [Skiplist](skiplist/Skiplist.md)（跳表） | 通过随机层高建立多层索引，支持期望 O(log n) 的查找、插入和删除；最坏情况下可退化为 O(n)。 |
 | [Rax](Rax.md)（基数树） | 按键的字节序列建立索引，通过压缩单一路径节省节点空间，并支持有序遍历。 |
 
 [返回 Redis 目录](../Redis.md)
