@@ -18,7 +18,5 @@ color: "#5B6CDA"
 
 基数树（rax）与 listpack 的组合。
 
-实现说明以 Redis 7.2 为基线。
-
 [返回数据类型目录](DataTypes.md)
 

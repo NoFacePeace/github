@@ -4,7 +4,7 @@ color: "#5B6CDA"
 
 # tail
 
-`tail` 是 `zskiplist` 中指向最后一个业务节点的指针，用于直接访问跳表末尾并开始倒序遍历。学习基线为 Redis 7.2.16。
+`tail` 是 `zskiplist` 中指向最后一个业务节点的指针，用于直接访问跳表末尾并开始倒序遍历。
 
 ## 1. 字段与指向
 
@@ -43,7 +43,7 @@ tail → 30 → 20 → 10 → NULL
 
 ## 4. 源码入口
 
-- [server.h](https://github.com/redis/redis/blob/7.2.16/src/server.h)：`zskiplist.tail` 和节点的 `backward` 字段。
-- [t_zset.c](https://github.com/redis/redis/blob/7.2.16/src/t_zset.c)：`zslCreate`、`zslInsert`、`zslDeleteNode` 和 `zslUpdateScore`。
+- `server.h`：`zskiplist.tail` 和节点的 `backward` 字段。
+- `t_zset.c`：`zslCreate`、`zslInsert`、`zslDeleteNode` 和 `zslUpdateScore`。
 
 [返回整体结构](zskiplist.md)

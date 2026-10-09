@@ -4,7 +4,7 @@ color: "#5B6CDA"
 
 # Data Structures
 
-数据结构决定 Redis 如何组织和存储数据。本文记录 Redis 的具体实现，学习基线为 [Redis 7.2.16](https://github.com/redis/redis/tree/7.2.16)。
+数据结构决定 Redis 如何组织和存储数据。本文记录 Redis 数据结构的实现原理。
 
 ## 1. 结构总览
 

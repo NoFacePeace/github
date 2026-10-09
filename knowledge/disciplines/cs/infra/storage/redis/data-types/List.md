@@ -16,9 +16,7 @@ color: "#5B6CDA"
 
 ## 3. 底层编码
 
-Redis 7.2 中主要使用 quicklist，节点通常以 listpack 存储元素。
-
-实现说明以 Redis 7.2 为基线。
+主要使用 quicklist，节点通常以 listpack 存储元素。
 
 [返回数据类型目录](DataTypes.md)
 

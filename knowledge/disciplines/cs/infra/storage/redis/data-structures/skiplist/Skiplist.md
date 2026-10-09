@@ -17,13 +17,12 @@ color: "#5B6CDA"
 
 - [zskiplist](zskiplist.md)：跳表整体结构、字段与节点连接关系。
 - [zskiplistNode](zskiplistNode.md)：节点字段、层高、前向指针与跨度。
+- [zskiplistLevel](zskiplistLevel.md)：节点在每层的连接结构，包含 forward 和 span。
 
 ## 3. 源码入口
 
-学习基线：Redis 7.2.16。
-
-- [server.h](https://github.com/redis/redis/blob/7.2.16/src/server.h)
-- [t_zset.c](https://github.com/redis/redis/blob/7.2.16/src/t_zset.c)
+- `server.h`
+- `t_zset.c`
 
 [返回数据结构目录](../DataStructures.md)
 

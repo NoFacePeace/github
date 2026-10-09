@@ -8,8 +8,6 @@ color: "#5B6CDA"
 
 ## 1. 结构定义
 
-学习基线：Redis 7.2.16。
-
 ```c
 typedef struct zskiplistNode {
     sds ele;
@@ -50,7 +48,7 @@ sizeof(zskiplistNode) + level * sizeof(struct zskiplistLevel)
 └── level[2]：forward、span
 ```
 
-业务节点的层高由 `zslRandomLevel` 随机生成，至少为 1，最大为 `ZSKIPLIST_MAXLEVEL`。Redis 7.2.16 中最大层数为 32，每次继续增加一层的概率约为 1/4。头哨兵直接分配最大层数，不保存业务成员。
+业务节点的层高由 `zslRandomLevel` 随机生成，至少为 1，最大为 `ZSKIPLIST_MAXLEVEL`。继续增加一层的概率由 `ZSKIPLIST_P` 决定。头哨兵直接分配最大层数，不保存业务成员。
 
 ## 3. span 的含义
 
@@ -75,7 +73,7 @@ sizeof(zskiplistNode) + level * sizeof(struct zskiplistLevel)
 
 ## 5. 源码入口
 
-- [server.h](https://github.com/redis/redis/blob/7.2.16/src/server.h)：`zskiplistNode`、`ZSKIPLIST_MAXLEVEL` 和 `ZSKIPLIST_P`。
-- [t_zset.c](https://github.com/redis/redis/blob/7.2.16/src/t_zset.c)：`zslCreateNode`、`zslRandomLevel`、`zslInsert`、`zslDeleteNode` 和 `zslUpdateScore`。
+- `server.h`：`zskiplistNode`、`ZSKIPLIST_MAXLEVEL` 和 `ZSKIPLIST_P`。
+- `t_zset.c`：`zslCreateNode`、`zslRandomLevel`、`zslInsert`、`zslDeleteNode` 和 `zslUpdateScore`。
 
 [返回跳表目录](Skiplist.md)

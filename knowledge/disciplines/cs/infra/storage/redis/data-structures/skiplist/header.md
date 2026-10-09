@@ -25,18 +25,18 @@ header → 头哨兵
 
 ## 2. 初始化
 
-学习基线：Redis 7.2.16。`zslCreate` 使用以下调用创建头哨兵：
+`zslCreate` 使用以下调用创建头哨兵：
 
 ```c
 zsl->header = zslCreateNode(ZSKIPLIST_MAXLEVEL, 0, NULL);
 ```
 
-- 分配最大层数的索引空间，此版本的 `ZSKIPLIST_MAXLEVEL` 为 32。
+- 分配最大层数的索引空间，层数由 `ZSKIPLIST_MAXLEVEL` 决定。
 - `ele` 为 `NULL`，`score` 初始化为 0；该分数不参与业务节点排序。
 - 各层的 `forward` 初始化为 `NULL`，`span` 初始化为 0。
 - `backward` 为 `NULL`。
 
-头哨兵分配 32 层，不代表跳表当前使用 32 层。空表的有效层数 `zskiplist.level` 为 1，后续查找从当前有效最高层开始。
+头哨兵分配最大层数的空间，不代表这些层当前都在使用。空表的有效层数 `zskiplist.level` 为 1，后续查找从当前有效最高层开始。
 
 ## 3. 查找与修改的入口
 
@@ -55,7 +55,7 @@ zsl->header = zslCreateNode(ZSKIPLIST_MAXLEVEL, 0, NULL);
 
 ## 5. 源码入口
 
-- [server.h](https://github.com/redis/redis/blob/7.2.16/src/server.h)：`zskiplist.header`、`zskiplistNode` 和最大层数定义。
-- [t_zset.c](https://github.com/redis/redis/blob/7.2.16/src/t_zset.c)：`zslCreate`、`zslInsert`、`zslDeleteNode` 和 `zslFree`。
+- `server.h`：`zskiplist.header`、`zskiplistNode` 和最大层数定义。
+- `t_zset.c`：`zslCreate`、`zslInsert`、`zslDeleteNode` 和 `zslFree`。
 
 [返回整体结构](zskiplist.md)

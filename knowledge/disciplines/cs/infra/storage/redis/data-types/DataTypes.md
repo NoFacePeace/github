@@ -23,7 +23,5 @@ Bitmap 和 HyperLogLog 基于 String，Geo 基于 ZSet。这些功能提供专�
 
 - 使用 `TYPE key` 查看键的数据类型。
 - 使用 `OBJECT ENCODING key` 查看键当前的底层编码。
-- 编码会受 Redis 版本、配置和数据规模影响；本文的实现说明以 Redis 7.2 为基线。
-
-[返回 Redis 目录](../Redis.md)
+- 编码会受 Redis 版本、配置和数据规模影响；本文的[返回 Redis 目录](../Redis.md)
 

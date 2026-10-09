@@ -14,10 +14,8 @@ color: "#5B6CDA"
 
 ## 2. 源码入口
 
-学习基线：Redis 7.2.16。
-
-- [rax.h](https://github.com/redis/redis/blob/7.2.16/src/rax.h)
-- [rax.c](https://github.com/redis/redis/blob/7.2.16/src/rax.c)
+- `rax.h`
+- `rax.c`
 
 [返回数据结构目录](DataStructures.md)
 

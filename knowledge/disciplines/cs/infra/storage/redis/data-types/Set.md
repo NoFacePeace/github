@@ -16,9 +16,7 @@ color: "#5B6CDA"
 
 ## 3. 底层编码
 
-Redis 7.2 中可使用 intset、listpack 或哈希表，编码选择与成员内容、数量和大小有关。
-
-实现说明以 Redis 7.2 为基线。
+可使用 intset、listpack 或哈希表，编码选择与成员内容、数量和大小有关。
 
 [返回数据类型目录](DataTypes.md)
 

@@ -18,7 +18,5 @@ color: "#5B6CDA"
 
 整数编码，或基于 SDS 的字符串编码。
 
-实现说明以 Redis 7.2 为基线。
-
 [返回数据类型目录](DataTypes.md)
 

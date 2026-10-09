@@ -8,8 +8,6 @@ color: "#5B6CDA"
 
 ## 1. 结构定义
 
-学习基线：Redis 7.2.16。
-
 ```c
 typedef struct zskiplist {
     struct zskiplistNode *header, *tail;
@@ -51,7 +49,7 @@ zskiplist
 
 ## 4. 源码入口
 
-- [server.h](https://github.com/redis/redis/blob/7.2.16/src/server.h)：`zskiplist` 与 `zskiplistNode` 的定义。
-- [t_zset.c](https://github.com/redis/redis/blob/7.2.16/src/t_zset.c)：`zslCreate`、`zslInsert`、`zslDeleteNode` 和 `zslFree`。
+- `server.h`：`zskiplist` 与 `zskiplistNode` 的定义。
+- `t_zset.c`：`zslCreate`、`zslInsert`、`zslDeleteNode` 和 `zslFree`。
 
 [返回跳表目录](Skiplist.md)
