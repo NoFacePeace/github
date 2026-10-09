@@ -4,8 +4,8 @@ temp
 repositories/go/projects/cron/config.yaml
 node_modules
 
-# Obsidian 本地工作区状态，其他配置可入库。
-knowledge/.obsidian/workspace*.json
+# Obsidian 本地配置和工作区状态。
+knowledge/.obsidian/
 
 # Claude Code 本地产物（worktree / 会话 / 任务缓存），不入库。
 # skills / agents / commands / settings.json 等共享配置不受影响，可正常提交。
