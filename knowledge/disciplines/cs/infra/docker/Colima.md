@@ -150,23 +150,6 @@ docker context use colima
 export DOCKER_HOST="unix://${HOME}/.colima/default/docker.sock"
 ```
 
-| 内容 | 含义 |
-| --- | --- |
-| `export DOCKER_HOST` | 设置环境变量，当前 Shell 及其启动的子进程可以读取 |
-| `unix://` | 通过本机 Unix socket 连接 |
-| `${HOME}` | 当前用户的主目录 |
-| `.colima/default/docker.sock` | Colima 默认实例的 Docker socket 路径 |
-
-设置后，在当前终端执行 `docker ps`、`docker run` 等命令会连接该地址。此设置只对当前 Shell 会话及其子进程有效；若需要每次打开终端自动设置，可以将上述命令加入 Shell 配置文件，例如 zsh 的 `~/.zshrc`。
-
-`DOCKER_HOST` 会覆盖当前 Docker context 的连接地址；显式指定 `docker --context ...` 或设置 `DOCKER_CONTEXT` 时，context 优先。Docker CLI 已通过 context 正常连接时，通常无需额外设置 `DOCKER_HOST`。
-
-取消当前会话中的设置：
-
-```sh
-unset DOCKER_HOST
-```
-
-如果已写入 Shell 配置文件，还应删除对应配置行，避免下次打开终端时重新设置。
+变量含义、生效范围、与 Docker context 的关系及取消方法，见 [DOCKER_HOST](environment-variables/DOCKER_HOST.md)。
 
 [返回 Docker 目录](Docker.md)
