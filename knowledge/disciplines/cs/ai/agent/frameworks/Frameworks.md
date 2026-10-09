@@ -2,7 +2,7 @@
 color: "#5B6CDA"
 ---
 
-# Agent Frameworks
+# Frameworks
 
 智能体开发框架。
 

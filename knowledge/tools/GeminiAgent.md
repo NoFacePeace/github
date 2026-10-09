@@ -26,7 +26,7 @@ Google 的 [Agent Development Kit（ADK）](../disciplines/cs/ai/agent/framework
 
 ## 3. 相关知识
 
-- [AI Agent](../disciplines/cs/ai/agent/AIAgent.md)：智能体通用知识入口。
+- [Agent](../disciplines/cs/ai/agent/Agent.md)：智能体通用知识入口。
 
 ## 4. 参考资料
 
