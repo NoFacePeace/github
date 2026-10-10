@@ -14,7 +14,7 @@ GC 从根对象出发，沿指针引用查找仍然可达的对象。根包括�
 
 ### 2.1 三色标记模型
 
-三色标记是追踪式垃圾回收的通用模型，不是 Go 特有的算法。颜色含义、标记过程和并发漏标问题参见 [三色标记](../../../runtime/tri-color-marking.md)。
+三色标记是追踪式垃圾回收的通用模型，不是 Go 特有的算法。颜色含义、标记过程和并发漏标问题参见 [三色标记](../../../../runtime/tri-color-marking.md)。
 
 Go 的并发标记可以用该模型理解；运行时通过标记位和工作队列等结构表达标记状态，并使用写屏障维护并发标记的正确性。
 
@@ -102,4 +102,4 @@ GC 跟踪信息输出到标准错误，可用于观察回收频率、各阶段�
 - [runtime/debug.SetGCPercent](https://pkg.go.dev/runtime/debug#SetGCPercent)
 - [runtime/debug.SetMemoryLimit](https://pkg.go.dev/runtime/debug#SetMemoryLimit)
 
-[返回内存管理目录](Memory%20Management.md)
+[返回 Runtime 目录](../Runtime.md)
