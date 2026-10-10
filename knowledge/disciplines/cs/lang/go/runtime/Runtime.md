@@ -52,7 +52,13 @@ GC 通过并发标记清扫回收不可达的堆对象，部分阶段仍需要�
 
 网络轮询器通过操作系统的 I/O 事件机制唤醒等待中的 goroutine，让多个连接可以共享线程等待事件。核心逻辑位于 `netpoll.go`，平台适配位于 `netpoll_*.go`。
 
-## 5. 阅读入口
+## 5. 系统监控
+
+监控线程的职责、执行方式与检查节奏参见 [sysmon](sysmon.md)。
+
+sysmon 在不持有 P 的专门 M 上执行监控循环，检查抢占、系统调用与网络事件等状态，并在满足条件时唤醒 GC 等后台工作。核心实现位于 `proc.go`。
+
+## 6. 阅读入口
 
 - [runtime 源码](https://github.com/golang/go/tree/master/src/runtime)：查看运行时实现，阅读特定版本时切换对应 tag。
 - [runtime 包文档](https://pkg.go.dev/runtime)：公开接口与运行时配置。
