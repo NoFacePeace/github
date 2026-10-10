@@ -61,7 +61,7 @@ channel 的发送和接收具有 Go 内存模型规定的同步关系，可用�
 
 ## 6. 相关机制
 
-- [Select](Select.md)：在多个 channel 通信操作之间选择。
-- [Scheduler](scheduler/Scheduler.md)：通信阻塞后的等待与唤醒。
+- [Select](../keywords/Select.md)：在多个 channel 通信操作之间选择。
+- [Scheduler](../runtime/scheduler/Scheduler.md)：通信阻塞后的等待与唤醒。
 
-[返回 Runtime 目录](Runtime.md)
+[返回 Types 目录](Types.md)
