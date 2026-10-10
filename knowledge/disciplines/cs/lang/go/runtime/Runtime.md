@@ -46,7 +46,13 @@ GC 的整体流程主要位于 `mgc.go`，可从 `gcStart()` 阅读启动条件�
 
 GC 通过并发标记清扫回收不可达的堆对象，部分阶段仍需要短暂的 STW 暂停。回收对象空间与向操作系统归还物理内存是不同过程，后者主要由 scavenger 负责。
 
-## 4. 阅读入口
+## 4. 网络轮询器
+
+工作流程、平台实现及调度器协作方式参见 [netpoller](netpoller.md)。
+
+网络轮询器通过操作系统的 I/O 事件机制唤醒等待中的 goroutine，让多个连接可以共享线程等待事件。核心逻辑位于 `netpoll.go`，平台适配位于 `netpoll_*.go`。
+
+## 5. 阅读入口
 
 - [runtime 源码](https://github.com/golang/go/tree/master/src/runtime)：查看运行时实现，阅读特定版本时切换对应 tag。
 - [runtime 包文档](https://pkg.go.dev/runtime)：公开接口与运行时配置。
