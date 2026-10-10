@@ -1,4 +1,4 @@
-# sysmon
+# Sysmon
 
 sysmon 是 Go 运行时的系统监控机制，核心循环位于 `src/runtime/proc.go` 的 `sysmon()`。它由专门的 M 执行，不需要持有 P，用于在普通调度工作之外检查运行时状态、请求抢占和唤醒后台工作。
 
@@ -60,7 +60,7 @@ Go 1.27.2 的监控循环从约 20 微秒的休眠开始。连续没有唤醒工
 ## 5. 相关机制
 
 - [Scheduler](scheduler/Scheduler.md)：goroutine 调度与抢占。
-- [netpoller](netpoller.md)：I/O 事件获取、等待与唤醒。
+- [Netpoller](Netpoller.md)：I/O 事件获取、等待与唤醒。
 - [GC](gc/GC.md)：垃圾回收的阶段与触发机制。
 
 [返回 Runtime 目录](Runtime.md)

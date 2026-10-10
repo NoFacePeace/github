@@ -10,6 +10,8 @@ Go 的运行时负责 goroutine 调度、垃圾回收、内存分配、栈管理
 | --- | --- | --- |
 | 调度器 | `proc.go`、`preempt.go` | goroutine 调度、运行队列、工作窃取与抢占 |
 | 核心结构 | `runtime2.go` | 定义 G、M、P 等运行时结构 |
+| Channel | `chan.go` | channel 的创建、发送、接收与关闭 |
+| Select | `select.go` | 多个 channel 通信操作的选择与等待 |
 | 垃圾回收 | `mgc.go`、`mgcmark.go`、`mgcsweep.go`、`mgcpacer.go` | GC 阶段管理、标记、清扫与节奏控制 |
 | 内存分配 | `malloc.go`、`mheap.go`、`mcache.go`、`mcentral.go` | 对象分配、堆页管理与分配缓存 |
 | 写屏障 | `mbarrier.go` | 维护并发标记期间的正确性 |
@@ -48,17 +50,29 @@ GC 通过并发标记清扫回收不可达的堆对象，部分阶段仍需要�
 
 ## 4. 网络轮询器
 
-工作流程、平台实现及调度器协作方式参见 [netpoller](netpoller.md)。
+工作流程、平台实现及调度器协作方式参见 [Netpoller](Netpoller.md)。
 
 网络轮询器通过操作系统的 I/O 事件机制唤醒等待中的 goroutine，让多个连接可以共享线程等待事件。核心逻辑位于 `netpoll.go`，平台适配位于 `netpoll_*.go`。
 
 ## 5. 系统监控
 
-监控线程的职责、执行方式与检查节奏参见 [sysmon](sysmon.md)。
+监控线程的职责、执行方式与检查节奏参见 [Sysmon](Sysmon.md)。
 
 sysmon 在不持有 P 的专门 M 上执行监控循环，检查抢占、系统调用与网络事件等状态，并在满足条件时唤醒 GC 等后台工作。核心实现位于 `proc.go`。
 
-## 6. 阅读入口
+## 6. Channel
+
+内部结构、发送接收与等待唤醒机制参见 [Channel](Channel.md)。
+
+channel 的核心实现位于 `chan.go`，通过缓冲区和等待队列协调 goroutine 之间的通信，并与调度器协作完成阻塞与唤醒。
+
+## 7. Select
+
+分支选择、阻塞等待与编译器处理参见 [Select](Select.md)。
+
+`select` 在多个 channel 通信操作之间选择一个执行，一般多分支场景的核心实现位于 `select.go`。
+
+## 8. 阅读入口
 
 - [runtime 源码](https://github.com/golang/go/tree/master/src/runtime)：查看运行时实现，阅读特定版本时切换对应 tag。
 - [runtime 包文档](https://pkg.go.dev/runtime)：公开接口与运行时配置。
