@@ -7,3 +7,4 @@ color: "#5B6CDA"
 人工智能（Artificial Intelligence）。
 
 - [智能体](agent/Agent.md)
+- [生态](ecosystem/Ecosystem.md)

@@ -18,7 +18,7 @@ Google ADK 针对 Gemini 与 Google 生态进行了优化，同时设计为支�
 
 ## 3. 相关知识与产品
 
-- [Gemini Agent](../../../../../tools/GeminiAgent.md)：Google 面向企业工作的智能体产品。
+- [Gemini Agent](GeminiAgent.md)：Google 面向企业工作的智能体产品。
 
 ## 4. 参考资料
 
@@ -26,3 +26,5 @@ Google ADK 针对 Gemini 与 Google 生态进行了优化，同时设计为支�
 - [Google ADK 文档](https://adk.dev/)。
 - [ADK for TypeScript 官方介绍](https://developers.googleblog.com/en/introducing-agent-development-kit-for-typescript-build-ai-agents-with-the-power-of-a-code-first-approach/)。
 - [IBM watsonx Orchestrate ADK](https://www.ibm.com/products/watsonx-orchestrate/developers)。
+
+[返回 AI 生态](Ecosystem.md)
