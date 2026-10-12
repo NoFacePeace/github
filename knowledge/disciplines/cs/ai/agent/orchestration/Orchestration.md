@@ -100,4 +100,4 @@ return await run_agent("汇总报告", input=review)
 - [Claude Managed Agents：多 Agent 编排](https://platform.claude.com/docs/en/managed-agents/multiagent-orchestration)
 - [Claude Dynamic Workflows：运行机制与事件](https://platform.claude.com/docs/en/managed-agents/workflow-runs)
 
-[返回 Agent 技术](Technical.md)
+[返回 Agent](../Agent.md)
