@@ -29,7 +29,8 @@ Content-Type: application/json
 
 | 字段 | 用途 |
 | --- | --- |
-| Server | 描述服务器软件信息 |
+| [Server](Server.md) | 描述服务器软件信息 |
+| [Last-Modified](LastModified.md) | 表示所选资源表示的最后修改时间 |
 | Set-Cookie | 指示客户端保存 Cookie |
 | Location | 指定重定向目标或新建资源的位置 |
 | WWW-Authenticate | 指定身份认证挑战 |
@@ -38,10 +39,11 @@ Content-Type: application/json
 
 | 字段 | 用途 |
 | --- | --- |
-| Content-Type | 说明报文内容的媒体类型 |
-| Content-Length | 说明报文内容的字节长度；HEAD 等场景有特殊规则 |
+| [Content-Type](ContentType.md) | 说明报文内容的媒体类型 |
+| [Content-Length](ContentLength.md) | 说明报文内容的字节长度；HEAD 等场景有特殊规则 |
 | Cache-Control | 指定请求或响应的缓存指令 |
-| Connection | 控制 HTTP/1.x 当前连接的使用，如 `close` |
+| [Date](Date.md) | 表示报文生成的日期和时间，常见于响应 |
+| [Connection](Connection.md) | 控制 HTTP/1.x 当前连接的使用，如 `close` |
 
 ## 5. HTTP/2 与 HTTP/3
 
