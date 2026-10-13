@@ -2,7 +2,7 @@
 
 请求行（Request Line）是 HTTP/1.x 请求报文的第一行，用于说明请求方法、请求目标和 HTTP 版本。
 
-请求行之后是[请求头](headers/Headers.md)，用于携带请求的附加信息。
+请求行之后是[请求头](../headers/Headers.md)，用于携带请求的附加信息。
 
 ## 1. 结构
 
@@ -16,7 +16,7 @@ method SP request-target SP HTTP-version CRLF
 GET /users?page=1 HTTP/1.1
 ```
 
-- [请求方法](Methods.md)：示例中的 `GET`，表示希望对目标资源执行的操作。
+- [请求方法](../Methods.md)：示例中的 `GET`，表示希望对目标资源执行的操作。
 - [请求目标](RequestTarget.md)：示例中的 `/users?page=1`，包含路径和查询字符串。这是直接向源站发送请求时的常见形式。
 - HTTP 版本：示例中的 `HTTP/1.1`。
 

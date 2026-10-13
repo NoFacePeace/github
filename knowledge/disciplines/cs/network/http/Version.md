@@ -1,6 +1,6 @@
 # HTTP 版本
 
-HTTP 版本（HTTP Version）标识使用的 HTTP 协议版本。不同版本保留了方法、[状态码](StatusCode.md)等核心语义，但报文格式和传输机制有所不同。
+HTTP 版本（HTTP Version）标识使用的 HTTP 协议版本。不同版本保留了方法、[状态码](status-codes/StatusCode.md)等核心语义，但报文格式和传输机制有所不同。
 
 ## 1. 常见版本
 

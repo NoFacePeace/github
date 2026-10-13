@@ -6,7 +6,7 @@ HTTP 首部（Headers）携带请求或响应的附加信息。客户端发送�
 
 每个首部字段由字段名、冒号和字段值组成，字段名不区分大小写。
 
-首部部分以一个[空行](../BlankLine.md)结束，随后可以是报文体。
+首部部分以一个[空行](../messages/BlankLine.md)结束，随后可以是报文体。
 
 ```http
 Host: example.com

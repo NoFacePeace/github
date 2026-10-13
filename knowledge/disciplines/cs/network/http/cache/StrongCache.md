@@ -4,7 +4,7 @@
 
 ## 1. 有效期
 
-服务器通过 [Cache-Control](headers/CacheControl.md) 等响应首部指定新鲜度：
+服务器通过 [Cache-Control](../headers/CacheControl.md) 等响应首部指定新鲜度：
 
 ```http
 Cache-Control: max-age=60
@@ -12,12 +12,12 @@ Cache-Control: max-age=60
 
 表示新鲜度期限为 60 秒，复用时需扣除响应当前年龄，而不是每次收到响应后重新计时。
 
-[Date](headers/Date.md) 表示响应生成时间，缓存结合它和 `Age` 等信息计算响应年龄；使用 `Expires` 时，新鲜度期限通常为 `Expires - Date`。
+[Date](../headers/Date.md) 表示响应生成时间，缓存结合它和 `Age` 等信息计算响应年龄；使用 `Expires` 时，新鲜度期限通常为 `Expires - Date`。
 
 | 缓存类型 | 有效期依据，从高到低 |
 | --- | --- |
-| 私有缓存，如浏览器缓存 | `max-age` → [Expires](headers/Expires.md) |
-| 共享缓存，如 CDN 缓存 | `s-maxage` → `max-age` → [Expires](headers/Expires.md) |
+| 私有缓存，如浏览器缓存 | `max-age` → [Expires](../headers/Expires.md) |
+| 共享缓存，如 CDN 缓存 | `s-maxage` → `max-age` → [Expires](../headers/Expires.md) |
 
 高优先级的有效指令覆盖低优先级字段，不取最早过期时间。没有显式有效期时，缓存可能按协议规则计算启发式有效期。
 

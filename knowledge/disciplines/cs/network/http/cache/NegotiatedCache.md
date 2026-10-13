@@ -4,7 +4,7 @@
 
 ## 1. 触发条件
 
-缓存过期时通常需要验证；响应的 [Cache-Control](headers/CacheControl.md) 包含不带字段名的 `no-cache` 时，每次复用前都必须验证，即使尚未过期。
+缓存过期时通常需要验证；响应的 [Cache-Control](../headers/CacheControl.md) 包含不带字段名的 `no-cache` 时，每次复用前都必须验证，即使尚未过期。
 
 **是否需要验证与使用什么验证，是两个不同的问题。**
 
@@ -23,8 +23,8 @@
 
 | 响应中的验证标识 | 后续验证请求携带 |
 | --- | --- |
-| [ETag](headers/ETag.md) | [If-None-Match](headers/IfNoneMatch.md) |
-| [Last-Modified](headers/LastModified.md) | [If-Modified-Since](headers/IfModifiedSince.md) |
+| [ETag](../headers/ETag.md) | [If-None-Match](../headers/IfNoneMatch.md) |
+| [Last-Modified](../headers/LastModified.md) | [If-Modified-Since](../headers/IfModifiedSince.md) |
 
 两个条件字段同时存在时，服务器优先判断 `If-None-Match`，忽略 `If-Modified-Since`。没有验证标识时，通常需要重新获取完整响应。
 
@@ -51,7 +51,7 @@ If-None-Match: "v1"
 
 对于通常的条件 GET 请求：
 
-- 表示未变化：返回 `304 Not Modified`，不发送内容；客户端复用已有内容并更新缓存信息。
+- 表示未变化：返回 [304 Not Modified](../status-codes/304.md)，不发送内容；客户端复用已有内容并更新缓存信息。
 - 表示已变化：同一次请求通常返回 `200 OK`、最新内容和新的验证标识，无须再发一次请求获取内容。
 
 ## 4. 与强缓存配合

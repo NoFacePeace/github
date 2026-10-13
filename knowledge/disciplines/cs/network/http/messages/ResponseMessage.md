@@ -15,7 +15,7 @@ Content-Length: 16
 ```
 
 - [状态行](StatusLine.md)：包含 HTTP 版本、状态码和可选的原因短语，示例中分别为 `HTTP/1.1`、`200` 和 `OK`。
-- [响应头](headers/Headers.md)：携带内容格式、缓存指令等附加信息。
+- [响应头](../headers/Headers.md)：携带内容格式、缓存指令等附加信息。
 - [空行](BlankLine.md)：标记响应头结束。
 - [响应体](Body.md)：携带返回的内容，并非所有响应都包含响应体。
 

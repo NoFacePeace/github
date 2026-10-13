@@ -16,7 +16,7 @@ Content-Length: 16
 ```
 
 - [请求行](RequestLine.md)：包含请求方法、请求目标和 HTTP 版本。
-- [请求头](headers/Headers.md)：携带目标主机、请求体格式等信息。
+- [请求头](../headers/Headers.md)：携带目标主机、请求体格式等信息。
 - [空行](BlankLine.md)：分隔请求头和请求体。
 - [请求体](Body.md)：携带提交的数据，并非所有请求都包含请求体。
 
