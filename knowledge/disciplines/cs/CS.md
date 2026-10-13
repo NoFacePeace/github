@@ -11,4 +11,6 @@ color: "#5B6CDA"
 - [运行时系统](runtime/Runtime.md)
 - [人工智能](ai/AI.md)
 - [操作系统](os/OS.md)
+- [网络](network/Network.md)
 - [数据结构](data-structures/DataStructures.md)
+- [架构](architecture/Architecture.md)
