@@ -6,7 +6,7 @@ HTTP 首部（Headers）携带请求或响应的附加信息。客户端发送�
 
 每个首部字段由字段名、冒号和字段值组成，字段名不区分大小写。
 
-首部部分以一个[空行](BlankLine.md)结束，随后可以是报文体。
+首部部分以一个[空行](../BlankLine.md)结束，随后可以是报文体。
 
 ```http
 Host: example.com
@@ -24,6 +24,8 @@ Content-Type: application/json
 | Authorization | 携带身份认证凭据 |
 | Cookie | 携带客户端保存的 Cookie |
 | User-Agent | 描述客户端软件信息 |
+| [If-None-Match](IfNoneMatch.md) | 使用实体标签执行条件请求 |
+| [If-Modified-Since](IfModifiedSince.md) | 使用修改时间验证缓存表示 |
 
 ## 3. 响应头
 
@@ -31,6 +33,8 @@ Content-Type: application/json
 | --- | --- |
 | [Server](Server.md) | 描述服务器软件信息 |
 | [Last-Modified](LastModified.md) | 表示所选资源表示的最后修改时间 |
+| [ETag](ETag.md) | 提供所选资源表示的实体标签 |
+| [Expires](Expires.md) | 指定响应的绝对过期时间 |
 | Set-Cookie | 指示客户端保存 Cookie |
 | Location | 指定重定向目标或新建资源的位置 |
 | WWW-Authenticate | 指定身份认证挑战 |
@@ -41,7 +45,7 @@ Content-Type: application/json
 | --- | --- |
 | [Content-Type](ContentType.md) | 说明报文内容的媒体类型 |
 | [Content-Length](ContentLength.md) | 说明报文内容的字节长度；HEAD 等场景有特殊规则 |
-| Cache-Control | 指定请求或响应的缓存指令 |
+| [Cache-Control](CacheControl.md) | 指定请求或响应的缓存指令 |
 | [Date](Date.md) | 表示报文生成的日期和时间，常见于响应 |
 | [Connection](Connection.md) | 控制 HTTP/1.x 当前连接的使用，如 `close` |
 
