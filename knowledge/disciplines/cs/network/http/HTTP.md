@@ -5,7 +5,7 @@ HTTP（Hypertext Transfer Protocol，超文本传输协议）是一种应用层�
 在 [B/S 架构](../../architecture/BrowserServer.md)中，浏览器通常通过 HTTP 或 HTTPS 与服务器通信。
 
 - [HTTP 报文](messages/Messages.md)
-- [请求方法](Methods.md)
+- [请求方法](methods/Methods.md)
 - [HTTP 首部](headers/Headers.md)
 - [状态码](status-codes/StatusCode.md)
 - [URL](URL.md)
