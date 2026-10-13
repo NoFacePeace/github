@@ -2,7 +2,7 @@
 
 请求目标（Request Target）是 HTTP/1.x 请求行中位于请求方法与 HTTP 版本之间的部分，用于指定请求的目标。
 
-请求目标之后是 [HTTP 版本](../Version.md)字段，例如 `HTTP/1.1`。
+请求目标之后是 [HTTP 版本](../versions/Version.md)字段，例如 `HTTP/1.1`。
 
 ## 1. 常见形式
 
