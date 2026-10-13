@@ -77,7 +77,8 @@
 
 ## 4. 前端与工程实践
 
-- 
+- [MDN Web Docs 中文站](https://developer.mozilla.org/zh-CN/)
+  - Web 开发文档与学习资源，涵盖 HTML、CSS、JavaScript、Web API 和 HTTP 等内容。
 
 ## 5. 其他
 
