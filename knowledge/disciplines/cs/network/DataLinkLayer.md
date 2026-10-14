@@ -22,7 +22,7 @@
 
 ## 3. 常见技术与协议
 
-- **以太网（Ethernet）**：常见的有线局域网技术，定义帧格式、MAC 寻址等机制，也包含物理层规范。
+- **[以太网（Ethernet）](Ethernet.md)**：常见的有线局域网技术，定义帧格式、MAC 寻址等机制，也包含物理层规范。
 - **Wi-Fi**：基于 IEEE 802.11 的无线局域网技术，包含数据链路层和物理层功能。
 - **PPP（Point-to-Point Protocol，点对点协议）**：用于点到点链路的数据封装等功能。
 - **[ARP（Address Resolution Protocol，地址解析协议）](ARP.md)**：在同一 IPv4 链路上，将下一跳的 IP 地址解析为 MAC 地址。
