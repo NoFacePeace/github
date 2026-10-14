@@ -4,7 +4,7 @@ TCP 校验和（TCP Checksum）是 TCP 首部中的 16 位字段，用于检测�
 
 ## 1. 计算范围
 
-TCP 校验和的计算范围包括 IP 伪首部、TCP 首部和全部 TCP 数据。
+TCP 校验和的计算范围包括 [IP 伪首部](PseudoHeader.md)、[TCP 首部](Header.md)和全部 [TCP 数据](Data.md)。
 
 ```text
 参与校验和计算的内容

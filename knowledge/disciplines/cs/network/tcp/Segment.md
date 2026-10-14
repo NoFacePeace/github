@@ -1,6 +1,6 @@
 # TCP 报文段
 
-TCP 报文段（TCP Segment）是 [TCP 协议](TCP.md)的传输单位，由 TCP 首部和数据部分组成，通常封装在 IP 数据包中传输。
+TCP 报文段（TCP Segment）是 [TCP 协议](TCP.md)的传输单位，由 [TCP 首部](Header.md)和[数据部分](Data.md)组成，通常封装在 IP 数据包中传输。
 
 ## 1. 基本结构
 
@@ -45,8 +45,8 @@ MSS 指一个 TCP 报文段能够承载的最大数据长度，不包含 TCP 首
 | --- | --- | --- |
 | 源端口（Source Port） | 16 位 | 发送方的端口号 |
 | 目的端口（Destination Port） | 16 位 | 接收方的端口号 |
-| [序列号（Sequence Number）](SequenceNumber.md) | 32 位 | 通常表示该报文段第一个数据字节的序列号；携带 SYN 时表示初始序列号 |
-| [确认号（Acknowledgment Number）](AcknowledgmentNumber.md) | 32 位 | ACK 标志置位时有效，表示下一步期望收到的序列号 |
+| 序列号（Sequence Number） | 32 位 | 通常表示该报文段第一个数据字节的序列号；携带 SYN 时表示初始序列号 |
+| 确认号（Acknowledgment Number） | 32 位 | ACK 标志置位时有效，表示下一步期望收到的序列号 |
 | 数据偏移（Data Offset） | 4 位 | 以 4 字节为单位表示首部长度，用于定位数据部分的起始位置 |
 | 控制标志（Flags） | 多个标志位 | 标识连接建立、确认、关闭等控制信息 |
 | 窗口大小（Window） | 16 位 | 通告接收窗口；协商窗口扩大选项后，按约定比例解释 |
