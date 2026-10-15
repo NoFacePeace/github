@@ -52,4 +52,8 @@ binlog 位于 Server 层，记录数据变更，主要用于复制和按时间�
 
 此流程为简化描述。预处理语句、不同类型的 SQL 和具体版本可能具有不同处理细节。MySQL 8.0 已移除 Query Cache，不能将其列为现代 Server 层的查询步骤。
 
+## 7. 锁
+
+- [Server 层锁](Locks.md)：元数据锁、显式表锁、全局读锁、备份锁和命名锁。
+
 [返回 MySQL 架构](../Architecture.md)
