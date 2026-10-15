@@ -57,4 +57,8 @@ SQL 由 Server 层解析、优化并组织执行，存储引擎负责具体的�
 - [EXPLAIN](EXPLAIN.md)：查看执行计划、选择输出格式，以及对比估计与实际执行信息。
 - [ANALYZE](ANALYZE.md)：更新统计信息与直方图，区分 ANALYZE TABLE 和 EXPLAIN ANALYZE。
 
+## 6. 管理语句
+
+- [FLUSH](FLUSH.md)：刷新日志、表缓存、权限及状态信息，区分刷页、锁定与事务提交。
+
 [返回 MySQL 目录](../MySQL.md)
