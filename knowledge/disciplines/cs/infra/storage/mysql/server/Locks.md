@@ -39,6 +39,8 @@ COMMIT;
 
 ## 3. 显式表锁
 
+- [显式表锁](ExplicitTableLock.md)：LOCK TABLES 的 READ／WRITE 语义、事务边界及与 InnoDB 表锁的关系。
+
 ```sql
 LOCK TABLES users READ;
 SELECT * FROM users;
