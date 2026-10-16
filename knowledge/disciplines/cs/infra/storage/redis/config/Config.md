@@ -64,3 +64,10 @@ CONFIG REWRITE
 | [appendfsync](appendfsync.md) | `everysec` | AOF 同步策略，支持 `always`、`everysec` 和 `no`；开启 AOF 后生效。 |
 
 部署环境可能覆盖上述默认值，应使用 `CONFIG GET` 确认当前实例的实际配置。
+
+## 5. 内存配置
+
+| 配置项 | 常见 64 位 Redis 默认值 | 作用 |
+| --- | --- | --- |
+| [maxmemory](maxmemory.md) | `0` | Redis 的内存上限，`0` 表示不设置此上限。 |
+| [maxmemory-policy](maxmemory-policy.md) | `noeviction` | 达到上限时淘汰哪些键，或拒绝需要增加内存的写入。 |

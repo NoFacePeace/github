@@ -16,4 +16,4 @@ color: "#5B6CDA"
 
 ## 3. 底层编码
 
-listpack 或哈希表，编码选择与字段数量、字段和值的大小有关。
+[listpack](../structs/Listpack.md) 或[字典（哈希表）](../structs/dict/Dict.md)，编码选择与字段数量、字段和值的大小有关。
