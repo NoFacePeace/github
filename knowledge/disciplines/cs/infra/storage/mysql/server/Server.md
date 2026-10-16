@@ -36,6 +36,8 @@ binlog 位于 Server 层，记录数据变更，主要用于复制和按时间�
 
 启用 binlog 时，MySQL 通过内部两阶段提交协调 InnoDB 与 binlog 的事务提交状态。
 
+- [组提交](GroupCommit.md)：批量协调 redo 持久化、binlog 写入与同步，以及引擎提交，减少重复刷盘开销。
+
 ## 6. 查询流程
 
 ```text

@@ -33,3 +33,11 @@ MySQL 是关系型数据库管理系统，使用 SQL 进行数据查询与管理
 ## 7. 性能
 
 - [性能排查与优化](performance/Performance.md)：区分等待与执行开销，定位慢 SQL，并验证索引和查询优化效果。
+
+## 8. 可靠性
+
+- [MySQL 可靠性](reliability/Reliability.md)：备份恢复、高可用与容灾的目标、边界和验证方法。
+
+## 9. 配置
+
+- [MySQL 配置](config/Config.md)：配置来源、变量作用域、动态修改、持久化及常见参数。

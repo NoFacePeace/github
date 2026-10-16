@@ -56,7 +56,7 @@ InnoDB 默认隔离级别是[可重复读（REPEATABLE READ）](../../../../../r
 
 innodb_flush_log_at_trx_commit 为 1 时，提交要求持久化相关 redo，实际 I/O 可以通过组提交合并。其他取值可能在部分故障场景丢失已提交结果。
 
-启用 binlog 时，Server 与 InnoDB 通过内部两阶段提交协调结果；通常还需结合 sync_binlog 为 1 及可靠存储，保障 binlog 的持久化。恢复时需判定处于准备阶段事务的最终结果，不能将所有崩溃时尚未完成提交流程的事务一律回滚。
+启用 binlog 时，Server 与 InnoDB 通过[内部两阶段提交](TwoPhaseCommit.md)协调结果；通常还需结合 sync_binlog 为 1 及可靠存储，保障 binlog 的持久化。恢复时需判定处于准备阶段事务的最终结果，不能将所有崩溃时尚未完成提交流程的事务一律回滚。
 
 ## 6. 业务用法与边界
 
