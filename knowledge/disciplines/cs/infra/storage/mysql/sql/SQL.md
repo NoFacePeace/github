@@ -36,6 +36,8 @@ WHERE 筛选记录，ORDER BY 明确结果顺序，LIMIT 限制返回数量。SQ
 
 ## 3. 数据修改与事务
 
+- [INSERT](INSERT.md)：插入单行与多行记录、查询结果写入、唯一键冲突处理及加锁行为。
+
 以下示例假设 users 使用 InnoDB：
 
 ```sql

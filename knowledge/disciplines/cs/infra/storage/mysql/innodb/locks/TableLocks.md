@@ -10,7 +10,7 @@ InnoDB 不只有记录和范围锁，也有表级锁。表级描述锁的作用�
 
 | 类型或模式 | 作用 |
 | --- | --- |
-| [IS、IX 意向锁](../../../../../runtime/locks/IntentionLock.md) | 在表上声明下层记录加锁的意图，协调表级锁与记录锁。 |
+| [IS 意向共享锁](IntentionSharedLock.md)、[IX 意向排他锁](IntentionExclusiveLock.md) | 在表上声明下层记录加锁的意图，协调表级锁与记录锁。 |
 | [S 锁](../../../../../runtime/locks/Shared.md)、[X 锁](../../../../../runtime/locks/Exclusive.md) | 对整张表提出共享或排他的访问要求，与表上的其他模式进行兼容性检查。 |
 | AUTO-INC | 特定自增值分配模式下使用的特殊表级锁，行为取决于配置和语句类型。 |
 
