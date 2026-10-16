@@ -29,3 +29,7 @@ MySQL 是关系型数据库管理系统，使用 SQL 进行数据查询与管理
 ## 6. 事务
 
 - [事务](../../../runtime/transactions/Transactions.md)：操作边界、提交与中止、并发控制及保证范围。
+
+## 7. 性能
+
+- [性能排查与优化](performance/Performance.md)：区分等待与执行开销，定位慢 SQL，并验证索引和查询优化效果。
