@@ -40,6 +40,8 @@ Go 1.27.2 的监控循环从约 20 微秒的休眠开始。连续没有唤醒工
 
 这不是对每个 G 的精确时间片保证。通过 `runnext` 连续执行的 G 可能共享调度周期，实际检查和抢占响应也存在延迟。
 
+请求发出后，G 如何通过函数入口检查或定向线程信号响应，以及内核、中断与单核调度如何参与，参见 [Go Goroutine 抢占机制](GoroutinePreemption.md)。
+
 ### 3.3 网络轮询检查
 
 轮询器已初始化、`sched.lastpoll` 非零且距今超过 10 毫秒时，sysmon 调用 `netpoll(0)` 做非阻塞检查。`lastpoll` 为零通常表示已有阻塞轮询者。
@@ -59,6 +61,7 @@ Go 1.27.2 的监控循环从约 20 微秒的休眠开始。连续没有唤醒工
 
 ## 5. 相关机制
 
-- [Scheduler](scheduler/Scheduler.md)：goroutine 调度与抢占。
-- [Netpoller](Netpoller.md)：I/O 事件获取、等待与唤醒。
-- [GC](gc/GC.md)：垃圾回收的阶段与触发机制。
+- [Go Goroutine 抢占机制](GoroutinePreemption.md)：协作式与异步抢占、线程信号及单核执行过程。
+- [Scheduler](../scheduler/Scheduler.md)：goroutine 调度与抢占。
+- [Netpoller](../Netpoller.md)：I/O 事件获取、等待与唤醒。
+- [GC](../gc/GC.md)：垃圾回收的阶段与触发机制。
