@@ -22,4 +22,12 @@ MySQL 是关系型数据库管理系统，使用 SQL 进行数据查询与管理
 
 - [SQL](sql/SQL.md)：语句分类、数据查询、数据修改与事务控制。
 
+## 5. 日志
+
+- [MySQL 日志](logs/Logs.md)：Server 层与 InnoDB 日志的分类、复制恢复及刷盘分工。
+
+## 6. 事务
+
+- [事务](../../../runtime/transactions/Transactions.md)：操作边界、提交与中止、并发控制及保证范围。
+
 [返回存储系统目录](../Storage.md)

@@ -8,9 +8,9 @@ InnoDB 是 MySQL 的默认存储引擎，负责表的数据组织、索引访问
 
 ## 1. 数据与索引
 
-- [存储格式](StorageFormat.md)：表空间、段、区、页、记录，以及 DYNAMIC 等行格式。
-- [InnoDB 索引](Indexes.md)：B+ 树、聚簇索引、二级索引、回表、覆盖索引和联合索引。
-- [回表](TableLookup.md)：通过二级索引取得聚簇索引键，再访问聚簇索引读取记录的流程与成本。
+- [存储格式](storage-format/StorageFormat.md)：表空间、段、区、页、记录，以及 DYNAMIC 等行格式。
+- [InnoDB 索引](indexes/Indexes.md)：B+ 树、聚簇索引、二级索引、回表、覆盖索引和联合索引。
+- [回表](indexes/TableLookup.md)：通过二级索引取得聚簇索引键，再访问聚簇索引读取记录的流程与成本。
 
 InnoDB 以页为单位管理数据和索引，默认页大小为 16 KiB，并使用 B+ 树组织常见索引。
 
@@ -32,6 +32,8 @@ Buffer Pool 缓存的是页，不是 SQL 查询结果。
 - **MVCC**：结合 undo log 中的历史版本与 Read View，在 READ COMMITTED 和 REPEATABLE READ 下实现一致性非锁定读。锁定读和写操作使用不同的访问规则。
 
 ## 4. 日志与恢复
+
+- [InnoDB 日志](logs/Logs.md)：redo、undo 与数据页、事务恢复及 binlog 的分工。
 
 | 机制 | 主要作用 |
 | --- | --- |

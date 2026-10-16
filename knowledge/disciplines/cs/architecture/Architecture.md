@@ -2,5 +2,5 @@
 
 架构（Architecture）描述系统的整体结构，包括组件的职责划分、组件之间的关系与交互方式，以及指导系统设计和演进的原则。这里涵盖软件架构、系统架构等内容。
 
-- [C/S 架构](ClientServer.md)
-- [B/S 架构](BrowserServer.md)
+- [应用](Application.md)：应用的职责分配与协作方式，包括 C/S 和 B/S 架构。
+- [存储](storage/Storage.md)：数据持久化、日志与故障恢复等通用设计机制。
