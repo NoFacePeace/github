@@ -25,5 +25,3 @@ m_low_limit_id 是 Read View 中数值较大的不可见性边界。其他事务
 ## 4. 与日志及清理的区别
 
 该字段不是 redo 的 LSN，不是时间戳，也不等于名称相近的 m_low_limit_no。后者涉及事务序列与历史清理边界等实现用途，不能因为名称相似就互相替代。
-
-[返回版本可见性](VersionVisibility.md)

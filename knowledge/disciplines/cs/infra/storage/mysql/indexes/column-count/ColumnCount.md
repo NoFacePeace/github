@@ -14,5 +14,3 @@ color: "#5B6CDA"
 ## 2. 与其他维度的关系
 
 主键、唯一索引和普通索引都可以是单列或联合索引。例如 `UNIQUE INDEX uk_name_age (name, age)` 同时是唯一索引和联合索引。
-
-[返回索引目录](../Indexes.md)

@@ -59,5 +59,3 @@ M 关联的 `g0` 用于运行时工作，其栈与普通 goroutine 栈承担不�
 
 - [G](G.md)：M 执行的 goroutine，`m.curg` 关联当前用户 G，`m.g0` 关联用于运行时工作的特殊 G。
 - [P](P.md)：M 执行普通 Go 代码时持有的调度资源，通过 `m.p` 和 `p.m` 关联。
-
-[返回 GMP](GMP.md)

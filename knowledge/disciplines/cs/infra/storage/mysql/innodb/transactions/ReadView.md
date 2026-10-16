@@ -69,5 +69,3 @@ FOR UPDATE、FOR SHARE 等锁定读以及 UPDATE、DELETE 等操作，不按普�
 READ COMMITTED 下视图通常按一致性读取的生命周期使用；REPEATABLE READ 下复用的事务视图通常在事务结束时释放。
 
 仍然活跃的旧视图可能需要较早的历史版本，使 purge 无法清理相关 undo。长事务或长时间一致性读取因此可能增加历史保留及版本遍历的成本。
-
-[返回 InnoDB 事务](Transactions.md)

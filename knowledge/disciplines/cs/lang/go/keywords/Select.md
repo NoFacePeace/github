@@ -72,5 +72,3 @@
 
 - [Channel](../types/Channel.md)：channel 结构、发送、接收与关闭。
 - [Scheduler](../runtime/scheduler/Scheduler.md)：G 的挂起与恢复调度。
-
-[返回 Keywords 目录](Keywords.md)

@@ -75,5 +75,3 @@ printf '%s' "$TOKEN" |
 ```sh
 docker logout registry.example.com
 ```
-
-[返回 Docker 命令目录](Commands.md)

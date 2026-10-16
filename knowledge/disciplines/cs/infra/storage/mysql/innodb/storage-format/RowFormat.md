@@ -71,5 +71,3 @@ ALTER TABLE articles ROW_FORMAT = DYNAMIC;
 ```
 
 修改行格式通常涉及表重建，会消耗时间和存储资源，在线执行能力取决于版本和表的具体条件。仅修改默认行格式配置，不会自动重写已有表。
-
-[返回存储格式](StorageFormat.md)

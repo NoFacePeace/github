@@ -19,5 +19,3 @@ CREATE INDEX idx_name ON users (name);
 ## 3. 使用注意
 
 多个单列索引不等同于一个联合索引。优化器可能选择其中一个索引或使用索引合并，是否合适需要结合查询与执行计划判断。
-
-[返回列数维度](ColumnCount.md)

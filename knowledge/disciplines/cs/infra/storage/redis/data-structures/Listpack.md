@@ -16,6 +16,3 @@ color: "#5B6CDA"
 
 - `listpack.h`
 - `listpack.c`
-
-[返回数据结构目录](DataStructures.md)
-

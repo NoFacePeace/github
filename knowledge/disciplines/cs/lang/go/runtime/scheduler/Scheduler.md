@@ -77,5 +77,3 @@ Go 同时使用协作式抢占和异步抢占机制。异步抢占自 Go 1.14 �
 - `runtime/trace` 与 `go tool trace`：观察 goroutine 的运行、等待、唤醒及处理器使用情况。
 - [proc.go](https://github.com/golang/go/blob/master/src/runtime/proc.go)：调度器核心实现，阅读时应切换到所用 Go 版本的 tag。
 - [runtime 包文档](https://pkg.go.dev/runtime)：调度参数与公开接口。
-
-[返回 Runtime 目录](../Runtime.md)

@@ -73,5 +73,3 @@ SELECT id, name FROM users WHERE age = 20;
 | ANALYZE TABLE users | 更新表与索引统计信息，帮助优化器估算后续查询。 |
 
 ANALYZE TABLE 不是执行计划查看命令，也不保证执行后查询一定变快。
-
-[返回 SQL 目录](SQL.md)

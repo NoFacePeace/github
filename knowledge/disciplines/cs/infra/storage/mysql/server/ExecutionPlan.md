@@ -110,5 +110,3 @@ SELECT name FROM users WHERE age = 20;
 | ANALYZE TABLE | 更新表与索引统计信息，帮助后续优化，不执行指定的业务查询。 |
 
 统计信息过旧可能导致估计偏差，但更新统计信息不保证计划一定变化或变快。还需结合数据分布、索引设计与实际访问成本判断。
-
-[返回 Server 层](Server.md)

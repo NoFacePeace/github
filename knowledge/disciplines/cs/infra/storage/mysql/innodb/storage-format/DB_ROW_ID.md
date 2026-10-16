@@ -37,5 +37,3 @@ CREATE TABLE events (
 DB_ROW_ID 由 InnoDB 内部管理，不能直接通过 SELECT DB_ROW_ID 查询，也不能用作应用稳定访问记录的公开接口。
 
 它不等于 AUTO_INCREMENT 列，不应依赖其值或分配顺序作为业务编号。通常应显式定义合适的主键，明确记录身份和索引组织方式。
-
-[返回聚簇索引叶子记录](ClusteredIndexLeafRecord.md)

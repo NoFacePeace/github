@@ -55,5 +55,3 @@ binlog 位于 Server 层，记录数据变更，主要用于复制和按时间�
 ## 7. 锁
 
 - [Server 层锁](Locks.md)：元数据锁、显式表锁、全局读锁、备份锁和命名锁。
-
-[返回 MySQL 架构](../Architecture.md)

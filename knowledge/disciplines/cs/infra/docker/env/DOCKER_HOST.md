@@ -58,5 +58,3 @@ docker ps
 | `.colima/default/docker.sock` | Colima 默认实例的 Docker socket 路径 |
 
 设置后，读取该变量的 `docker ps`、`docker run` 等命令会连接 Colima 默认实例。如果已设置 `DOCKER_CONTEXT`，需要先取消它才能让 Docker CLI 使用此地址。
-
-[返回环境变量目录](Env.md)

@@ -57,5 +57,3 @@ zsl->header = zslCreateNode(ZSKIPLIST_MAXLEVEL, 0, NULL);
 
 - `server.h`：`zskiplist.header`、`zskiplistNode` 和最大层数定义。
 - `t_zset.c`：`zslCreate`、`zslInsert`、`zslDeleteNode` 和 `zslFree`。
-
-[返回整体结构](zskiplist.md)

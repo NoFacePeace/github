@@ -47,5 +47,3 @@ Agent Sandbox 支持这两种集成方式，具体选择取决于需要隔离和
 - [ADK：将 Sandbox 作为 Agent 工具](https://agent-sandbox.sigs.k8s.io/docs/use-cases/examples/code-interpreter-agent-on-adk/)
 - [OpenClaw：Agent 运行在 Sandbox 内](https://agent-sandbox.sigs.k8s.io/docs/use-cases/openclaw/)
 - [LangGraph 编程 Agent 示例](https://agent-sandbox.sigs.k8s.io/docs/use-cases/examples/langchain/)
-
-[返回 Kubernetes 生态](../Ecosystem.md)

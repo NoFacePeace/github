@@ -118,5 +118,3 @@ CREATE TABLE storage_example (
 ```
 
 修改默认行格式配置不会自动重写所有已有表。调整已有表的行格式通常涉及表重建，应结合数据量和在线 DDL 支持情况评估。
-
-[返回 InnoDB 目录](../InnoDB.md)

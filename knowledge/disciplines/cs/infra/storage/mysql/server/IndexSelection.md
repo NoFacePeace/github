@@ -107,5 +107,3 @@ SET optimizer_trace = 'enabled=off';
 ```
 
 optimizer_trace 可以帮助查看候选方案及成本比较。必要时可评估直方图、调整索引或查询，再验证实际效果。索引提示适合在理解计划偏差后谨慎使用，不能替代统计信息和长期维护。
-
-[返回优化器](Optimizer.md)

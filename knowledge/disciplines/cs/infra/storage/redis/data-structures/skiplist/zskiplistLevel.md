@@ -58,5 +58,3 @@ struct zskiplistLevel {
 
 - `server.h`：`zskiplistLevel` 和节点的 `level[]` 定义。
 - `t_zset.c`：`zslInsert`、`zslDeleteNode`、`zslGetRank` 和 `zslGetElementByRank`。
-
-[返回跳表目录](Skiplist.md)

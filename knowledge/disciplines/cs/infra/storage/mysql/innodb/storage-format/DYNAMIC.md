@@ -64,5 +64,3 @@ SHOW CREATE TABLE articles;
 SHOW TABLE STATUS 的 Row_format 用于查看实际格式；默认配置只影响未显式指定格式的新建等操作，不会自动重写已有表。
 
 已有表可以使用 `ALTER TABLE articles ROW_FORMAT = DYNAMIC` 调整格式，通常涉及表重建，应结合版本、表规模和在线 DDL 支持情况评估。
-
-[返回行格式](RowFormat.md)

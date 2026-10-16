@@ -25,5 +25,3 @@ color: "#5B6CDA"
 | CHECK | 检查数据是否满足表达式，不要求建立索引；MySQL 8.0.16 起执行检查。 |
 
 NOT NULL、FOREIGN KEY 和 CHECK 是约束，不作为本维度下的索引类型。
-
-[返回索引目录](../Indexes.md)

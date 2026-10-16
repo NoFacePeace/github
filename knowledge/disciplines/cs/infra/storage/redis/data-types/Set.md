@@ -17,6 +17,3 @@ color: "#5B6CDA"
 ## 3. 底层编码
 
 可使用 intset、listpack 或哈希表，编码选择与成员内容、数量和大小有关。
-
-[返回数据类型目录](DataTypes.md)
-

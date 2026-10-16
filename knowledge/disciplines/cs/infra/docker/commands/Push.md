@@ -46,5 +46,3 @@ docker push registry.example.com/team/my-app:1.0
 ```sh
 docker pull registry.example.com/team/my-app:1.0
 ```
-
-[返回 Docker 命令目录](Commands.md)

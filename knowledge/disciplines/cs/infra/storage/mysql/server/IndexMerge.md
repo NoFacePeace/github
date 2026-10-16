@@ -91,5 +91,3 @@ EXPLAIN SELECT * FROM users WHERE city = 'Shanghai' OR age = 20;
 | Extra | Using intersect、Using union 或 Using sort_union |
 
 计划未出现 index_merge 并不代表异常，应比较实际成本。MySQL 8.0.18 起可用 EXPLAIN ANALYZE 检查实际行数与耗时，但它会执行查询。需要了解候选方案被放弃的原因时，可以查看 optimizer_trace。
-
-[返回索引选择](IndexSelection.md)

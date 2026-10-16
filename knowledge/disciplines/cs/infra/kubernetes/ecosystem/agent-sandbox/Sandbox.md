@@ -133,5 +133,3 @@ stdout, stderr = process.communicate(timeout=timeout)
 - [Python Runtime 示例](https://github.com/kubernetes-sigs/agent-sandbox/tree/main/examples/python-runtime-sandbox)
 - [Python Runtime 执行服务源码](https://github.com/kubernetes-sigs/agent-sandbox/blob/main/examples/python-runtime-sandbox/main.py)
 - [客户端依赖与 sandboxd gRPC 说明](https://github.com/kubernetes-sigs/agent-sandbox/blob/main/clients/python/agentic-sandbox-client/pyproject.toml)
-
-[返回 Agent Sandbox](AgentSandbox.md)

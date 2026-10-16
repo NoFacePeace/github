@@ -43,5 +43,3 @@ Go 有 25 个关键字，以下按主要用途分类，每个关键字列出一�
 
 - [Keywords](https://go.dev/ref/spec#Keywords)：语言规范中的关键字列表。
 - [Predeclared identifiers](https://go.dev/ref/spec#Predeclared_identifiers)：预声明标识符。
-
-[返回 Go 目录](../Go.md)

@@ -52,5 +52,3 @@ color: "#5B6CDA"
 在 DYNAMIC、COMPACT 等使用的紧凑记录格式中，源码以 REC_STATUS_ORDINARY 标识普通用户叶子记录，以 REC_STATUS_NODE_PTR 标识非叶子节点指针记录。
 
 ORDINARY 不等于“聚簇索引专用”，二级索引用户叶子记录也使用该类型。页内还存在 infimum、supremum 等特殊记录，不能把叶子页中的所有记录都视为业务行。
-
-[返回 DYNAMIC](DYNAMIC.md)

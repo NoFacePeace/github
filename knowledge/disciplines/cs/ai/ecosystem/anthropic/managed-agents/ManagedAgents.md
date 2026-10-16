@@ -50,5 +50,3 @@ Managed Agents 当前处于 Beta，请求需要 Claude API Key 与 `managed-agen
 - [Managed Agents 概览](https://platform.claude.com/docs/en/managed-agents/overview)
 - [多 Agent 编排](https://platform.claude.com/docs/en/managed-agents/multiagent-orchestration)
 - [Workflow Runs](https://platform.claude.com/docs/en/managed-agents/workflow-runs)
-
-[返回 Claude](../Claude.md)

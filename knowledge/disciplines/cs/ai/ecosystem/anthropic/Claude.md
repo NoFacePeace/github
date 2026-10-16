@@ -19,5 +19,3 @@ Claude 是 Anthropic 的模型与产品品牌。本文说明其模型、应用�
 - [Claude Code 概览](https://code.claude.com/docs/en/overview)
 - [Claude Managed Agents 概览](https://platform.claude.com/docs/en/managed-agents/overview)
 - [多 Agent 编排](https://platform.claude.com/docs/en/managed-agents/multiagent-orchestration)
-
-[返回 Anthropic](Anthropic.md)

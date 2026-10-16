@@ -30,5 +30,3 @@ UPDATE 等自动加锁操作同样可以产生显式锁；Server 的 LOCK TABLES
 MySQL 8.0 的 performance_schema.data_locks 和 data_lock_waits 可用于观察引擎暴露的锁及等待，具体可见性受权限和实现影响。
 
 锁未出现在某次查询结果中，不足以证明记录没有受到保护；还应考虑隐式锁、采集时机及相关事务状态。
-
-[返回 InnoDB 锁目录](Locks.md)

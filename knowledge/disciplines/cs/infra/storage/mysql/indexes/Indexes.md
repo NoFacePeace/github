@@ -60,5 +60,3 @@ EXPLAIN SELECT id, name FROM users WHERE name = 'Alice';
 ```
 
 建立索引不保证查询一定使用它。优化器会根据统计信息和访问成本选择计划，索引也会增加写入维护成本和存储开销。
-
-[返回 MySQL 目录](../MySQL.md)

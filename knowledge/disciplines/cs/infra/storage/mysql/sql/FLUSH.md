@@ -71,5 +71,3 @@ FLUSH TABLES 不是这个过程的统一手动开关，FLUSH LOGS 也不等于�
 FLUSH 不应作为 COMMIT 的替代写法。很多 FLUSH 语句会在执行前导致当前会话事务隐式提交，但存在例外，例如 FLUSH TABLES WITH READ LOCK 和 FLUSH TABLES ... FOR EXPORT。
 
 因此，既不能说“所有 FLUSH 都提交事务”，也不能说“FLUSH 完全不影响事务”。执行管理语句前应明确事务边界，避免把未完成的业务事务意外提交。
-
-[返回 SQL 目录](SQL.md)

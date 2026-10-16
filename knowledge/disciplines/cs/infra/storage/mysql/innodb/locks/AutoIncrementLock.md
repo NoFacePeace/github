@@ -73,5 +73,3 @@ innodb_autoinc_lock_mode 在常见 MySQL 版本中是非动态变量，调整通
 一次 INSERT 可以涉及其中多种机制，不能因名字相近或都在插入时出现就视为同一把锁。
 
 MySQL 8.0 中，可以结合 performance_schema.data_locks 和 data_lock_waits 查看等待；表级 AUTO-INC 锁通常可由 AUTO_INC 模式识别。短暂的内部互斥保护不等同于这些事务数据锁。
-
-[返回 InnoDB 表锁](TableLocks.md)

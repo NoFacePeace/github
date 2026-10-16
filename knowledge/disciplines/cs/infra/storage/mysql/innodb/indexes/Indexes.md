@@ -88,5 +88,3 @@ EXPLAIN SELECT age FROM users WHERE name = 'Alice';
 ```
 
 检查执行计划时，可以关注所选索引、估计扫描行数及额外操作。估计值不等于实际执行耗时；MySQL 8.0.18 起提供的 `EXPLAIN ANALYZE` 可以显示实际执行信息，但会执行查询，使用时需要考虑查询成本。
-
-[返回 InnoDB 目录](../InnoDB.md)

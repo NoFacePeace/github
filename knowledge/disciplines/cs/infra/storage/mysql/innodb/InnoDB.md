@@ -46,5 +46,3 @@ binlog 属于 MySQL Server 层。启用 binlog 时，MySQL 通过内部两阶段
 ## 5. 概念与实现的边界
 
 页缓存、B+ 树、事务、锁、MVCC、重做日志和撤销日志都是通用技术概念。本文描述的是 InnoDB 的具体实现，其他存储引擎或数据库的支持程度与实现方式可能不同。
-
-[返回 MySQL 存储引擎](../StorageEngines.md)

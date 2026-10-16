@@ -62,5 +62,3 @@ Go 1.27.2 的监控循环从约 20 微秒的休眠开始。连续没有唤醒工
 - [Scheduler](scheduler/Scheduler.md)：goroutine 调度与抢占。
 - [Netpoller](Netpoller.md)：I/O 事件获取、等待与唤醒。
 - [GC](gc/GC.md)：垃圾回收的阶段与触发机制。
-
-[返回 Runtime 目录](Runtime.md)

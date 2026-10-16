@@ -104,5 +104,3 @@ SHOW ENGINE INNODB STATUS;
 ```
 
 Server 层的 MDL 应通过 metadata_locks 等信息查看，不属于上述记录锁分类。
-
-[返回 InnoDB 目录](../InnoDB.md)

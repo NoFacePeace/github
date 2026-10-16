@@ -48,5 +48,3 @@ InnoDB 的行级锁体系以索引记录及相关间隙为基础，不是简单�
 事务记录锁通常保留到提交或回滚，部分不匹配记录锁等可以根据隔离级别和执行过程提前释放。锁冲突可能造成等待和死锁，应结合事务范围和访问顺序分析。
 
 MySQL 8.0 可通过 performance_schema.data_locks 和 data_lock_waits 观察锁与等待关系。底层 RECORD 类型还可能包含间隙保护，需要结合 LOCK_MODE 判断，不能把所有 RECORD 对象都视为纯记录锁。
-
-[返回 InnoDB 锁目录](Locks.md)

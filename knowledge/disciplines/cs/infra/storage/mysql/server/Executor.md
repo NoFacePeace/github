@@ -82,5 +82,3 @@ SELECT name FROM users WHERE age = 20 LIMIT 10;
 ```
 
 分析时应结合节点层次和 loops 判断工作量，不能简单相加节点耗时。EXPLAIN ANALYZE 会执行查询，需要考虑查询本身的资源开销。
-
-[返回 Server 层](Server.md)

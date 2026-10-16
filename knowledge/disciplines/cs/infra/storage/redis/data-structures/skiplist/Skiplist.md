@@ -23,6 +23,3 @@ color: "#5B6CDA"
 
 - `server.h`
 - `t_zset.c`
-
-[返回数据结构目录](../DataStructures.md)
-

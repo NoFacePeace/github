@@ -51,5 +51,3 @@ echo "$JAVA_HOME"
 java -version
 javac -version
 ```
-
-[返回环境变量目录](Env.md)

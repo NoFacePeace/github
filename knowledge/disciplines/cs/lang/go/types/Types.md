@@ -74,5 +74,3 @@ Go 的赋值和函数传参会复制值。复制之后是否共享底层数据�
 - [Channel](Channel.md)：channel 的内部结构与通信流程。
 - [Go Language Specification](https://go.dev/ref/spec#Types)：类型定义、赋值、转换及接口规则。
 - [go/types](https://pkg.go.dev/go/types)：类型检查与源码分析 API。
-
-[返回 Go 目录](../Go.md)

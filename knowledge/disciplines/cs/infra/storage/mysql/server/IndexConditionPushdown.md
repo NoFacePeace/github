@@ -84,5 +84,3 @@ SHOW VARIABLES LIKE 'optimizer_switch';
 传统 EXPLAIN 的 Extra 出现 `Using index condition`，表示使用索引条件下推。`Using index` 通常表示覆盖索引，与 ICP 含义不同。
 
 ICP 由 optimizer_switch 中的 index_condition_pushdown 开关控制，通常默认开启。是否采用仍由访问路径、条件适用性等因素决定，不能因为开启开关就认定某条查询一定使用 ICP。
-
-[返回 Server 层](Server.md)

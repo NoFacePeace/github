@@ -124,5 +124,3 @@ I/O 事件到来时，netpoll 从 `pollDesc` 找出需要唤醒的 G。相关 G 
 - `src/internal/poll`：文件描述符操作与运行时轮询接口之间的衔接。
 - [runtime 源码](https://github.com/golang/go/tree/master/src/runtime)：阅读时切换到所用 Go 版本的 tag。
 - [Go 1.27.2 的 proc.go](https://github.com/golang/go/blob/go1.27.2/src/runtime/proc.go)：上述轮询调用路径与协调逻辑的版本固定源码。
-
-[返回 Runtime 目录](Runtime.md)

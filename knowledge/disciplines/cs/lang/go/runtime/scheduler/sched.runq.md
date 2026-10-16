@@ -69,5 +69,3 @@ P 缺少本地工作时，调度器可以从全局队列获取一批 G，其中�
 
 - [G](G.md)：全局队列中等待执行的 goroutine。
 - [p.runq](p.runq.md)：每个 P 管理的本地运行队列。
-
-[返回 Scheduler 目录](Scheduler.md)

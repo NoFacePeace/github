@@ -86,5 +86,3 @@ docker rm demo-nginx
 
 - [登录仓库与访问令牌认证示例](Login.md#4-示例)
 - [登录并推送镜像示例](Push.md#31-登录并推送镜像)
-
-[返回 Docker 目录](../Docker.md)

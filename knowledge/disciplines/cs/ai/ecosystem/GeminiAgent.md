@@ -32,5 +32,3 @@ Google 的 [Agent Development Kit（ADK）](GoogleADK.md) 是开源 Agent 开发
 
 - [Gemini at Work 2026 官方公告](https://cloud.google.com/blog/products/ai-machine-learning/welcome-to-gemini-at-work-2026)。
 - [ADK 官方介绍](https://developers.googleblog.com/en/agent-development-kit-easy-to-build-multi-agent-applications/)。
-
-[返回 AI 生态](Ecosystem.md)

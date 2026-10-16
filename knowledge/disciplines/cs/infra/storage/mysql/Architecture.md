@@ -89,5 +89,3 @@ SELECT * FROM users WHERE id = 10;
 ## 5. 版本说明
 
 旧架构图中的 Query Cache（查询缓存）已在 MySQL 8.0 中移除。Query Cache 缓存的是查询结果，InnoDB Buffer Pool 缓存的是数据页和索引页，两者是不同的机制。
-
-[返回 MySQL 目录](MySQL.md)

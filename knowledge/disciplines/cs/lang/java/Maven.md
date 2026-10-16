@@ -64,5 +64,3 @@ mvn clean install -DskipTests -Dcheckstyle.skip=true -Dlicense.skip -Dspotbugs.s
 `-D` 用于设置 Maven 属性。`-Dlicense.skip` 省略了赋值，通常等价于 `-Dlicense.skip=true`；也可以显式写出 `=true`。
 
 这些跳过属性需要项目中的对应插件支持并读取才会生效，具体以 `pom.xml`、父 POM 和插件配置为准。此命令可用于快速构建本地产物，跳过检查不代表相关问题已解决，编译或其他构建步骤仍可能失败。
-
-[返回 Java 目录](Java.md)

@@ -50,5 +50,3 @@ READ COMMITTED 通常不对普通搜索和索引扫描使用间隙锁，但外�
 相关事务锁通常在提交或回滚时释放，实际范围需结合索引、执行计划和隔离级别判断。
 
 MySQL 8.0 可以通过 performance_schema.data_locks 和 data_lock_waits 观察锁与等待。纯间隙锁通常带 GAP 标记，锁信息可能显示该间隙的后继记录键值，而不是准备插入的新值。
-
-[返回行锁](RowLocks.md)

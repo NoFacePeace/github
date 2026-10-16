@@ -29,5 +29,3 @@ MySQL 是关系型数据库管理系统，使用 SQL 进行数据查询与管理
 ## 6. 事务
 
 - [事务](../../../runtime/transactions/Transactions.md)：操作边界、提交与中止、并发控制及保证范围。
-
-[返回存储系统目录](../Storage.md)

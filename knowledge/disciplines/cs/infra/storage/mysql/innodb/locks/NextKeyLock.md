@@ -60,5 +60,3 @@ READ COMMITTED 通常不在普通搜索和扫描中使用间隙锁，因此通�
 MySQL 8.0 可通过 performance_schema.data_locks 查看记录层面的锁。对于普通记录，S 或 X 且没有 GAP、REC_NOT_GAP 等修饰时，通常表示临键锁；supremum 等特殊记录应单独解释。
 
 判断时还应结合 LOCK_DATA、索引名称及 data_lock_waits，而不是仅根据一项模式标记推断全部阻塞原因。
-
-[返回行锁](RowLocks.md)

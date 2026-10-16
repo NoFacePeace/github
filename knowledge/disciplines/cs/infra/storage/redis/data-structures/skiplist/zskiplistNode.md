@@ -76,5 +76,3 @@ sizeof(zskiplistNode) + level * sizeof(struct zskiplistLevel)
 
 - `server.h`：`zskiplistNode`、`ZSKIPLIST_MAXLEVEL` 和 `ZSKIPLIST_P`。
 - `t_zset.c`：`zslCreateNode`、`zslRandomLevel`、`zslInsert`、`zslDeleteNode` 和 `zslUpdateScore`。
-
-[返回跳表目录](Skiplist.md)

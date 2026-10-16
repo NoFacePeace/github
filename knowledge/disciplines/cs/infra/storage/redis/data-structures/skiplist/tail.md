@@ -45,5 +45,3 @@ tail → 30 → 20 → 10 → NULL
 
 - `server.h`：`zskiplist.tail` 和节点的 `backward` 字段。
 - `t_zset.c`：`zslCreate`、`zslInsert`、`zslDeleteNode` 和 `zslUpdateScore`。
-
-[返回整体结构](zskiplist.md)

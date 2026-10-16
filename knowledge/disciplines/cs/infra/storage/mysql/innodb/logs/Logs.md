@@ -18,5 +18,3 @@ InnoDB 使用 redo log 和 undo log 支持事务、崩溃恢复及历史版本�
 redo 主要服务于引擎崩溃恢复，undo 服务于回滚和历史版本读取，binlog 主要服务于复制及结合备份进行按时间点恢复。
 
 启用 binlog 时，MySQL 通过内部两阶段提交协调 InnoDB 与 binlog 的事务提交状态。日志保留策略也不同：redo 空间可复用，undo 在不再需要时清理，binlog 按相应保留策略管理。
-
-[返回 InnoDB 目录](../InnoDB.md)

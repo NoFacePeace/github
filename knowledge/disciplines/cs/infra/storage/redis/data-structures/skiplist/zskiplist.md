@@ -51,5 +51,3 @@ zskiplist
 
 - `server.h`：`zskiplist` 与 `zskiplistNode` 的定义。
 - `t_zset.c`：`zslCreate`、`zslInsert`、`zslDeleteNode` 和 `zslFree`。
-
-[返回跳表目录](Skiplist.md)

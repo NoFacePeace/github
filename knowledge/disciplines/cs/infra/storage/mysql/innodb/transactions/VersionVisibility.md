@@ -72,5 +72,3 @@ READ COMMITTED 的普通一致性读通常每次建立新视图，REPEATABLE REA
 FOR UPDATE、FOR SHARE 等锁定读和修改操作采用相应的当前记录访问及锁定规则，不能直接套用上述旧视图读取流程。
 
 二级索引记录不直接保存聚簇记录中的整套事务字段，其可见性处理还可能借助页级信息并访问聚簇索引。不能对所有索引记录都直接假设存在可供比较的 DB_TRX_ID。
-
-[返回 Read View](ReadView.md)

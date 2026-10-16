@@ -77,5 +77,3 @@ WHERE LOCK_TYPE = 'TABLE';
 ```
 
 此查询不能替代 Server 层锁诊断，MDL 等信息应结合 metadata_locks 和会话状态查看。
-
-[返回 InnoDB 锁目录](Locks.md)

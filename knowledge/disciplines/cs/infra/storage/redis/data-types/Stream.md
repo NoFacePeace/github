@@ -17,6 +17,3 @@ color: "#5B6CDA"
 ## 3. 底层编码
 
 基数树（rax）与 listpack 的组合。
-
-[返回数据类型目录](DataTypes.md)
-

@@ -64,5 +64,3 @@ EXPLAIN ANALYZE 不用于更新表的索引统计信息，并且会执行查询�
 | EXPLAIN ANALYZE SELECT ... | 显示实际执行统计。 | 是。 |
 | ANALYZE TABLE users | 更新表与索引统计信息。 | 否，但会读取表或索引进行分析。 |
 | ANALYZE TABLE ... UPDATE HISTOGRAM | 收集指定列的直方图。 | 否，但会读取数据进行统计。 |
-
-[返回 EXPLAIN](EXPLAIN.md)

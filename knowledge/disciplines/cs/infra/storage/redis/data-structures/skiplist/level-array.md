@@ -46,5 +46,3 @@ sizeof(zskiplistNode) + h * sizeof(struct zskiplistLevel)
 
 - `server.h`：节点中的 `level[]` 与 `zskiplistLevel` 定义。
 - `t_zset.c`：`zslCreateNode` 根据层高分配节点及数组空间。
-
-[返回节点结构](zskiplistNode.md)

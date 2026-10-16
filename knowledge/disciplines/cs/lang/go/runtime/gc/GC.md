@@ -101,5 +101,3 @@ GC 跟踪信息输出到标准错误，可用于观察回收频率、各阶段�
 - [runtime 包文档](https://pkg.go.dev/runtime)
 - [runtime/debug.SetGCPercent](https://pkg.go.dev/runtime/debug#SetGCPercent)
 - [runtime/debug.SetMemoryLimit](https://pkg.go.dev/runtime/debug#SetMemoryLimit)
-
-[返回 Runtime 目录](../Runtime.md)

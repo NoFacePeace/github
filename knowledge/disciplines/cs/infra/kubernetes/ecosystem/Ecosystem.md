@@ -25,5 +25,3 @@ Kubernetes 生态包括围绕 Kubernetes 的项目、标准与接口、托管服
 ## 5. 集成方案与选型
 
 记录 AI Agent 执行环境、GPU 平台等集成方案，以及网络、存储等生态技术的选型对比。
-
-[返回 Kubernetes](../Kubernetes.md)

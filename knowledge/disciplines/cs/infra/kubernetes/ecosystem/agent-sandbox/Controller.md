@@ -83,5 +83,3 @@ SDK → Kubernetes API：创建 SandboxClaim CR
 - [Controller Deployment 清单](https://github.com/kubernetes-sigs/agent-sandbox/blob/main/k8s/controller.yaml)
 - [核心 Controller 源码目录](https://github.com/kubernetes-sigs/agent-sandbox/tree/main/controllers)
 - [扩展 Controller 源码目录](https://github.com/kubernetes-sigs/agent-sandbox/tree/main/extensions/controllers)
-
-[返回 Agent Sandbox](AgentSandbox.md)

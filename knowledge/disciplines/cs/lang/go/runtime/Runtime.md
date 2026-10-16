@@ -63,5 +63,3 @@ sysmon 在不持有 P 的专门 M 上执行监控循环，检查抢占、系统�
 - [runtime 源码](https://github.com/golang/go/tree/master/src/runtime)：查看运行时实现，阅读特定版本时切换对应 tag。
 - [runtime 包文档](https://pkg.go.dev/runtime)：公开接口与运行时配置。
 - [Go GC Guide](https://go.dev/doc/gc-guide)：GC 原理与调优。
-
-[返回 Go 目录](../Go.md)

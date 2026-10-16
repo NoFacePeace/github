@@ -82,5 +82,3 @@ Workflow 是程序，Workflow Run 是一次程序执行。程序可以并行调�
 - [官方发布记录](https://platform.claude.com/docs/en/release-notes/overview)
 - [多 Agent 编排与启用配置](https://platform.claude.com/docs/en/managed-agents/multiagent-orchestration)
 - [Workflow Run 运行机制、事件与限制](https://platform.claude.com/docs/en/managed-agents/workflow-runs)
-
-[返回 Claude Managed Agents](ManagedAgents.md)

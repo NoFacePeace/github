@@ -20,6 +20,8 @@ SQL（Structured Query Language，结构化查询语言）用于定义数据结�
 
 ## 2. 查询示例
 
+- [SELECT](SELECT.md)：查询语法、条件过滤、连接、分组聚合、排序与分页。
+
 以下示例假设 users 表包含 id、name 和 age 列：
 
 ```sql
@@ -60,5 +62,3 @@ SQL 由 Server 层解析、优化并组织执行，存储引擎负责具体的�
 ## 6. 管理语句
 
 - [FLUSH](FLUSH.md)：刷新日志、表缓存、权限及状态信息，区分刷页、锁定与事务提交。
-
-[返回 MySQL 目录](../MySQL.md)

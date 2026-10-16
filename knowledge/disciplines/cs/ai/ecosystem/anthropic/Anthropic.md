@@ -11,5 +11,3 @@ Anthropic 是开发 Claude 模型及相关应用、编程工具和 Agent 平台�
 - [Anthropic 官网](https://www.anthropic.com/)
 - [Claude 产品介绍](https://claude.com/product/overview)
 - [Claude Platform 文档](https://platform.claude.com/docs/)
-
-[返回 AI 生态](../Ecosystem.md)

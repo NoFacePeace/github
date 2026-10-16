@@ -25,5 +25,3 @@ CREATE TABLE places (
 InnoDB 空间索引列需要定义为 NOT NULL。MySQL 8.0 中，应为列显式指定 SRID，以便优化器考虑使用空间索引，并确保查询几何对象的 SRID 与列一致。
 
 SRID 决定坐标参考系统，不能把平面坐标计算直接当作地理经纬度距离计算。实际是否使用索引需通过执行计划确认。
-
-[返回特殊用途维度](SpecialPurpose.md)

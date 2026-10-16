@@ -13,5 +13,3 @@ Redis 是以内存为主要数据存储介质的键值存储系统，支持多�
 ## 2. 数据结构
 
 - [数据结构](data-structures/DataStructures.md)：SDS、字典、整数集合、listpack、quicklist、跳表和基数树的作用与实现。
-
-[返回存储系统目录](../Storage.md)

@@ -66,5 +66,3 @@ CREATE TABLE users (
     name VARCHAR(100) NOT NULL
 ) ENGINE = InnoDB;
 ```
-
-[返回 MySQL 架构](Architecture.md)

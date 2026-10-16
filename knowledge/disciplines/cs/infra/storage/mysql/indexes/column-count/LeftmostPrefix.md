@@ -70,5 +70,3 @@ EXPLAIN SELECT id FROM users WHERE age = 20;
 ```
 
 可以关注访问类型、所选索引、key_len 和 Extra。key_len 可辅助判断参与定位的索引键长度，但不能单独反映后续列是否用于过滤或覆盖查询。
-
-[返回联合索引](Composite.md)

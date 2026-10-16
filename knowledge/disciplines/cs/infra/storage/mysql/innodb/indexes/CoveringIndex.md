@@ -72,5 +72,3 @@ EXPLAIN SELECT id, name FROM users WHERE name = 'Alice';
 可以关注 `key` 所选索引和 `Extra` 信息。`Using index` 通常表示通过覆盖索引获取查询所需列；`Using index condition` 表示索引条件下推，含义不同。
 
 为了覆盖查询而增加索引列，会增加磁盘和缓存占用，以及相关列更新时的维护成本。应优先围绕常用查询评估收益，避免为了覆盖所有查询而建立过宽或重复的索引。
-
-[返回二级索引](SecondaryIndex.md)

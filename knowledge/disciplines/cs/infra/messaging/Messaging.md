@@ -7,5 +7,3 @@ color: "#5B6CDA"
 消息中间件。
 
 - [Pulsar](pulsar/Pulsar.md)：分布式消息与流处理平台。
-
-[返回基础设施目录](../Infra.md)

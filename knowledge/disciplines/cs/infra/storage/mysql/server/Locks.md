@@ -116,5 +116,3 @@ SHOW PROCESSLIST;
 可结合锁状态和线程信息定位持有者、等待者及长事务。MySQL 8.0 的 performance_schema.data_locks、data_lock_waits 主要用于查看 InnoDB 等引擎暴露的数据锁，不等同于 MDL 信息。
 
 Server 内部还使用 mutex、读写锁等同步原语保护内存结构，通常不与本文面向 SQL 操作的锁混在一起分类。
-
-[返回 Server 层](Server.md)

@@ -74,5 +74,3 @@ EXPLAIN SELECT age FROM users WHERE name = 'Alice';
 ```
 
 可以关注 `key` 所选索引和 `Extra` 信息。`Using index` 通常表示使用覆盖索引；`Using index condition` 表示索引条件下推，两者含义不同。不能仅凭这些标记断言运行时绝不会为可见性检查访问聚簇索引。
-
-[返回二级索引](SecondaryIndex.md)

@@ -66,5 +66,3 @@ SELECT id, name FROM users WHERE name = 'Alice';
 ```sql
 EXPLAIN SELECT age FROM users WHERE name = 'Alice';
 ```
-
-[返回 InnoDB 索引](Indexes.md)
