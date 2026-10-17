@@ -6,6 +6,8 @@ sysmon 是 Go 运行时的系统监控机制，核心循环位于 `src/runtime/p
 
 运行时启动过程中，通过 `newm(sysmon, nil, -1)` 等路径启动系统监控线程。sysmon 在该 M 的系统栈上执行，不是通过普通 `go` 语句启动并放入运行队列的业务 G。
 
+创建 M、进入监控循环的调用链，以及不需要 P 的原因，参见 [Bootstrap](Bootstrap.md)。
+
 它与 netpoller 的执行方式不同：sysmon 有专门执行监控循环的 M，netpoller 则可由不同运行时路径上的 M 调用。sysmon 也会调用网络轮询，但不是唯一的调用者。
 
 ## 2. 主要职责
@@ -61,6 +63,7 @@ Go 1.27.2 的监控循环从约 20 微秒的休眠开始。连续没有唤醒工
 
 ## 5. 相关机制
 
+- [Bootstrap](Bootstrap.md)：sysmon 的创建时机、专用 M 启动与无 P 执行机制。
 - [Go Goroutine 抢占机制](GoroutinePreemption.md)：协作式与异步抢占、线程信号及单核执行过程。
 - [Scheduler](../scheduler/Scheduler.md)：goroutine 调度与抢占。
 - [Netpoller](../Netpoller.md)：I/O 事件获取、等待与唤醒。
