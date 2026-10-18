@@ -71,6 +71,10 @@ Go 的赋值和函数传参会复制值。复制之后是否共享底层数据�
 
 ## 6. 相关文档与参考资料
 
+- [字符串](string/String.md)：字节与 rune、索引遍历、不可变性及转换与存储。
+- [数组](array/Array.md)：固定长度、值复制、索引与切片共享及比较规则。
+- [切片](slice/Slice.md)：长度与容量、底层数组共享、追加扩容和复制。
+- [Map](map/Map.md)：键值操作、nil 行为、共享数据、遍历及并发访问规则。
 - [Channel](channel/Channel.md)：channel 的内部结构与通信流程。
 - [接口](interface/Interface.md)：隐式实现、方法集、动态类型、类型断言及 nil 接口。
 - [Go Language Specification](https://go.dev/ref/spec#Types)：类型定义、赋值、转换及接口规则。
