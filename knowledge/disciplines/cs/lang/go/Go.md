@@ -27,3 +27,7 @@ color: "#5B6CDA"
 ## 6. 并发同步
 
 - [Go 并发同步](sync/Sync.md)：互斥锁、读写锁及其他同步工具的选择与使用。
+
+## 7. 内建函数
+
+- [Go 内建函数](builtins/Builtins.md)：make、new 等预声明内建函数的用途、行为和区别。
