@@ -21,6 +21,7 @@ Go 的运行时负责 goroutine 调度、垃圾回收、内存分配、栈管理
 
 - [Go 程序启动](Bootstrap.md)：从平台入口、运行时初始化和首次调度，到包初始化与 `main.main`。
 - [sudog](sudog.md)：关联 goroutine 与等待操作的运行时节点，用于 channel 和信号量等待。
+- [运行时信号量](semaphore/Semaphore.md)：令牌、semtable 等待关系及 G 的挂起与唤醒。
 - [Runtime 变量](variables/Variables.md)：运行时内部变量，包括后台标记 worker 池。
 - [Runtime 函数](functions/Functions.md)：运行时内部函数的职责与执行流程，包括 `gopark` 和 `goready`。
 
