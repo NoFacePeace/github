@@ -15,3 +15,11 @@ color: "#5B6CDA"
 ## 3. 关键字
 
 - [Keywords](keywords/Keywords.md)：关键字分类、预声明标识符区别及用法与实现的组织方式。
+
+## 4. 调试
+
+- [Go 调试](Debugging.md)：断点调试、goroutine 栈、竞态检测、pprof、trace 及运行时状态观察。
+
+## 5. 泛型
+
+- [Go 泛型](generics/Generics.md)：类型参数、类型约束、类型集、类型推断及泛型函数和类型。

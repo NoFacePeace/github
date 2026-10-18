@@ -72,5 +72,6 @@ Go 的赋值和函数传参会复制值。复制之后是否共享底层数据�
 ## 6. 相关文档与参考资料
 
 - [Channel](channel/Channel.md)：channel 的内部结构与通信流程。
+- [接口](interface/Interface.md)：隐式实现、方法集、动态类型、类型断言及 nil 接口。
 - [Go Language Specification](https://go.dev/ref/spec#Types)：类型定义、赋值、转换及接口规则。
 - [go/types](https://pkg.go.dev/go/types)：类型检查与源码分析 API。
