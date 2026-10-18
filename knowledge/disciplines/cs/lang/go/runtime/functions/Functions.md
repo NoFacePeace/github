@@ -30,3 +30,4 @@
 ## 6. 调度
 
 - [schedule](schedule.md)：在 `g0` 栈上选择下一个可运行 G，并安排执行。
+- [findRunnable](findRunnable.md)：从运行队列、网络事件等来源寻找可运行 G，没有工作时协调等待与重试。

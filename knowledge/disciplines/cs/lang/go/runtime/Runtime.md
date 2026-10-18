@@ -19,6 +19,7 @@ Go 的运行时负责 goroutine 调度、垃圾回收、内存分配、栈管理
 
 具体文件组织和函数实现可能随 Go 版本变化，阅读时应以使用版本的源码为准。
 
+- [Go 程序启动](Bootstrap.md)：从平台入口、运行时初始化和首次调度，到包初始化与 `main.main`。
 - [sudog](sudog.md)：关联 goroutine 与等待操作的运行时节点，用于 channel 和信号量等待。
 - [Runtime 变量](variables/Variables.md)：运行时内部变量，包括后台标记 worker 池。
 - [Runtime 函数](functions/Functions.md)：运行时内部函数的职责与执行流程，包括 `gopark` 和 `goready`。
@@ -52,7 +53,7 @@ GC 通过并发标记清扫回收不可达的堆对象，部分阶段仍需要�
 
 ## 4. 网络轮询器
 
-工作流程、平台实现及调度器协作方式参见 [Netpoller](Netpoller.md)。
+工作流程、平台实现及调度器协作方式参见 [Netpoller](netpoller/Netpoller.md)。
 
 网络轮询器通过操作系统的 I/O 事件机制唤醒等待中的 goroutine，让多个连接可以共享线程等待事件。核心逻辑位于 `netpoll.go`，平台适配位于 `netpoll_*.go`。
 
@@ -62,7 +63,13 @@ GC 通过并发标记清扫回收不可达的堆对象，部分阶段仍需要�
 
 sysmon 在不持有 P 的专门 M 上执行监控循环，检查抢占、系统调用与网络事件等状态，并在满足条件时唤醒 GC 等后台工作。核心实现位于 `proc.go`。
 
-## 6. 阅读入口
+## 6. 系统调用
+
+进入与退出系统调用时 G、M、P 的状态变化、`oldp` 的作用及 sysmon 的参与方式参见[系统调用](syscall/Syscall.md)。
+
+运行时通过系统调用进入、退出和 P 的交接协议，使阻塞在内核中的 M 不会长期独占 Go 的执行资源；具体实现随 Go 版本变化。
+
+## 7. 阅读入口
 
 - [runtime 源码](https://github.com/golang/go/tree/master/src/runtime)：查看运行时实现，阅读特定版本时切换对应 tag。
 - [runtime 包文档](https://pkg.go.dev/runtime)：公开接口与运行时配置。
