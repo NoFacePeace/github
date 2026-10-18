@@ -93,4 +93,3 @@ channel 的发送和接收具有 Go 内存模型规定的同步关系，可用�
 ## 7. 相关机制
 
 - [Select](../../keywords/Select.md)：在多个 channel 通信操作之间选择。
-- [Scheduler](../../runtime/scheduler/Scheduler.md)：通信阻塞后的等待与唤醒。

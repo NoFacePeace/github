@@ -28,7 +28,7 @@ if gp.preemptStop {
 
 ## 3. 停止与调度
 
-`preemptPark` 协调目标 G 的扫描状态与暂停状态，最终使其处于 `_Gpreempted`，解除它与 M 的执行绑定，再进入 `schedule`。
+`preemptPark` 协调目标 G 的扫描状态与暂停状态，最终使其处于 `_Gpreempted`，解除它与 M 的执行绑定，再进入 [schedule](schedule.md)。
 
 目标 G 不进入普通可运行队列。它的 `g` 对象、栈和恢复现场仍保留在内存中，运行时通过已有指针和全局 G 集合等引用管理它，无需专门的停止队列。
 

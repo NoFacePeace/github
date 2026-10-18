@@ -4,7 +4,7 @@
 
 ## 1. 职责与执行栈
 
-从普通 G 调用时，`systemstack(fn)` 将执行切换到当前 M 的 [g0](../scheduler/g0.md) 栈，执行 `fn`，完成后切回原 G 的栈，继续调用点之后的代码。
+从普通 G 调用时，`systemstack(fn)` 将执行切换到当前 M 的 [g0](../scheduler/g/g0.md) 栈，执行 `fn`，完成后切回原 G 的栈，继续调用点之后的代码。
 
 ```text
 普通 G 栈：systemstack(fn)

@@ -35,5 +35,6 @@
 
 ## 5. 相关函数
 
+- [抢占停止请求](../scheduler/scheduling/PreemptionStop.md)：目标 G 响应停止请求、进入调度及由发起方接管的过程。
 - [resumeG](resumeG.md)：释放检查权限，并按暂停凭据决定是否恢复运行资格。
 - [preemptPark](preemptPark.md)：目标响应抢占停止请求时，在 `g0` 栈上提交停止状态。

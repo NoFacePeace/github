@@ -79,5 +79,5 @@ channel 未关闭、缓冲区为空且没有有效等待发送方时，普通接
 
 ## 9. 相关函数
 
-- [gopark](../../runtime/functions/gopark.md)：接收无法立即完成时，挂起当前接收方。
+- [等待条件](../../runtime/scheduler/scheduling/Waiting.md)：阻塞接收登记等待、挂起并在条件满足后恢复的共同调度过程。
 - [goready](../../runtime/functions/goready.md)：配对通信后唤醒等待发送方；等待接收方也通过这一机制被唤醒。

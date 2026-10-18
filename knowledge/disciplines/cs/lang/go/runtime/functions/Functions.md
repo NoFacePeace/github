@@ -5,6 +5,7 @@
 ## 1. 挂起与唤醒
 
 - [gopark](gopark.md)：提交当前 goroutine 的等待状态，并进入调度。
+- [park_m](park_m.md)：在 `g0` 栈上提交原 G 的等待状态、执行提交回调并转入调度。
 - [goready](goready.md)：将等待中的 goroutine 置为可运行，等待后续调度。
 
 ## 2. 抢占
@@ -25,3 +26,7 @@
 ## 5. GC 后台任务
 
 - [bgsweep](bgsweep.md)：后台清扫 goroutine 的入口，负责领取清扫工作、挂起及等待后续周期。
+
+## 6. 调度
+
+- [schedule](schedule.md)：在 `g0` 栈上选择下一个可运行 G，并安排执行。

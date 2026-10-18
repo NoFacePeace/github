@@ -68,7 +68,7 @@ sysmon 检查到 P 的调度进度长时间未变化
 
 G 后续再次被调度时，从暂停位置继续执行，也可能换到另一个 M 上运行。
 
-普通异步抢占进入调度及重新排队的具体过程参见 [gopreempt_m](../functions/gopreempt_m.md)。
+普通异步抢占进入调度及重新排队的具体过程参见[异步普通抢占](../scheduler/scheduling/AsyncPreemption.md)。
 
 ## 4. 信号如何打断正在运行的线程
 

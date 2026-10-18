@@ -66,5 +66,5 @@ channel 发送的核心运行时实现位于 `src/runtime/chan.go`。普通发�
 
 ## 8. 相关函数
 
-- [gopark](../../runtime/functions/gopark.md)：发送无法立即完成时，挂起当前发送方。
+- [等待条件](../../runtime/scheduler/scheduling/Waiting.md)：阻塞发送登记等待、挂起并在条件满足后恢复的共同调度过程。
 - [goready](../../runtime/functions/goready.md)：直接配对通信后唤醒等待接收方；等待发送方也通过这一机制被唤醒。

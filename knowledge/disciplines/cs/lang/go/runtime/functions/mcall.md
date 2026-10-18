@@ -4,7 +4,7 @@
 
 ## 1. 执行过程
 
-从普通 G 调用 `mcall(fn)` 时，运行时保存恢复所需的 PC、SP 等现场，切换到当前 M 的 [g0](../scheduler/g0.md) 栈，并以原 G 的指针作为参数执行 `fn`。
+从普通 G 调用 `mcall(fn)` 时，运行时保存恢复所需的 PC、SP 等现场，切换到当前 M 的 [g0](../scheduler/g/g0.md) 栈，并以原 G 的指针作为参数执行 `fn`。
 
 ```text
 普通 G 栈：mcall(fn)
