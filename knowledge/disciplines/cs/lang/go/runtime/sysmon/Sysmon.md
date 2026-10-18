@@ -91,4 +91,4 @@ G 变为可运行本身不会统一通知 sysmon。创建或唤醒 G 的路径�
 - [Bootstrap](Bootstrap.md)：sysmon 的创建时机、专用 M 启动与无 P 执行机制。
 - [Go Goroutine 抢占机制](GoroutinePreemption.md)：协作式与异步抢占、线程信号及单核执行过程。
 - [Netpoller](../Netpoller.md)：I/O 事件获取、等待与唤醒。
-- [GC](../gc/GC.md)：垃圾回收的阶段与触发机制。
+- [时间条件触发](../gc/TimeTrigger.md)：sysmon 检查时间条件并唤醒后台强制 GC 的过程。
