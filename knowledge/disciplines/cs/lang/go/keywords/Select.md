@@ -70,5 +70,5 @@
 
 ## 5. 相关机制
 
-- [Channel](../types/Channel.md)：channel 结构、发送、接收与关闭。
+- [Channel](../types/channel/Channel.md)：channel 结构、发送、接收与关闭。
 - [Scheduler](../runtime/scheduler/Scheduler.md)：G 的挂起与恢复调度。

@@ -19,6 +19,10 @@ Go 的运行时负责 goroutine 调度、垃圾回收、内存分配、栈管理
 
 具体文件组织和函数实现可能随 Go 版本变化，阅读时应以使用版本的源码为准。
 
+- [sudog](sudog.md)：关联 goroutine 与等待操作的运行时节点，用于 channel 和信号量等待。
+- [Runtime 变量](variables/Variables.md)：运行时内部变量，包括后台标记 worker 池。
+- [Runtime 函数](functions/Functions.md)：运行时内部函数的职责与执行流程，包括 `gopark` 和 `goready`。
+
 ## 2. 调度器
 
 详细模型与调度流程参见 [Scheduler](scheduler/Scheduler.md)。
