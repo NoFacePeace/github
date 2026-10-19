@@ -16,3 +16,4 @@ color: "#5B6CDA"
 - [算法](algorithms/Algorithms.md)
 - [ACM](acm/ACM.md)：算法竞赛与解题笔记。
 - [架构](architecture/Architecture.md)
+- [软件工程](engineering/Engineering.md)
