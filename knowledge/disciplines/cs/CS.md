@@ -12,6 +12,7 @@ color: "#5B6CDA"
 - [人工智能](ai/AI.md)
 - [操作系统](os/OS.md)
 - [网络](network/Network.md)
+- [密码学](cryptography/Cryptography.md)
 - [数据结构](data-structures/DataStructures.md)
 - [算法](algorithms/Algorithms.md)
 - [ACM](acm/ACM.md)：算法竞赛与解题笔记。
