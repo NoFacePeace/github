@@ -19,3 +19,4 @@ Agent 可观测性（Observability）是通过日志、执行轨迹和指标等�
 ## 3. 相关实现
 
 - [DigitalOcean Agent Learning Services](../../ecosystem/digitalocean/AgentLearningServices.md)：记录执行过程，并通过 Signals 筛选潜在问题会话。
+- [Arize Phoenix](../../ecosystem/arize/Phoenix.md)：追踪模型、检索和工具调用，支持查看执行过程并定位问题。

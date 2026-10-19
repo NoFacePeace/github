@@ -19,3 +19,4 @@ Agent 评估（Evaluation）是通过明确的任务、场景和标准，判断 
 ## 3. 相关实现
 
 - [DigitalOcean Agent Learning Services](../../ecosystem/digitalocean/AgentLearningServices.md)：通过 Evaluations 与 Simulations 评分和模拟多轮交互，验证修改效果。
+- [Arize Phoenix](../../ecosystem/arize/Phoenix.md)：通过数据集、实验、标注与评分比较模型和 Agent 的表现。
