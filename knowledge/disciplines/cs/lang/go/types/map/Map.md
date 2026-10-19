@@ -15,6 +15,14 @@ make 的可选大小是初始空间提示，不是长度或容量上限。新 ma
 
 ## 2. 读取、写入与删除
 
+从哈希定位、组内筛选到完整键比较的过程参见[Map 查找](lookup/Lookup.md)。
+
+插入与更新的共同流程参见[Map 写入](Write.md)。
+
+清理、表扩容、拆分与目录扩容参见[Map 扩容](growth/Growth.md)。
+
+条目清理、空槽与删除标记的选择过程参见[Map 删除](Delete.md)。
+
 ```go
 counts := make(map[string]int)
 counts["go"] = 1
@@ -110,6 +118,10 @@ map 只能与 nil 比较，不能直接使用 `==` 比较两个 map 的内容。
 对 map 值的重新赋值、对其引用对象的修改，也需要分别考虑同步；只保护查找过程不一定保护返回对象后续的访问。
 
 ## 9. 实现与源码入口
+
+Go 1.27.2 的 Map、目录、table 与 group 结构参见[Map 结构](structs/structs.md)。
+
+分组探测、控制信息和哈希指纹的设计参见[瑞士表](../../../../data-structures/hash-table/SwissTable.md)。
 
 Go 的 map 底层使用哈希映射实现，布局、扩容、冲突处理和迭代机制随版本变化。新版实现采用 Swiss Table 相关设计，阅读旧版的桶、溢出桶笔记时需要确认版本。
 
