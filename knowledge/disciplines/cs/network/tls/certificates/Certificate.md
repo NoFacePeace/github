@@ -34,4 +34,4 @@
 
 ## 4. 信任链
 
-证书如何关联到客户端预先信任的根 CA，见[信任链](trust-chain/TrustChain.md)。
+证书如何关联到客户端预先信任的根 CA，见[信任链](TrustChain.md)。
