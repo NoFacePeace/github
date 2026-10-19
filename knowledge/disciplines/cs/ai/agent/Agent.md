@@ -18,3 +18,5 @@ color: "#5B6CDA"
 - [运行时](runtime/Runtime.md)
 - [会话](session/Session.md)
 - [安全](safety/Safety.md)
+- [插件](plugins/Plugins.md)
+- [事件](events/Events.md)
