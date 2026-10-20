@@ -8,6 +8,7 @@ AI 生态包括模型、应用产品、开发框架、托管平台与编排服�
 
 ## 2. 模型与产品平台
 
+- [OpenAI](openai/OpenAI.md)：提供 ChatGPT、Codex 及模型 API 与 Agent 开发能力的公司。
 - [Anthropic](anthropic/Anthropic.md)：Claude 模型、应用、编程工具与 Agent 托管平台的开发厂商。
 - [DigitalOcean](digitalocean/DigitalOcean.md)：提供云计算基础设施、模型推理与 Agent 托管、数据和评估服务的云服务商。
 - [Perplexity](perplexity/Perplexity.md)：提供 AI 搜索、问答与 Agent 产品，并开发 SPACE 沙箱平台的公司。

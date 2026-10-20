@@ -5,6 +5,7 @@ Anthropic 是开发 Claude 模型及相关应用、编程工具和 Agent 平台�
 ## 1. 模型与应用
 
 - [Claude](Claude.md)：Claude 模型与产品品牌，以及应用、编程工具和平台之间的定位关系。
+- [Claude Code](claude-code/ClaudeCode.md)：面向代码库和开发流程的编程 Agent。
 
 ## 2. 安全研究
 

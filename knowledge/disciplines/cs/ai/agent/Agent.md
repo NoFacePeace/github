@@ -20,3 +20,4 @@ color: "#5B6CDA"
 - [安全](safety/Safety.md)
 - [插件](plugins/Plugins.md)
 - [事件](events/Events.md)
+- [钩子](hooks/Hooks.md)
