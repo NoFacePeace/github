@@ -25,7 +25,7 @@ Agent 是工作方式的通用概念，不是 Claude 或 Claude Code 的专有�
 | `CLAUDE.md` | 项目约定、架构说明及工作规则 |
 | Skills | 可复用的任务说明、脚本与参考资源 |
 | Subagents | 将专门任务交给独立上下文中的子 Agent |
-| MCP | 连接外部工具和数据服务 |
+| [工具与 MCP](tools/Tools.md) | 内置操作能力，以及外部工具和数据服务 |
 | [Hooks](Hooks.md) | 在生命周期事件发生时触发操作 |
 | [Plugins](Plugins.md) | 将多种扩展打包、安装和分发 |
 
