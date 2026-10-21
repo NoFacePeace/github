@@ -7,6 +7,8 @@ color: "#5B6CDA"
 人工智能智能体（AI Agent）。
 
 - [交互机制](interaction/Interaction.md)
+- [模型](model/Model.md)
+- [消息](message/Message.md)
 - [训练方法](training/Training.md)
 - [编排](orchestration/Orchestration.md)
 - [检索](retrieval/Retrieval.md)

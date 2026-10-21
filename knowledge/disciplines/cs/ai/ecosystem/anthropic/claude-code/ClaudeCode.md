@@ -6,7 +6,7 @@ Claude Code 是 Anthropic 的编程 Agent，能够读取代码库、编辑文件
 
 | 名称 | 定位 |
 |---|---|
-| [Claude](../Claude.md) | 模型与产品品牌 |
+| [Claude](../claude/Claude.md) | 模型与产品品牌 |
 | Claude Code | 面向代码库与开发任务的 Agent 产品及执行环境 |
 | Claude Managed Agents | 托管 Agent 运行平台 |
 
