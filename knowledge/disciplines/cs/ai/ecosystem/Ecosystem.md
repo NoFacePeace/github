@@ -15,6 +15,7 @@ AI 生态包括模型、应用产品、开发框架、托管平台与编排服�
 - [Perplexity](perplexity/Perplexity.md)：提供 AI 搜索、问答与 Agent 产品，并开发 SPACE 沙箱平台的公司。
 - [NVIDIA](nvidia/NVIDIA.md)：提供 GPU、AI 计算平台和 Nemotron 等模型的公司。
 - [xAI / Grok](xai/XAI.md)：Grok 模型、应用及开发者 API 相关产品。
+- [Mistral AI](mistral/Mistral.md)：提供语言模型、语音模型及语音 Agent 开发工具的公司。
 - [Arize AI](arize/Arize.md)：提供 AI 应用可观测性与评估平台，包括可自托管的 Phoenix。
 - [ModelScope（魔搭）](modelscope/ModelScope.md)：提供模型托管、共享和开发资源的社区与平台。
 
