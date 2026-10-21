@@ -27,7 +27,7 @@ Work 可以在云端环境执行；桌面应用在相应能力启用时，还可
 ## 3. 相关知识
 
 - [Agent](../disciplines/cs/ai/agent/Agent.md)：智能体通用知识入口。
-- [Steering](../disciplines/cs/ai/agent/interaction/Steering.md)：运行中引导的概念与执行边界。
+- [Steering](../disciplines/cs/ai/agent/control/interaction/Steering.md)：运行中引导的概念与执行边界。
 
 ## 4. 参考资料
 

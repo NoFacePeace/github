@@ -1,6 +1,6 @@
 # DigitalOcean Agent Learning Services
 
-Agent Learning Services 是 DigitalOcean 提供的一组 Agent [可观测性](../../agent/observability/Observability.md)与[评估](../../agent/evaluation/Evaluation.md)服务，包含 Insights、Signals 和 Evaluations & Simulations。它帮助开发者记录执行过程、发现问题，并在上线前测试修改是否有效。
+Agent Learning Services 是 DigitalOcean 提供的一组 Agent [可观测性](../../agent/quality/observability/Observability.md)与[评估](../../agent/quality/evaluation/Evaluation.md)服务，包含 Insights、Signals 和 Evaluations & Simulations。它帮助开发者记录执行过程、发现问题，并在上线前测试修改是否有效。
 
 ## 1. 核心组成
 

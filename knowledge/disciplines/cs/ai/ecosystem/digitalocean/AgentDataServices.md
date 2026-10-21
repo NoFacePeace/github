@@ -13,9 +13,9 @@ Agent Data Services 是 DigitalOcean 为 Agent 提供的托管数据服务。可
 
 | 方面 | 对应关系 |
 |---|---|
-| [知识库与检索](../../agent/retrieval/Retrieval.md) | 整理外部资料、建立索引，供 Agent 查找相关信息 |
-| [记忆](../../agent/memory/Memory.md) | 保存并检索会话和执行记录，可作为记忆机制的数据基础 |
-| [会话](../../agent/session/Session.md) | 将执行事件组装为会话，支持按会话标识查询历史交互 |
+| [知识库与检索](../../agent/knowledge/retrieval/Retrieval.md) | 整理外部资料、建立索引，供 Agent 查找相关信息 |
+| [记忆](../../agent/knowledge/memory/Memory.md) | 保存并检索会话和执行记录，可作为记忆机制的数据基础 |
+| [会话](../../agent/execution/session/Session.md) | 将执行事件组装为会话，支持按会话标识查询历史交互 |
 | 可观测性与评估 | 为运行分析和测试提供历史轨迹与上下文 |
 
 存储历史记录并不自动构成完整的记忆系统。哪些信息需要记住、何时召回、如何更新或遗忘，仍需由 Agent 应用设计。

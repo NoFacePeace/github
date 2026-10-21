@@ -75,7 +75,7 @@ Workflow 是程序，Workflow Run 是一次程序执行。程序可以并行调�
 
 默认事件流不展示工作流代码。官方建议等 Run 结束且会话空闲后，要求主 Agent 原样输出启动时的工作流。不能据此假定底层使用某一种语言、Temporal 或其他特定框架。
 
-通用编排模式参见 [Agent 编排](../../../agent/orchestration/Orchestration.md)。
+通用编排模式参见 [Agent 编排](../../../agent/control/orchestration/Orchestration.md)。
 
 ## 6. 参考资料
 

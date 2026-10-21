@@ -1,6 +1,6 @@
 # Anthropic 模型自主复制研究
 
-Anthropic 于 2026 年 10 月 12 日发布研究《AI models may be capable of self-replicating without access to a datacenter》，探讨模型能否在数据中心以外的硬件上运行，并自主完成部署与复制相关步骤。这属于 [Agent 安全](../../agent/safety/Safety.md) 中的自主复制风险研究。
+Anthropic 于 2026 年 10 月 12 日发布研究《AI models may be capable of self-replicating without access to a datacenter》，探讨模型能否在数据中心以外的硬件上运行，并自主完成部署与复制相关步骤。这属于 [Agent 安全](../../agent/quality/safety/Safety.md) 中的自主复制风险研究。
 
 ## 1. 研究问题
 

@@ -14,8 +14,8 @@ Phoenix 是 Arize AI 开发的 AI 应用可观测性与评估平台，用于查�
 
 ## 2. 与 Agent 知识的关系
 
-- [可观测性](../../agent/observability/Observability.md)：Phoenix 收集和展示执行轨迹，帮助理解实际运行过程及失败原因。
-- [评估](../../agent/evaluation/Evaluation.md)：Phoenix 提供数据集、实验和评分能力，帮助验证任务效果及版本改进。
+- [可观测性](../../agent/quality/observability/Observability.md)：Phoenix 收集和展示执行轨迹，帮助理解实际运行过程及失败原因。
+- [评估](../../agent/quality/evaluation/Evaluation.md)：Phoenix 提供数据集、实验和评分能力，帮助验证任务效果及版本改进。
 
 追踪不会自动覆盖所有业务步骤，应用需要接入对应的埋点组件；评估也需要按任务定义标准，不能仅凭调用成功判断目标已经完成。
 

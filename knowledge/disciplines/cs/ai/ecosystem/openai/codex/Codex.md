@@ -21,7 +21,7 @@ Codex 提供 CLI、IDE 和桌面等使用入口；不同入口的界面与可用
 - [插件](Plugins.md)：打包、安装和分发技能、工具连接及其他支持的扩展。
 - [Hook](Hooks.md)：由宿主在生命周期事件发生时触发操作，可独立配置或随插件分发。
 
-配置入口和支持范围取决于版本。普通用户、项目和插件提供的非托管 Hook 需要审阅和信任；通用概念见 [Agent Hooks](../../../agent/hooks/Hooks.md)。
+配置入口和支持范围取决于版本。普通用户、项目和插件提供的非托管 Hook 需要审阅和信任；通用概念见 [Agent Hooks](../../../agent/extensions/hooks/Hooks.md)。
 
 ## 4. 与 Codex Harness 的关系
 

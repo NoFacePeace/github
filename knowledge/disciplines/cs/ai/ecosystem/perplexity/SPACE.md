@@ -11,7 +11,7 @@ SPACE（Sandboxed Platform for Agentic Code Execution）是 Perplexity 开源的
 
 ## 2. 与 Agent 沙箱的关系
 
-SPACE 是 [Agent 沙箱](../../agent/sandbox/Sandbox.md) 的具体实现，可为命令执行、文件操作和代码运行提供隔离环境。
+SPACE 是 [Agent 沙箱](../../agent/execution/sandbox/Sandbox.md) 的具体实现，可为命令执行、文件操作和代码运行提供隔离环境。
 
 应用决定执行什么任务、如何调用模型和保留哪些结果；SPACE 管理沙箱、进程和命令输出连接。独立执行环境的实际访问范围仍取决于挂载、网络和权限配置。
 
