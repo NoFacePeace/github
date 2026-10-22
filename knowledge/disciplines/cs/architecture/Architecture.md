@@ -4,3 +4,5 @@
 
 - [应用](Application.md)：应用的职责分配与协作方式，包括 C/S 和 B/S 架构。
 - [存储](storage/Storage.md)：数据持久化、日志与故障恢复等通用设计机制。
+- [故障检测](failure-detection/FailureDetection.md)：通过心跳、健康探测等信号判断进程、节点或服务是否可能异常。
+- [协调](coordination/Coordination.md)：管理共享资源与执行权的归属、交接和失效隔离。

@@ -10,6 +10,8 @@ Lua 是一种轻量的脚本语言。Redis 内置 Lua 执行环境，可以在�
 
 使用 `EVAL` 执行脚本，依次提供脚本内容、键的数量、键名及其他参数：
 
+详细命令格式、参数与客户端示例见 [EVAL](Eval.md)。
+
 ```redis
 EVAL "return redis.call('GET', KEYS[1])" 1 stock
 ```
@@ -18,7 +20,7 @@ EVAL "return redis.call('GET', KEYS[1])" 1 stock
 | --- | --- |
 | `KEYS` | 客户端显式传入的键名数组，从 `1` 开始索引。 |
 | `ARGV` | 客户端传入的非键名参数数组，从 `1` 开始索引。 |
-| `redis.call()` | 调用 Redis 命令；命令报错会中止脚本，除非在 Lua 层捕获。 |
+| [redis.call()](Call.md) | 调用 Redis 命令；命令报错会中止脚本，除非在 Lua 层捕获。 |
 | `redis.pcall()` | 调用 Redis 命令；命令报错时返回包含 `err` 字段的错误对象，供脚本继续处理。 |
 
 脚本访问的键应通过 `KEYS` 显式传入，不应根据数据内容动态生成未声明的键名。Redis Cluster 中，通常要求一次脚本访问的键位于同一个哈希槽。
