@@ -14,6 +14,8 @@ color: "#5B6CDA"
 
 `SET`、`GET`、`MSET`、`MGET`、`INCR`、`DECR`、`APPEND`、`STRLEN`。
 
+命令用法、返回值和示例见 [Commands](Commands.md)。
+
 ## 3. 底层编码
 
 整数编码，或基于 SDS 的字符串编码。

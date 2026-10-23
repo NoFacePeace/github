@@ -4,7 +4,7 @@ color: "#5B6CDA"
 
 # Distributed Lock
 
-分布式锁用于协调多个进程或服务实例对同一资源的访问。Redis 常用带过期时间的 [String](../types/String.md) 类型键表示锁，值为本次持有者的唯一随机 token。持有者在有效期内执行任务，完成后验证身份并释放。
+分布式锁用于协调多个进程或服务实例对同一资源的访问。Redis 常用带过期时间的 [String](../types/string/String.md) 类型键表示锁，值为本次持有者的唯一随机 token。持有者在有效期内执行任务，完成后验证身份并释放。
 
 ## 1. 获取锁
 
