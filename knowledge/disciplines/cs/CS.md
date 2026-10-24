@@ -8,6 +8,7 @@ color: "#5B6CDA"
 
 - [基础设施](infra/Infra.md)
 - [编程语言](lang/Lang.md)
+- [编译原理](compiler/Compiler.md)：源码解析、语义分析、中间表示与代码生成。
 - [运行时系统](runtime/Runtime.md)
 - [人工智能](ai/AI.md)
 - [操作系统](os/OS.md)
@@ -20,3 +21,4 @@ color: "#5B6CDA"
 - [ACM](acm/ACM.md)：算法竞赛与解题笔记。
 - [架构](architecture/Architecture.md)
 - [软件工程](engineering/Engineering.md)
+- [项目](projects/Projects.md)：项目定位、设计与实现笔记。

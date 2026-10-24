@@ -18,6 +18,7 @@ AI 生态包括模型、应用产品、开发框架、托管平台与编排服�
 - [Mistral AI](mistral/Mistral.md)：提供语言模型、语音模型及语音 Agent 开发工具的公司。
 - [Arize AI](arize/Arize.md)：提供 AI 应用可观测性与评估平台，包括可自托管的 Phoenix。
 - [ModelScope（魔搭）](modelscope/ModelScope.md)：提供模型托管、共享和开发资源的社区与平台。
+- [FPT Software](fpt/FPTSoftware.md)：软件与 IT 服务公司，其 AI Center 下的 AI4Code 团队开展代码智能与自动化软件开发研究，发布 CodeWiki 等开源项目。
 
 ## 3. 智能体产品
 

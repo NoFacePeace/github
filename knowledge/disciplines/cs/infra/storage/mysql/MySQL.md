@@ -41,3 +41,7 @@ MySQL 是关系型数据库管理系统，使用 SQL 进行数据查询与管理
 ## 9. 配置
 
 - [MySQL 配置](config/Config.md)：配置来源、变量作用域、动态修改、持久化及常见参数。
+
+## 10. 函数
+
+- [MySQL 函数](functions/Functions.md)：内置 SQL 函数的分类、用途与调用方式。
