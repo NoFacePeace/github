@@ -95,7 +95,27 @@ return await run_agent("汇总报告", input=review)
 - 为失败、部分成功、取消和结果冲突定义处理方式。
 - 验证最终产物；工作流执行结束不一定意味着任务目标已达成。
 
-## 6. 参考资料
+## 6. 执行方式与协作结构
+
+### 6.1 执行方式
+
+- [Workflow（工作流）](Workflow.md)：通过显式定义的步骤、依赖和分支组织执行。
+- [ReAct（推理与行动）](ReAct.md)：根据观察结果交替推理和行动，逐步决定下一步。
+- [Plan-and-Execute（规划与执行）](PlanAndExecute.md)：先生成任务计划，再执行并按需重新规划。
+- [Reflection（反思）](Reflection.md)：审查已有结果，根据反馈修正产出或执行方式。
+
+这些方式可以组合：工作流中的某个步骤可以调用采用 ReAct 的 Agent；Agent 可以先生成计划，再在每一步中交替推理和行动，最后反思并修正结果。
+
+Workflow 与 Plan 的主要区别是流程来源：前者强调显式流程结构，后者强调为当前任务制定的具体步骤。工作流可以预先编写，也可以由 Agent 动态生成，因此不能简单按“静态”和“动态”完全区分。
+
+### 6.2 协作结构
+
+- **单 Agent**：由一个 Agent 组织任务并调用工具，也可以采用规划、反思等方式。
+- **多 Agent**：多个 Agent 分工，例如规划、执行和审查；可以顺序执行，也可以并行执行。
+
+Agent 的数量与执行方式是不同维度。多 Agent 系统中的各个 Agent 可以分别使用 ReAct 或 Plan-and-Execute；反思也不要求必须由另一个 Agent 完成。
+
+## 7. 参考资料
 
 - [Claude Managed Agents：多 Agent 编排](https://platform.claude.com/docs/en/managed-agents/multiagent-orchestration)
 - [Claude Dynamic Workflows：运行机制与事件](https://platform.claude.com/docs/en/managed-agents/workflow-runs)
