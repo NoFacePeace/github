@@ -18,6 +18,8 @@
 - [Worker](worker/Worker.md)：构建领取、执行组织、并发容量与退出恢复。
 - [请求服务](server/Server.md)：外部请求接入、路由、鉴权、业务调用与响应。
 - [查询与检索](retrieval/Retrieval.md)：查询范围选择、索引加载、全文与向量召回、结果融合和章节聚合。
+- [图谱查询](codegraph/Codegraph.md)：加载已发布图谱，执行节点匹配、邻居查询、遍历和路径分析。
+- [源码访问](source/Source.md)：固定版本的目录浏览、文件查找、正文读取与内容搜索。
 - [MySQL](mysql/MySQL.md)：仓库、版本、构建与产物的表结构、索引、约束及事务设计。
 - [调度器](scheduler/Scheduler.md)：定时任务注册与运行，以及版本发现、构建领取和缓存刷新。
 

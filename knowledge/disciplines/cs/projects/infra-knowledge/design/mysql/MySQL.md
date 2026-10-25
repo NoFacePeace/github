@@ -40,3 +40,4 @@
 - [文档存储](Document.md)：完整 Markdown、内容引用及文档归属与可见性。
 - [文档生成批次](GenerationBatch.md)：批次身份、恢复检查点、索引配置和发布状态。
 - [索引产物存储](IndexArtifact.md)：文档派生的检索数据、模型与切分配置。
+- [指标与仓库映射](MetricRepository.md)：从成功发布的指标目录累积关联，支持指标名反查仓库。
