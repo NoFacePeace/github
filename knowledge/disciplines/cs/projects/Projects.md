@@ -5,3 +5,7 @@
 ## 1. 知识平台
 
 - [Infra 知识库](infra-knowledge/InfraKnowledge.md)：面向基础设施领域，整理代码、文档及排障上下文的知识平台。
+
+## 2. Agent 平台
+
+- [Infra Agent Cloud](infra-agent-cloud/InfraAgentCloud.md)：面向基础设施工作，提供云端任务执行与成果交付的 Agent 平台。
