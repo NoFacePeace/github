@@ -4,3 +4,4 @@
 - [B+ 树](BPlusTree.md)
 - [哈希表](hash-table/HashTable.md)
 - [图](graph/Graph.md)
+- [并查集](UnionFind.md)
