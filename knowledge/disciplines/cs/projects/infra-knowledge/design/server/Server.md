@@ -50,3 +50,4 @@ HTTP API 与 MCP 等接入方式可以复用应用逻辑，各自维护输入输
 ## 6. 接口专题
 
 - [仓库接口](repositories/Repositories.md)：仓库登记、配置更新和查询的请求职责与处理流程。
+- [搜索](Search.md)：接收页面、Agent 和 MCP 的文档搜索请求，校验范围并调用检索服务。
