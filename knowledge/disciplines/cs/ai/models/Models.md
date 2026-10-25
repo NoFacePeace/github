@@ -4,7 +4,7 @@ AI 模型是通过训练从数据中学习规律，并用于预测、生成或�
 
 ## 1. 内容范围
 
-- 模型类型：语言模型、视觉模型、[多模态模型](multimodal/Multimodal.md)、嵌入模型和重排序模型等。
+- 模型类型：语言模型、视觉模型、[多模态模型](multimodal/Multimodal.md)、[嵌入模型](embedding/Embedding.md)和重排序模型等。
 - 模型架构：Transformer、混合专家（MoE）和状态空间模型等。
 - 生成机制：[扩散模型](diffusion/Diffusion.md)、自回归模型和流匹配模型等。
 - 规模与精度：总参数量、激活参数量、数值精度与量化。

@@ -5,3 +5,4 @@
 - [哈希表](hash-table/HashTable.md)
 - [图](graph/Graph.md)
 - [并查集](UnionFind.md)
+- [倒排索引](inverted-index/InvertedIndex.md)
