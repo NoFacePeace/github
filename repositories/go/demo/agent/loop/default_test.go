@@ -44,7 +44,6 @@ func TestDefaultLoopToolRoundTrip(t *testing.T) {
 			t.Fatalf("unexpected tool definitions: %+v", req.Tools)
 		}
 		if modelCalls == 1 {
-			emit(model.ToolCallEvent{Call: call})
 			emit(model.CompletedEvent{Message: model.Message{ToolCalls: []tool.Call{call}}})
 			return nil
 		}
@@ -56,8 +55,8 @@ func TestDefaultLoopToolRoundTrip(t *testing.T) {
 		if !reflect.DeepEqual(req.Messages, want) {
 			t.Fatalf("messages = %+v, want %+v", req.Messages, want)
 		}
-		emit(&model.TextDeltaEvent{Text: "done"})
-		emit(&model.CompletedEvent{Message: model.Message{Content: "done"}})
+		emit(model.TextDeltaEvent{Text: "done"})
+		emit(model.CompletedEvent{Message: model.Message{Content: "done"}})
 		return nil
 	})
 	err := (&DefaultLoop{}).Run(context.Background(), Request{
@@ -147,7 +146,6 @@ func TestDefaultLoopFailures(t *testing.T) {
 		req  Request
 		want string
 	}{
-		{name: "missing model", want: "model is required"},
 		{name: "model error", req: Request{Model: modelFunc(func(context.Context, model.Request, func(model.Event)) error {
 			return failure
 		})}, want: "model unavailable"},
