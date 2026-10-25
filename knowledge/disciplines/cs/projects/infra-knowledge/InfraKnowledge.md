@@ -37,3 +37,7 @@ Infra 知识库（Infra Knowledge Base）是面向基础设施领域的知识平
 ## 4. 技术设计
 
 技术方案与模块协作见 [技术设计](design/Design.md)。
+
+## 5. 评测
+
+[评测](evaluation/Evaluation.md) 说明 Agent 与检索评测的目标、实验分组、执行流程及结果解释。
