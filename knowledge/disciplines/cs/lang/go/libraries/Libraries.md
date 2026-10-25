@@ -5,3 +5,7 @@
 ## 1. 源码解析
 
 - [Tree-sitter Go 使用](tree-sitter/TreeSitter.md)：通过 Go 绑定解析源码、遍历语法树、提取源码位置并管理底层资源。
+
+## 2. 敏感信息检测
+
+- [Gitleaks Go 使用](gitleaks/Gitleaks.md)：加载检测规则、在进程内扫描文件内容并处理命中结果。

@@ -37,3 +37,6 @@
 - [仓库存储](Repositories.md)：仓库登记信息的持久化、唯一性约束及更新事务。
 - [Commit 存储](Commit.md)：固定源码版本的身份、来源信息及去重约束。
 - [Build 存储](Build.md)：构建尝试、执行状态及其与源码版本的关联。
+- [文档存储](Document.md)：完整 Markdown、内容引用及文档归属与可见性。
+- [文档生成批次](GenerationBatch.md)：批次身份、恢复检查点、索引配置和发布状态。
+- [索引产物存储](IndexArtifact.md)：文档派生的检索数据、模型与切分配置。
