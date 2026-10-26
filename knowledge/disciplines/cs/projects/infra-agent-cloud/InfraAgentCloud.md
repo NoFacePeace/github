@@ -27,3 +27,15 @@ OpenAI 将 ChatGPT Work 定位为把实际工作委托给 ChatGPT 的方式，�
 
 - [ChatGPT Work 官方介绍](https://learn.chatgpt.com/docs/get-started-with-work)
 - [ChatGPT 使用与运行环境说明](https://learn.chatgpt.com/docs/use-chatgpt)
+
+## 4. 调用链
+
+[调用链](chain/Chain.md) 记录任务发起、执行与结果交付的通用流程。
+
+## 5. 存储
+
+[存储](storage/Storage.md) 说明结构化数据、执行协调状态与文件产物的存储职责。
+
+## 6. 组件
+
+[组件](components/Components.md) 说明平台各组件的职责与协作关系。
