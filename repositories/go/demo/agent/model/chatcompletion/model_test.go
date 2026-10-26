@@ -1,10 +1,12 @@
-package openai
+package chatcompletion
 
 import (
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	protocol "github.com/NoFacePeace/github/repositories/go/demo/agent/protocol/chatcompletion"
+	"github.com/NoFacePeace/github/repositories/go/demo/agent/provider"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -43,7 +45,7 @@ func TestGenerateWithLoop(t *testing.T) {
 		if r.Method != http.MethodPost || r.URL.Path != "/v1/chat/completions" || r.Header.Get("Authorization") != "Bearer test-key" {
 			t.Errorf("unexpected request: %s %s", r.Method, r.URL.Path)
 		}
-		var req completionRequest
+		var req protocol.Request
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			t.Error(err)
 			w.WriteHeader(http.StatusBadRequest)
@@ -77,7 +79,7 @@ func TestGenerateWithLoop(t *testing.T) {
 		io.WriteString(w, "data: [DONE]\n\n")
 	}))
 	defer server.Close()
-	m := New(Config{APIKey: "test-key", Model: "test-model", BaseURL: server.URL + "/v1/"})
+	m := New(protocol.New(provider.Config{APIKey: "test-key", BaseURL: server.URL + "/v1/"}), "test-model")
 	var text strings.Builder
 	var reason loop.StopReason
 	err := (&loop.DefaultLoop{}).Run(context.Background(), loop.Request{
@@ -108,7 +110,7 @@ func TestInterleavedToolCalls(t *testing.T) {
 		`data: [DONE]`,
 	}, "\r\n\r\n") + "\r\n\r\n"
 	var events []model.Event
-	if err := readStream(strings.NewReader(stream), func(e model.Event) { events = append(events, e) }); err != nil {
+	if err := generateStream(t, stream, func(e model.Event) { events = append(events, e) }); err != nil {
 		t.Fatal(err)
 	}
 	want := []model.Event{model.CompletedEvent{Message: model.Message{
@@ -136,7 +138,7 @@ func TestStreamErrors(t *testing.T) {
 	}
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			err := readStream(strings.NewReader(tt.stream), func(event model.Event) {
+			err := generateStream(t, tt.stream, func(event model.Event) {
 				if _, ok := event.(model.CompletedEvent); ok {
 					t.Error("failed stream emitted completion")
 				}
@@ -154,7 +156,7 @@ func TestHTTPError(t *testing.T) {
 		io.WriteString(w, `{"error":{"message":"invalid API key"}}`)
 	}))
 	defer server.Close()
-	err := New(Config{BaseURL: server.URL}).Generate(context.Background(), model.Request{}, func(model.Event) {
+	err := New(protocol.New(provider.Config{BaseURL: server.URL}), "test-model").Generate(context.Background(), model.Request{}, func(model.Event) {
 		t.Error("HTTP error emitted an event")
 	})
 	if err == nil || !strings.Contains(err.Error(), "401") {
@@ -172,7 +174,7 @@ func TestStreamCancellation(t *testing.T) {
 	defer server.Close()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	err := New(Config{BaseURL: server.URL}).Generate(ctx, model.Request{}, func(event model.Event) {
+	err := New(protocol.New(provider.Config{BaseURL: server.URL}), "test-model").Generate(ctx, model.Request{}, func(event model.Event) {
 		if _, ok := event.(model.CompletedEvent); ok {
 			t.Error("canceled stream emitted completion")
 		}
@@ -181,4 +183,39 @@ func TestStreamCancellation(t *testing.T) {
 	if !errors.Is(err, context.Canceled) {
 		t.Fatalf("error = %v, want context cancellation", err)
 	}
+}
+
+func TestSharedClientWithDifferentModels(t *testing.T) {
+	names := make(chan string, 2)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var req protocol.Request
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			t.Error(err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		names <- req.Model
+		w.Header().Set("Content-Type", "text/event-stream")
+		io.WriteString(w, "data: {\"choices\":[{\"finish_reason\":\"stop\"}]}\n\ndata: [DONE]\n\n")
+	}))
+	defer server.Close()
+	client := protocol.New(provider.Config{BaseURL: server.URL})
+	for _, name := range []string{"model-a", "model-b"} {
+		if err := New(client, name).Generate(context.Background(), model.Request{}, func(model.Event) {}); err != nil {
+			t.Fatal(err)
+		}
+		if got := <-names; got != name {
+			t.Fatalf("requested model = %q, want %q", got, name)
+		}
+	}
+}
+
+func generateStream(t *testing.T, stream string, onEvent func(model.Event)) error {
+	t.Helper()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		io.WriteString(w, stream)
+	}))
+	defer server.Close()
+	return New(protocol.New(provider.Config{BaseURL: server.URL}), "test-model").Generate(context.Background(), model.Request{}, onEvent)
 }
