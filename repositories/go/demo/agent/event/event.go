@@ -1,4 +1,4 @@
-package loop
+package event
 
 import "github.com/NoFacePeace/github/repositories/go/demo/agent/tool"
 

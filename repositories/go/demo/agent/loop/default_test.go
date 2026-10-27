@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/NoFacePeace/github/repositories/go/demo/agent/event"
 	"github.com/NoFacePeace/github/repositories/go/demo/agent/model"
 	"github.com/NoFacePeace/github/repositories/go/demo/agent/tool"
 )
@@ -37,7 +38,7 @@ func TestDefaultLoopToolRoundTrip(t *testing.T) {
 	backing[1] = model.Message{Content: "sentinel"}
 	initial := backing[:1]
 	modelCalls, toolCalls := 0, 0
-	var events []Event
+	var events []event.Event
 	m := modelFunc(func(ctx context.Context, req model.Request, emit func(model.Event)) error {
 		modelCalls++
 		if len(req.Tools) != 1 || req.Tools[0].Name != "echo" {
@@ -68,18 +69,18 @@ func TestDefaultLoopToolRoundTrip(t *testing.T) {
 			}
 			return tool.Result{Content: "hello"}, nil
 		}}},
-	}, func(event Event) { events = append(events, event) })
+	}, func(ev event.Event) { events = append(events, ev) })
 	if err != nil {
 		t.Fatal(err)
 	}
 	if modelCalls != 2 || toolCalls != 1 {
 		t.Fatalf("model calls = %d, tool calls = %d", modelCalls, toolCalls)
 	}
-	wantEvents := []Event{
-		ToolCallEvent{Call: call},
-		ToolResultEvent{CallID: call.ID, Result: tool.Result{Content: "hello"}},
-		TextDeltaEvent{Text: "done"},
-		CompletedEvent{Reason: StopCompleted},
+	wantEvents := []event.Event{
+		event.ToolCallEvent{Call: call},
+		event.ToolResultEvent{CallID: call.ID, Result: tool.Result{Content: "hello"}},
+		event.TextDeltaEvent{Text: "done"},
+		event.CompletedEvent{Reason: event.StopCompleted},
 	}
 	if !reflect.DeepEqual(events, wantEvents) {
 		t.Fatalf("events = %+v, want %+v", events, wantEvents)
@@ -127,13 +128,13 @@ func TestDefaultLoopStepLimit(t *testing.T) {
 			emit(model.CompletedEvent{Message: model.Message{ToolCalls: []tool.Call{{ID: "call", Name: "missing"}}}})
 			return nil
 		})
-		var last Event
-		err := (&DefaultLoop{}).Run(context.Background(), Request{Model: m, MaxSteps: limit}, func(e Event) { last = e })
+		var last event.Event
+		err := (&DefaultLoop{}).Run(context.Background(), Request{Model: m, MaxSteps: limit}, func(e event.Event) { last = e })
 		wantCalls := limit
 		if wantCalls == 0 {
 			wantCalls = 10
 		}
-		if err != nil || calls != wantCalls || last != (CompletedEvent{Reason: StopMaxSteps}) {
+		if err != nil || calls != wantCalls || last != (event.CompletedEvent{Reason: event.StopMaxSteps}) {
 			t.Fatalf("limit = %d: error = %v, calls = %d, last = %+v", limit, err, calls, last)
 		}
 	}
@@ -179,8 +180,8 @@ func TestDefaultLoopCancellation(t *testing.T) {
 			toolCalls++
 			return tool.Result{}, ctx.Err()
 		}}},
-	}, func(event Event) {
-		if _, ok := event.(ToolCallEvent); ok {
+	}, func(ev event.Event) {
+		if _, ok := ev.(event.ToolCallEvent); ok {
 			cancel()
 		}
 	})

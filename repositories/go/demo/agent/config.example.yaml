@@ -1,7 +1,10 @@
-defaults:
-  provider: default
-  protocol: chat_completions
-  model: "" # 未指定模型时使用；此处也为空则需要选择模型
+service:
+  defaults:
+    provider: default
+    protocol: chat_completions
+    model: "" # 未指定模型时使用；此处也为空则需要选择模型
+  loop:
+    max_steps: 10
 
 providers:
   default:
@@ -12,6 +15,3 @@ providers:
       - chat_completions
     model_source: remote # 默认为 remote，动态获取模型列表；manual 使用下方列表
     models: [] # 仅在 manual 模式生效，空列表表示没有可选模型
-
-loop:
-  max_steps: 10

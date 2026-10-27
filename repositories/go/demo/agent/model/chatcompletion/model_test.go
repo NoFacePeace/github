@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	protocol "github.com/NoFacePeace/github/repositories/go/demo/agent/protocol/chatcompletion"
-	"github.com/NoFacePeace/github/repositories/go/demo/agent/provider"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -14,8 +12,11 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/NoFacePeace/github/repositories/go/demo/agent/event"
 	"github.com/NoFacePeace/github/repositories/go/demo/agent/loop"
 	"github.com/NoFacePeace/github/repositories/go/demo/agent/model"
+	protocol "github.com/NoFacePeace/github/repositories/go/demo/agent/protocol/chatcompletion"
+	"github.com/NoFacePeace/github/repositories/go/demo/agent/provider"
 	"github.com/NoFacePeace/github/repositories/go/demo/agent/tool"
 )
 
@@ -81,7 +82,7 @@ func TestGenerateWithLoop(t *testing.T) {
 	defer server.Close()
 	m := New(protocol.New(provider.Config{APIKey: "test-key", BaseURL: server.URL + "/v1/"}), "test-model")
 	var text strings.Builder
-	var reason loop.StopReason
+	var reason event.StopReason
 	err := (&loop.DefaultLoop{}).Run(context.Background(), loop.Request{
 		Model: m,
 		Messages: []model.Message{
@@ -89,15 +90,15 @@ func TestGenerateWithLoop(t *testing.T) {
 			{Role: model.RoleUser, Content: "Echo hello"},
 		},
 		Tools: []tool.Tool{echoTool{}},
-	}, func(event loop.Event) {
-		switch e := event.(type) {
-		case loop.TextDeltaEvent:
+	}, func(ev event.Event) {
+		switch e := ev.(type) {
+		case event.TextDeltaEvent:
 			text.WriteString(e.Text)
-		case loop.CompletedEvent:
+		case event.CompletedEvent:
 			reason = e.Reason
 		}
 	})
-	if err != nil || requests != 2 || text.String() != "Hello!" || reason != loop.StopCompleted {
+	if err != nil || requests != 2 || text.String() != "Hello!" || reason != event.StopCompleted {
 		t.Fatalf("error = %v, requests = %d, text = %q, reason = %q", err, requests, text.String(), reason)
 	}
 }
@@ -138,8 +139,8 @@ func TestStreamErrors(t *testing.T) {
 	}
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			err := generateStream(t, tt.stream, func(event model.Event) {
-				if _, ok := event.(model.CompletedEvent); ok {
+			err := generateStream(t, tt.stream, func(ev model.Event) {
+				if _, ok := ev.(model.CompletedEvent); ok {
 					t.Error("failed stream emitted completion")
 				}
 			})
@@ -174,8 +175,8 @@ func TestStreamCancellation(t *testing.T) {
 	defer server.Close()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	err := New(protocol.New(provider.Config{BaseURL: server.URL}), "test-model").Generate(ctx, model.Request{}, func(event model.Event) {
-		if _, ok := event.(model.CompletedEvent); ok {
+	err := New(protocol.New(provider.Config{BaseURL: server.URL}), "test-model").Generate(ctx, model.Request{}, func(ev model.Event) {
+		if _, ok := ev.(model.CompletedEvent); ok {
 			t.Error("canceled stream emitted completion")
 		}
 		cancel()

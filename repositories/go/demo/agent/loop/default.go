@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/NoFacePeace/github/repositories/go/demo/agent/event"
 	"github.com/NoFacePeace/github/repositories/go/demo/agent/model"
 	"github.com/NoFacePeace/github/repositories/go/demo/agent/tool"
 )
@@ -13,7 +14,7 @@ const defaultMaxSteps = 10
 
 type DefaultLoop struct{}
 
-func (l *DefaultLoop) Run(ctx context.Context, req Request, onEvent func(Event)) error {
+func (l *DefaultLoop) Run(ctx context.Context, req Request, onEvent func(event.Event)) error {
 	maxSteps := req.MaxSteps
 	if maxSteps == 0 {
 		maxSteps = defaultMaxSteps
@@ -26,9 +27,9 @@ func (l *DefaultLoop) Run(ctx context.Context, req Request, onEvent func(Event))
 		tools[definition.Name] = t
 		definitions = append(definitions, definition)
 	}
-	emit := func(event Event) {
+	emit := func(ev event.Event) {
 		if onEvent != nil {
-			onEvent(event)
+			onEvent(ev)
 		}
 	}
 	// 复制消息切片，避免追加消息时覆盖调用方切片的底层数组。
@@ -39,10 +40,10 @@ func (l *DefaultLoop) Run(ctx context.Context, req Request, onEvent func(Event))
 		if err := req.Model.Generate(ctx, model.Request{
 			Messages: messages,
 			Tools:    definitions,
-		}, func(event model.Event) {
-			switch e := event.(type) {
+		}, func(ev model.Event) {
+			switch e := ev.(type) {
 			case model.TextDeltaEvent:
-				emit(TextDeltaEvent{Text: e.Text})
+				emit(event.TextDeltaEvent{Text: e.Text})
 			case model.CompletedEvent:
 				response = e.Message
 				completed = true
@@ -56,11 +57,11 @@ func (l *DefaultLoop) Run(ctx context.Context, req Request, onEvent func(Event))
 		response.Role = model.RoleAssistant
 		messages = append(messages, response)
 		if len(response.ToolCalls) == 0 {
-			emit(CompletedEvent{Reason: StopCompleted})
+			emit(event.CompletedEvent{Reason: event.StopCompleted})
 			return nil
 		}
 		for _, call := range response.ToolCalls {
-			emit(ToolCallEvent{Call: call})
+			emit(event.ToolCallEvent{Call: call})
 			var result tool.Result
 			if t, exists := tools[call.Name]; exists {
 				output, err := t.Execute(ctx, call.Arguments)
@@ -74,7 +75,7 @@ func (l *DefaultLoop) Run(ctx context.Context, req Request, onEvent func(Event))
 			} else {
 				result.Content = fmt.Sprintf("tool error: unknown tool %q", call.Name)
 			}
-			emit(ToolResultEvent{CallID: call.ID, Result: result})
+			emit(event.ToolResultEvent{CallID: call.ID, Result: result})
 			messages = append(messages, model.Message{
 				Role:       model.RoleTool,
 				Content:    result.Content,
@@ -82,6 +83,6 @@ func (l *DefaultLoop) Run(ctx context.Context, req Request, onEvent func(Event))
 			})
 		}
 	}
-	emit(CompletedEvent{Reason: StopMaxSteps})
+	emit(event.CompletedEvent{Reason: event.StopMaxSteps})
 	return nil
 }
