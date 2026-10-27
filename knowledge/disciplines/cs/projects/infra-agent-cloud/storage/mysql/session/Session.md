@@ -15,3 +15,8 @@ Task.id ← Session.task_id
 ```
 
 这里的 Session 表示平台的一轮执行，与底层 Agent 引擎自身的会话标识应分别理解。
+
+## 3. 执行状态与扩展信息
+
+- [status](Status.md)：本轮执行的整体状态。
+- [extra_info](ExtraInfo.md)：调度信息、停止请求标记等扩展数据。

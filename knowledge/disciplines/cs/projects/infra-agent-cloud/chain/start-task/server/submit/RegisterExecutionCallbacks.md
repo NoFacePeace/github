@@ -10,10 +10,10 @@
 
 ## 2. 写入 Redis
 
-向执行事件状态的 [callbacks](../../storage/redis/execution-event-state/Callbacks.md) 字段写入标记，并设置所属 key 的过期时间。Redis 只保存是否启用的标记，不保存函数本身。
+向执行事件状态的 [callbacks](../../../../storage/redis/execution-event-state/Callbacks.md) 字段写入标记，并设置所属 key 的过期时间。Redis 只保存是否启用的标记，不保存函数本身。
 
 需要在任务入队前完成登记，避免执行事件先于标记到达。事件处理层据此决定是否保留供回调消费的回放输出，避免没有回调时积累无人消费的输出。
 
 ## 3. 后续步骤
 
-登记完成后提交调度队列，等待分配 Runner。登记为未启用不影响任务执行及状态、结果的保存。
+登记完成后进入[提交调度队列](submit-dispatch-queue/SubmitDispatchQueue.md)，等待分配 Runner。登记为未启用不影响任务执行及状态、结果的保存。

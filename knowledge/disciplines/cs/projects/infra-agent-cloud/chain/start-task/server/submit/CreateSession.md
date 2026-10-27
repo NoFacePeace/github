@@ -1,6 +1,6 @@
 # 创建 Session
 
-Task 保存后，创建并持久化首个 [Session](../../storage/mysql/session/Session.md)，记录本轮输入及执行状态。
+Task 保存后，创建并持久化首个 [Session](../../../../storage/mysql/session/Session.md)，记录本轮输入及执行状态。
 
 ## 1. 生成执行轮次标识
 

@@ -1,6 +1,6 @@
 # 创建 Task
 
-执行配置组装与启动前检查完成后，创建并持久化 [Task](../../storage/mysql/task/Task.md) 记录，建立本次任务的身份与执行归属。
+执行配置组装与启动前检查完成后，创建并持久化 [Task](../../../../storage/mysql/task/Task.md) 记录，建立本次任务的身份与执行归属。
 
 ## 1. 生成任务标识
 
@@ -28,4 +28,4 @@
 
 ## 4. 后续步骤
 
-保存 Task 后，进入[创建 Session](CreateSession.md)，将首次消息作为本轮输入，并通过 `task_id` 关联 Task。任务与首轮执行记录准备完成后，再异步提交执行。
+保存 Task 后，进入[创建 Session](CreateSession.md)，将首次消息作为本轮输入，并通过 `task_id` 关联 Task。任务与首轮执行记录准备完成后，再异步提交。

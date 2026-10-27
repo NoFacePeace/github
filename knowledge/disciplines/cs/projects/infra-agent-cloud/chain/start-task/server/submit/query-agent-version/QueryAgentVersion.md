@@ -1,6 +1,6 @@
 # 查询 Agent 版本
 
-读取 Agent 管理信息后，根据请求与版本选择规则，在 [AgentVersion](../../../storage/mysql/agent-version/AgentVersion.md) 中确定本次任务使用的版本记录。
+读取 Agent 管理信息后，根据请求与版本选择规则，在 [AgentVersion](../../../../../storage/mysql/agent-version/AgentVersion.md) 中确定本次任务使用的版本记录。
 
 ## 1. 选择优先级
 
