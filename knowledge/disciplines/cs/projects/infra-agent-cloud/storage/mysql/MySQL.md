@@ -15,3 +15,9 @@ MySQL 是关系型数据库，可在 Agent 云平台中持久化任务、执行�
 - [Session](session/Session.md)：保存任务中一轮执行的信息。
 
 两类记录为一对多关系：Session 的 `task_id` 关联 Task 的 `id`，一个 Task 可以包含多个 Session。
+
+- [SessionRunnerMapping](session-runner-mapping/SessionRunnerMapping.md)：记录本轮执行对应的 Runner 与租约。
+
+## 3. 执行授权
+
+- [SecretGrant](secret-grant/SecretGrant.md)：保存绑定执行身份的授权信息与加密凭证快照。
