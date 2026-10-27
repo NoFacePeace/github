@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/NoFacePeace/github/repositories/go/demo/agent/event"
 	"github.com/NoFacePeace/github/repositories/go/demo/agent/loop"
@@ -49,5 +50,37 @@ func NewDefault(config Config, providers map[string]ProviderEntry, agentLoop loo
 }
 
 func (s *DefaultService) Run(ctx context.Context, req Request, onEvent func(event.Event)) error {
-	return nil
+	if req.Provider == "" {
+		req.Provider = s.config.Defaults.Provider
+	}
+	if req.Protocol == "" {
+		req.Protocol = s.config.Defaults.Protocol
+	}
+	if req.Model == "" {
+		req.Model = s.config.Defaults.Model
+	}
+
+	entry, ok := s.providers[req.Provider]
+	if !ok {
+		return fmt.Errorf("unknown provider: %s", req.Provider)
+	}
+	factory, ok := entry.Factories[req.Protocol]
+	if !ok {
+		return fmt.Errorf("unsupported protocol: %s", req.Protocol)
+	}
+	if req.Model == "" {
+		return fmt.Errorf("model is required")
+	}
+	if req.SessionID != "" {
+		return fmt.Errorf("sessions are not supported yet")
+	}
+
+	return s.loop.Run(ctx, loop.Request{
+		Model: factory(req.Model),
+		Messages: []model.Message{
+			{Role: model.RoleUser, Content: req.Input},
+		},
+		Tools:    s.tools,
+		MaxSteps: s.config.Loop.MaxSteps,
+	}, onEvent)
 }
