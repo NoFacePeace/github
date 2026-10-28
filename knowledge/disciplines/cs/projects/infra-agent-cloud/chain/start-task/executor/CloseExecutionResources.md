@@ -16,3 +16,7 @@ Executor 在 `finally` 中执行收尾，成功、失败或停止均会进入该
 ## 3. 存储操作
 
 关闭日志前会等待本地文件写入完成。此步骤不直接更新 MySQL、Redis，也不负责上传对象存储。
+
+## 4. 后续流程
+
+Executor 结束后，外层 Runtime 进入[执行收尾](../runtime/finalize-execution/FinalizeExecution.md)，停止日志定时备份、清理执行环境、启动后台备份并发布终态。
