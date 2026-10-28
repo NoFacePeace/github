@@ -4,7 +4,7 @@ color: "#5B6CDA"
 
 # Message Stream
 
-Redis 的 [Stream](../types/Stream.md) 类型按消息 ID 保存追加式记录，配合消费者组可以作为消息队列使用，适合异步任务和事件处理。
+Redis 的 [Stream](../types/stream/Stream.md) 类型按消息 ID 保存追加式记录，配合消费者组可以作为消息队列使用，适合异步任务和事件处理。
 
 ## 1. 消息流与消息队列
 
