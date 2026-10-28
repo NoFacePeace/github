@@ -11,6 +11,7 @@ Redis 是内存键值存储，可在 Agent 云平台中承载缓存、任务队�
 - [执行事件状态](execution-event-state/ExecutionEventState.md)：按任务与执行轮次保存回调标记等事件处理状态。
 - [执行事件 Stream](RunnerEventStream.md)：保存 Runner 回传、供 Server 消费的事件。
 - [执行事件回放](ExecutionEventReplay.md)：保存按执行轮次组织、供本地回调读取的事件。
+- [执行日志](ExecutionLog.md)：保存从输出事件提取的引擎日志，供历史查询与对话解析。
 - [事件字节计数](RunnerEventBytes.md)：统计事件 payload 总大小，控制积压。
 
 ## 3. 调度
