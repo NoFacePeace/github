@@ -8,6 +8,8 @@ Server 将通过执行归属校验的事件写入按任务与执行轮次组织�
 
 是否保留供回调消费的输出受回调标记控制。收到 `accepted` 不等于直接将 MySQL 中的 Session 更新为某个接受状态，Session 的主状态仍可能为 `running`。
 
+适用的事件保存在[执行事件回放](../../../storage/redis/ExecutionEventReplay.md)，供持有回调的 Server 读取；原始 Stream 消费确认清理后，回调仍可读取尚未确认的回放成员。
+
 ## 2. 终态事件
 
 `completed`、`failed`、`stopped` 等结果进一步更新 [Session](../../../storage/mysql/session/Session.md) 和 [Task](../../../storage/mysql/task/Task.md)，记录状态、结果、退出信息和适用的统计或产物引用。

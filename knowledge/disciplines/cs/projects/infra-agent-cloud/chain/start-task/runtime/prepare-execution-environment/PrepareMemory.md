@@ -10,4 +10,4 @@
 
 ## 2. 失败与后续步骤
 
-Memory 初始化失败时记录告警并继续；之后仍检查准备取消与租约失效信号，再进入[启动 Executor](StartExecutor.md)。
+Memory 初始化失败时记录告警并继续；之后仍检查准备取消与租约失效信号，再进入[启动 Executor](../start-executor/StartExecutor.md)。
