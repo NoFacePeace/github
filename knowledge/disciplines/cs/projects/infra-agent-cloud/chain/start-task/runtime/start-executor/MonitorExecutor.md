@@ -15,3 +15,5 @@
 ## 3. 与引擎启动的边界
 
 拿到 Runtime 进程句柄不代表 Agent 已经就绪。Executor 还要读取输入、生成引擎配置并启动引擎，后续需依据执行事件判断实际进度。
+
+后续进入 [Executor 流程](../../executor/Executor.md)，从读取执行输入开始。
