@@ -14,4 +14,4 @@
 
 - [Redis](redis/Redis.md)：缓存、队列与执行协调。
 - [MySQL](mysql/MySQL.md)：结构化业务数据持久化。
-- [对象存储](ObjectStorage.md)：文件、执行产物与备份存储。
+- [对象存储](object-storage/ObjectStorage.md)：文件、执行产物与备份存储。

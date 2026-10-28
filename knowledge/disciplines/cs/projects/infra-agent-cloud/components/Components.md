@@ -4,7 +4,7 @@
 
 ## 1. 服务端组件
 
-- [Server](Server.md)：处理业务请求、授权、任务管理与调度。
+- [Server](server/Server.md)：处理业务请求、授权、任务管理与调度。
 - [Runtime](Runtime.md)：准备执行环境，管理任务执行进程的生命周期。
 - [Executor](Executor.md)：适配 Agent 引擎，负责启动、配置与输出解析。
 
