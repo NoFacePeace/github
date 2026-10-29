@@ -165,3 +165,7 @@ uname: Operation not permitted
 | Seccomp | 过滤进程能够请求的系统调用。 |
 
 三者可以组合使用，但职责不同。seccomp 本身不限制 CPU、内存额度，也不能代替完整的文件访问控制或容器隔离。
+
+## 7. 容器默认策略
+
+Linux 提供过滤机制，具体规则由使用方制定。Docker、containerd 和 Podman 等项目维护了可参考的默认策略，详见[容器默认策略](DefaultProfiles.md)。
