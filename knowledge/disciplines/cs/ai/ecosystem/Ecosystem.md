@@ -24,3 +24,4 @@ AI 生态包括模型、应用产品、开发框架、托管平台与编排服�
 ## 3. 智能体产品
 
 - [Gemini Agent](GeminiAgent.md)：Google 面向企业工作的智能体产品。
+- [Multica](Multica.md)：面向人类与多个 AI 智能体的任务管理与协作平台，支持连接已有编程智能体和自托管。
