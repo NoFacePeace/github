@@ -65,7 +65,8 @@ func main() {
 	// 在应用入口集中组装服务、处理器和路由依赖。
 	healthService := services.NewHealthService()
 	healthHandler := handlers.NewHealthHandler(healthService)
-	taskService := tasks.NewTaskService()
+	// 工作区服务尚未实现，暂时不注入。
+	taskService := tasks.NewTaskService(nil)
 	taskHandler := handlers.NewTaskHandler(taskService)
 	routerDependencies := routers.Dependencies{
 		HealthHandler: healthHandler,

@@ -19,7 +19,7 @@ func NewTaskHandler(taskService tasks.Service) *TaskHandler {
 
 // Create 创建一个任务。
 func (h *TaskHandler) Create(c *gin.Context) {
-	task, err := h.taskService.Create(c.Request.Context())
+	task, err := h.taskService.Create(c.Request.Context(), tasks.CreateTaskRequest{})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "create task"})
 		return
