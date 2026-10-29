@@ -38,7 +38,7 @@
 
 ### 3.1 操作系统级限制
 
-进程可以直接在本机运行，由系统限制其资源访问。例如 macOS [Seatbelt](Seatbelt.md) 可限制文件和网络操作，Linux 可使用 [Bubblewrap](Bubblewrap.md) 构造隔离环境，并结合 seccomp 等机制。
+进程可以直接在本机运行，由系统限制其资源访问。例如 macOS [Seatbelt](Seatbelt.md) 可限制文件和网络操作，Linux 可使用 [Bubblewrap](bubblewrap/Bubblewrap.md) 构造隔离环境，并结合 seccomp 等机制。
 
 不同机制能力不同：文件访问限制、系统调用过滤和资源视图隔离不能互相等同。
 

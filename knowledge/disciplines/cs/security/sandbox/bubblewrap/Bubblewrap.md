@@ -8,16 +8,7 @@ Bubblewrap（命令名 `bwrap`）是 Linux 沙箱构造工具，通过 namespace
 
 ## 2. 常见参数
 
-| 参数 | 作用 |
-| --- | --- |
-| `--ro-bind SRC DEST` | 只读映射目录 |
-| `--bind SRC DEST` | 可写映射目录，仍受文件权限约束 |
-| `--tmpfs DEST` | 提供临时文件系统 |
-| `--unshare-net` | 创建独立网络 namespace |
-| `--unshare-pid` | 隔离进程视图 |
-| `--proc /proc` | 挂载 proc 文件系统 |
-| `--dev /dev` | 提供基础设备节点 |
-| `--new-session` | 创建新会话 |
+- [参数](parameters/Parameters.md)：文件映射、namespace、会话和系统调用过滤等参数。
 
 ## 3. 示例
 
