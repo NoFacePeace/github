@@ -103,6 +103,34 @@ LIMIT 10;
 
 实际应用需传入上一页最后一个 id，并保持相同的筛选和排序条件。分页期间并发修改数据仍可能影响跨页结果；复杂排序还需要使用对应的排序键构造游标条件。
 
+### 5.1 分页查询与总数
+
+需要同时返回当前页数据和符合条件的总条数时，通常分别执行分页查询和 COUNT(*) 查询，再由应用层组装结果：
+
+```sql
+-- 当前页：跳过前 20 条，最多返回 10 条
+SELECT id, name
+FROM users
+WHERE age >= 18
+ORDER BY id
+LIMIT 10 OFFSET 20;
+
+-- 符合条件的总条数，不受当前页限制
+SELECT COUNT(*) AS total_size
+FROM users
+WHERE age >= 18;
+```
+
+两条查询的业务筛选条件必须一致。总数查询不加分页的 LIMIT、OFFSET，也不需要用于展示的 ORDER BY；返回的 total_size 是整个筛选结果的行数，不是当前页行数。使用游标分页时，如果总数表示整个集合的大小，COUNT 查询也不应带上 `id > 上一页最后一个 id` 这类仅用于翻页的条件。
+
+涉及 JOIN、DISTINCT 或 GROUP BY 时，需要先明确统计对象：连接后的行数不一定等于用户数量，分组前的记录数也不等于分组后的结果数。若分页展示的是去重或分组结果，应按相同语义统计，例如对未分页的结果使用子查询再执行 COUNT(*)。
+
+InnoDB 不保存可直接读取的精确总行数。COUNT(*) 需要统计当前事务可见的记录，过滤条件、索引和数据规模都会影响开销；分页只取少量数据，不代表统计总数也只需读取少量记录。不需要精确总数时，可以不查询总数，或采用明确标注的缓存值、估算值。参见 [MySQL 聚合函数文档](https://dev.mysql.com/doc/refman/8.4/en/aggregate-functions.html)。
+
+两条查询之间若有并发写入，当前页与总数可能来自不同的数据快照。要求二者基于同一快照时，可在同一连接的显式 REPEATABLE READ 事务中执行这两条普通一致性读，且期间不修改相关数据；READ COMMITTED 下即使在同一事务中，每次一致性读仍会获取新快照。该方式只保证本次两条查询的快照一致，不保证后续翻页请求仍使用同一快照。参见 [MySQL 一致性非锁定读文档](https://dev.mysql.com/doc/refman/8.4/en/innodb-consistent-read.html)。
+
+不建议使用 SQL_CALC_FOUND_ROWS 搭配 FOUND_ROWS() 获取分页前的总数：两者从 MySQL 8.0.17 起已弃用，官方建议改用分页查询加独立 COUNT(*) 查询。参见 [MySQL 信息函数文档](https://dev.mysql.com/doc/refman/8.4/en/information-functions.html)。
+
 ## 6. 逻辑处理与执行计划
 
 理解常见查询语义时，可以按 FROM / JOIN → WHERE → GROUP BY → HAVING → SELECT → DISTINCT → ORDER BY → LIMIT 的顺序分析。这是概念上的逻辑顺序，不代表引擎逐步执行的物理过程。
