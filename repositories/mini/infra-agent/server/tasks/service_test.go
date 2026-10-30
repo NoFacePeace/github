@@ -48,7 +48,9 @@ func TestNewTaskServiceInjectsDependencies(t *testing.T) {
 	workspaceService := &stubWorkspaceService{}
 	workspaceConfig := workspaces.Config{DataDirectory: t.TempDir()}
 	cfg := Config{DefaultModel: "provider/model"}
-	taskService := NewTaskService(workspaceService, workspaceConfig, cfg).(*service)
+	modelManager := &stubModelManager{}
+	providerManager := &stubProviderManager{}
+	taskService := NewTaskService(workspaceService, workspaceConfig, cfg, modelManager, providerManager).(*service)
 	if taskService.workspaceService != workspaceService {
 		t.Fatal("NewTaskService() did not retain the workspace service")
 	}
@@ -58,6 +60,36 @@ func TestNewTaskServiceInjectsDependencies(t *testing.T) {
 	if taskService.config != cfg {
 		t.Fatal("NewTaskService() did not retain the task config")
 	}
+	if taskService.modelManager != modelManager {
+		t.Fatal("NewTaskService() did not retain the model manager")
+	}
+	if taskService.providerManager != providerManager {
+		t.Fatal("NewTaskService() did not retain the provider manager")
+	}
+}
+
+func TestServiceCreateSetsGoal(t *testing.T) {
+	const goal = "Add model enable support"
+	taskStorage := &stubTaskStorage{}
+	taskService := NewTaskService(nil, workspaces.Config{}, Config{}, nil, nil).(*service)
+	taskService.manager.storage = taskStorage
+
+	task, err := taskService.Create(context.Background(), CreateTaskRequest{
+		Goal:               goal,
+		WorkspaceDirectory: t.TempDir(),
+	})
+	if err != nil {
+		t.Fatalf("Create() error = %v", err)
+	}
+	if task.Goal != goal {
+		t.Errorf("Create() goal = %q, want %q", task.Goal, goal)
+	}
+	if taskStorage.createTaskCalls != 1 {
+		t.Errorf("CreateTask() calls = %d, want 1", taskStorage.createTaskCalls)
+	}
+	if taskStorage.task.Goal != goal {
+		t.Errorf("stored task goal = %q, want %q", taskStorage.task.Goal, goal)
+	}
 }
 
 func TestServiceCreateGetsWorkspace(t *testing.T) {
@@ -66,7 +98,7 @@ func TestServiceCreateGetsWorkspace(t *testing.T) {
 
 	workspaceService := &stubWorkspaceService{status: workspaces.StatusActive, directory: t.TempDir()}
 	taskStorage := &stubTaskStorage{}
-	taskService := NewTaskService(workspaceService, workspaces.Config{}, Config{}).(*service)
+	taskService := NewTaskService(workspaceService, workspaces.Config{}, Config{}, nil, nil).(*service)
 	taskService.manager.storage = taskStorage
 	task, err := taskService.Create(ctx, CreateTaskRequest{
 		WorkspaceID:        "workspace_123",
@@ -101,7 +133,7 @@ func TestServiceCreateGetsWorkspace(t *testing.T) {
 func TestServiceCreateWrapsManagerError(t *testing.T) {
 	wantErr := errors.New("storage unavailable")
 	taskStorage := &stubTaskStorage{err: wantErr}
-	taskService := NewTaskService(nil, workspaces.Config{}, Config{}).(*service)
+	taskService := NewTaskService(nil, workspaces.Config{}, Config{}, nil, nil).(*service)
 	taskService.manager.storage = taskStorage
 
 	task, err := taskService.Create(context.Background(), CreateTaskRequest{
@@ -125,7 +157,7 @@ func TestServiceCreateReturnsWorkspaceError(t *testing.T) {
 	wantErr := errors.New("workspace not found")
 	workspaceService := &stubWorkspaceService{err: wantErr}
 	taskStorage := &stubTaskStorage{}
-	taskService := NewTaskService(workspaceService, workspaces.Config{}, Config{}).(*service)
+	taskService := NewTaskService(workspaceService, workspaces.Config{}, Config{}, nil, nil).(*service)
 	taskService.manager.storage = taskStorage
 
 	_, err := taskService.Create(context.Background(), CreateTaskRequest{
@@ -146,7 +178,7 @@ func TestServiceCreateReturnsWorkspaceError(t *testing.T) {
 func TestServiceCreateRejectsArchivedWorkspace(t *testing.T) {
 	workspaceService := &stubWorkspaceService{status: workspaces.StatusArchived}
 	taskStorage := &stubTaskStorage{}
-	taskService := NewTaskService(workspaceService, workspaces.Config{}, Config{}).(*service)
+	taskService := NewTaskService(workspaceService, workspaces.Config{}, Config{}, nil, nil).(*service)
 	taskService.manager.storage = taskStorage
 
 	_, err := taskService.Create(context.Background(), CreateTaskRequest{
@@ -183,7 +215,7 @@ func TestServiceCreateUsesWorkspaceDirectory(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			taskStorage := &stubTaskStorage{}
-			taskService := NewTaskService(nil, workspaces.Config{}, Config{}).(*service)
+			taskService := NewTaskService(nil, workspaces.Config{}, Config{}, nil, nil).(*service)
 			taskService.manager.storage = taskStorage
 
 			task, err := taskService.Create(context.Background(), CreateTaskRequest{
@@ -229,7 +261,7 @@ func TestServiceCreateRejectsWorkspaceDirectory(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			taskStorage := &stubTaskStorage{}
-			taskService := NewTaskService(nil, workspaces.Config{}, Config{}).(*service)
+			taskService := NewTaskService(nil, workspaces.Config{}, Config{}, nil, nil).(*service)
 			taskService.manager.storage = taskStorage
 
 			_, err := taskService.Create(context.Background(), CreateTaskRequest{WorkspaceDirectory: tt.directory})
@@ -266,7 +298,7 @@ func TestServiceCreateEnsuresWorkspaceDirectory(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := workspaces.Config{DataDirectory: filepath.Join(t.TempDir(), "data")}
 			taskStorage := &stubTaskStorage{}
-			taskService := NewTaskService(nil, cfg, Config{}).(*service)
+			taskService := NewTaskService(nil, cfg, Config{}, nil, nil).(*service)
 			taskService.manager.storage = taskStorage
 
 			task, err := taskService.Create(context.Background(), CreateTaskRequest{WorkspaceID: tt.workspaceID})
@@ -316,7 +348,7 @@ func TestServiceCreateReturnsEnsureDirectoryError(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			taskStorage := &stubTaskStorage{}
-			taskService := NewTaskService(nil, tt.cfg, Config{}).(*service)
+			taskService := NewTaskService(nil, tt.cfg, Config{}, nil, nil).(*service)
 			taskService.manager.storage = taskStorage
 
 			_, err := taskService.Create(context.Background(), CreateTaskRequest{WorkspaceID: tt.workspaceID})
@@ -350,7 +382,7 @@ func TestServiceCreateAgentID(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			taskStorage := &stubTaskStorage{}
-			taskService := NewTaskService(nil, workspaces.Config{}, Config{}).(*service)
+			taskService := NewTaskService(nil, workspaces.Config{}, Config{}, nil, nil).(*service)
 			taskService.manager.storage = taskStorage
 
 			task, err := taskService.Create(context.Background(), CreateTaskRequest{
@@ -365,45 +397,6 @@ func TestServiceCreateAgentID(t *testing.T) {
 			}
 			if taskStorage.task.AgentID != tt.want {
 				t.Errorf("stored Task.AgentID = %q, want %q", taskStorage.task.AgentID, tt.want)
-			}
-			if taskStorage.createTaskCalls != 1 {
-				t.Errorf("CreateTask() calls = %d, want 1", taskStorage.createTaskCalls)
-			}
-		})
-	}
-}
-
-func TestServiceCreateModel(t *testing.T) {
-	tests := []struct {
-		name         string
-		model        string
-		defaultModel string
-		want         string
-	}{
-		{name: "default", defaultModel: "provider/default-model", want: "provider/default-model"},
-		{name: "specified", model: "provider/custom-model", defaultModel: "provider/default-model", want: "provider/custom-model"},
-		{name: "specified without default", model: "provider/custom-model", want: "provider/custom-model"},
-		{name: "both empty"},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			taskStorage := &stubTaskStorage{}
-			taskService := NewTaskService(nil, workspaces.Config{}, Config{DefaultModel: tt.defaultModel}).(*service)
-			taskService.manager.storage = taskStorage
-
-			task, err := taskService.Create(context.Background(), CreateTaskRequest{
-				Model:              tt.model,
-				WorkspaceDirectory: t.TempDir(),
-			})
-			if err != nil {
-				t.Fatalf("Create() error = %v", err)
-			}
-			if task.Model != tt.want {
-				t.Errorf("Task.Model = %q, want %q", task.Model, tt.want)
-			}
-			if taskStorage.task.Model != tt.want {
-				t.Errorf("stored Task.Model = %q, want %q", taskStorage.task.Model, tt.want)
 			}
 			if taskStorage.createTaskCalls != 1 {
 				t.Errorf("CreateTask() calls = %d, want 1", taskStorage.createTaskCalls)
@@ -428,7 +421,7 @@ func TestServiceCreateTriggerType(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			task, err := NewTaskService(nil, workspaces.Config{}, Config{}).Create(context.Background(), CreateTaskRequest{
+			task, err := NewTaskService(nil, workspaces.Config{}, Config{}, nil, nil).Create(context.Background(), CreateTaskRequest{
 				TriggerType:        tt.triggerType,
 				WorkspaceDirectory: t.TempDir(),
 			})

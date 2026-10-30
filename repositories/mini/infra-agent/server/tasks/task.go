@@ -19,9 +19,9 @@ const (
 
 // Task 表示一个任务。
 type Task struct {
+	Goal               string // 任务的初始目标。
 	TriggerType        TriggerType
 	AgentID            string
-	Model              string
 	WorkspaceID        string
 	WorkspaceDirectory string
 }
