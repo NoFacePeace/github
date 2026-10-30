@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"testing/synctest"
+	"time"
 
 	"infra-agent/server/agents"
 	"infra-agent/server/workspaces"
@@ -47,7 +49,7 @@ func (s *stubTaskStorage) CreateRun(_ context.Context, _ run) error {
 func TestNewTaskServiceInjectsDependencies(t *testing.T) {
 	workspaceService := &stubWorkspaceService{}
 	workspaceConfig := workspaces.Config{DataDirectory: t.TempDir()}
-	cfg := Config{DefaultModel: "provider/model"}
+	cfg := Config{DefaultModel: "provider/model", TitleTimeout: 5 * time.Second}
 	modelManager := &stubModelManager{}
 	providerManager := &stubProviderManager{}
 	taskService := NewTaskService(workspaceService, workspaceConfig, cfg, modelManager, providerManager).(*service)
@@ -65,6 +67,27 @@ func TestNewTaskServiceInjectsDependencies(t *testing.T) {
 	}
 	if taskService.providerManager != providerManager {
 		t.Fatal("NewTaskService() did not retain the provider manager")
+	}
+}
+
+func TestNewTaskServiceTitleTimeout(t *testing.T) {
+	tests := []struct {
+		name    string
+		timeout time.Duration
+		want    time.Duration
+	}{
+		{name: "unconfigured", want: 30 * time.Second},
+		{name: "negative", timeout: -time.Second, want: 30 * time.Second},
+		{name: "configured", timeout: 5 * time.Second, want: 5 * time.Second},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := Config{TitleTimeout: tt.timeout}
+			taskService := NewTaskService(nil, workspaces.Config{}, cfg, nil, nil).(*service)
+			if got := taskService.config.TitleTimeout; got != tt.want {
+				t.Errorf("TitleTimeout = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }
 
@@ -90,6 +113,77 @@ func TestServiceCreateSetsGoal(t *testing.T) {
 	if taskStorage.task.Goal != goal {
 		t.Errorf("stored task goal = %q, want %q", taskStorage.task.Goal, goal)
 	}
+}
+
+func TestServiceCreateSetsTitleFromGoal(t *testing.T) {
+	tests := []struct {
+		name          string
+		goal          string
+		maxTitleRunes int
+		want          string
+	}{
+		{name: "goal below limit", goal: "Goal text", maxTitleRunes: 10, want: "Goal text"},
+		{name: "truncate goal", goal: "Goal text", maxTitleRunes: 5, want: "Go..."},
+		{name: "empty goal", maxTitleRunes: 5},
+		{name: "unconfigured limit", goal: "Goal text", want: "Goal text"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			taskStorage := &stubTaskStorage{}
+			cfg := Config{MaxTitleRunes: tt.maxTitleRunes}
+			taskService := NewTaskService(nil, workspaces.Config{}, cfg, nil, nil).(*service)
+			taskService.manager.storage = taskStorage
+
+			task, err := taskService.Create(context.Background(), CreateTaskRequest{
+				Goal:               tt.goal,
+				WorkspaceDirectory: t.TempDir(),
+			})
+			if err != nil {
+				t.Fatalf("Create() error = %v", err)
+			}
+			if task.Title != tt.want {
+				t.Errorf("Create() title = %q, want %q", task.Title, tt.want)
+			}
+			if taskStorage.createTaskCalls != 1 {
+				t.Errorf("CreateTask() calls = %d, want 1", taskStorage.createTaskCalls)
+			}
+			if taskStorage.task.Title != tt.want {
+				t.Errorf("stored task title = %q, want %q", taskStorage.task.Title, tt.want)
+			}
+			if task.Goal != tt.goal || taskStorage.task.Goal != tt.goal {
+				t.Errorf("Create() goal = %q, stored goal = %q, want %q", task.Goal, taskStorage.task.Goal, tt.goal)
+			}
+		})
+	}
+}
+
+func TestServiceCreateAutoTitleKeepsFallback(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+		taskStorage := &stubTaskStorage{}
+		cfg := Config{AutoTitle: true, MaxTitleRunes: 5}
+		taskService := NewTaskService(nil, workspaces.Config{}, cfg, nil, nil).(*service)
+		taskService.manager.storage = taskStorage
+
+		task, err := taskService.Create(ctx, CreateTaskRequest{
+			Goal:               "Goal text",
+			WorkspaceDirectory: t.TempDir(),
+		})
+		if err != nil {
+			t.Fatalf("Create() error = %v", err)
+		}
+		cancel()
+		synctest.Wait()
+
+		const want = "Go..."
+		if task.Title != want || taskStorage.task.Title != want {
+			t.Errorf("task title = %q, stored title = %q, want %q", task.Title, taskStorage.task.Title, want)
+		}
+		if taskStorage.createTaskCalls != 1 {
+			t.Errorf("CreateTask() calls = %d, want 1", taskStorage.createTaskCalls)
+		}
+	})
 }
 
 func TestServiceCreateGetsWorkspace(t *testing.T) {

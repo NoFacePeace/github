@@ -3,6 +3,7 @@ package tasks
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"strings"
 
 	"infra-agent/server/agents"
@@ -42,6 +43,9 @@ func NewTaskService(
 	modelManager providers.ModelManager,
 	providerManager providers.Manager,
 ) Service {
+	if cfg.TitleTimeout <= 0 {
+		cfg.TitleTimeout = defaultTitleTimeout
+	}
 	return &service{
 		config:           cfg,
 		manager:          newManager(),
@@ -88,12 +92,13 @@ func (s *service) Create(ctx context.Context, request CreateTaskRequest) (Task, 
 	}
 	task := Task{
 		Goal:               request.Goal,
+		Title:              truncateRunes(request.Goal, s.config.MaxTitleRunes),
 		TriggerType:        request.TriggerType,
 		AgentID:            request.AgentID,
 		WorkspaceID:        workspaceID,
 		WorkspaceDirectory: workspaceDirectory,
 	}
-	task, err := s.manager.CreateTask(ctx, task)
+	task, err := s.manager.Create(ctx, task)
 	if err != nil {
 		return Task{}, fmt.Errorf("create task: %w", err)
 	}
@@ -103,6 +108,27 @@ func (s *service) Create(ctx context.Context, request CreateTaskRequest) (Task, 
 	if _, err := s.startRun(ctx, task); err != nil {
 		return Task{}, fmt.Errorf("start run: %w", err)
 	}
+	if s.config.AutoTitle {
+		go func(taskID, goal, model string) {
+			// 保留请求上下文中的值，但使用独立的取消生命周期和超时。
+			titleCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), s.config.TitleTimeout)
+			defer cancel()
+
+			title, err := s.generateTitle(titleCtx, goal, model)
+			if err != nil {
+				slog.ErrorContext(titleCtx, "generate task title", "task_id", taskID, "error", err)
+				return
+			}
+			title = strings.TrimSpace(title)
+			if title == "" {
+				return
+			}
+			title = truncateRunes(title, s.config.MaxTitleRunes)
+			if err := s.manager.Update(titleCtx, taskID, UpdateTaskRequest{Title: &title}); err != nil {
+				slog.ErrorContext(titleCtx, "update task title", "task_id", taskID, "error", err)
+			}
+		}(task.ID, task.Goal, request.Model)
+	}
 	return task, nil
 }
 
@@ -110,6 +136,12 @@ func (s *service) Create(ctx context.Context, request CreateTaskRequest) (Task, 
 func (s *service) startRun(ctx context.Context, task Task) (run, error) {
 	// TODO: 创建运行、保存任务关联并启动执行。
 	return run{}, nil
+}
+
+// generateTitle 根据任务目标生成标题，不更新任务。
+func (s *service) generateTitle(ctx context.Context, goal, model string) (string, error) {
+	// TODO: 调用模型生成任务标题。
+	return "", nil
 }
 
 // resolveModelMaxOutputTokens 根据模型标识确定最大输出 token 数。
