@@ -22,13 +22,14 @@ type CreateTaskRequest struct {
 	TriggerType        TriggerType
 	AgentID            string
 	Model              string
+	AttachmentIDs      []string
 	WorkspaceID        string
 	WorkspaceDirectory string
 }
 
 type service struct {
 	config           Config
-	storage          storage
+	store            store
 	workspaceService workspaces.Service
 	workspaceConfig  workspaces.Config
 	modelManager     providers.ModelManager
@@ -62,7 +63,7 @@ func (s *service) Create(ctx context.Context, request CreateTaskRequest) (Task, 
 	}
 	workspaceID := request.WorkspaceID
 	workspaceDirectory := request.WorkspaceDirectory
-	if s.workspaceService != nil {
+	if workspaceID != "" {
 		workspace, err := s.workspaceService.Get(ctx, request.WorkspaceID)
 		if err != nil {
 			return Task{}, fmt.Errorf("get workspace %q: %w", request.WorkspaceID, err)
@@ -77,9 +78,7 @@ func (s *service) Create(ctx context.Context, request CreateTaskRequest) (Task, 
 			return Task{}, fmt.Errorf("validate workspace directory: %w", err)
 		}
 	} else {
-		if workspaceID == "" {
-			workspaceID = workspaces.DefaultWorkspaceID
-		}
+		workspaceID = workspaces.DefaultWorkspaceID
 		var err error
 		workspaceDirectory, err = workspaces.EnsureDirectory(s.workspaceConfig, workspaceID)
 		if err != nil {
@@ -89,7 +88,12 @@ func (s *service) Create(ctx context.Context, request CreateTaskRequest) (Task, 
 	if request.AgentID == "" {
 		request.AgentID = agents.DefaultAgentID
 	}
+	taskID, err := newID("task")
+	if err != nil {
+		return Task{}, fmt.Errorf("generate task id: %w", err)
+	}
 	task := Task{
+		ID:                 taskID,
 		Goal:               request.Goal,
 		Title:              truncateRunes(request.Goal, s.config.MaxTitleRunes),
 		TriggerType:        request.TriggerType,
@@ -97,18 +101,16 @@ func (s *service) Create(ctx context.Context, request CreateTaskRequest) (Task, 
 		WorkspaceID:        workspaceID,
 		WorkspaceDirectory: workspaceDirectory,
 	}
-	if s.storage != nil {
-		if err := s.storage.CreateTask(ctx, task); err != nil {
-			return Task{}, fmt.Errorf("create task: %w", err)
-		}
+	if err := s.store.CreateTask(ctx, task); err != nil {
+		return Task{}, fmt.Errorf("create task: %w", err)
 	}
 	if request.Model == "" {
 		request.Model = s.config.DefaultModel
 	}
-	if _, err := s.startRun(ctx, task); err != nil {
+	if _, err := s.startRun(ctx, task, request.AttachmentIDs); err != nil {
 		return Task{}, fmt.Errorf("start run: %w", err)
 	}
-	if s.config.AutoTitle && s.storage != nil {
+	if s.config.AutoTitle {
 		go func(taskID, goal, model string) {
 			// 保留请求上下文中的值，但使用独立的取消生命周期和超时。
 			titleCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), s.config.TitleTimeout)
@@ -124,7 +126,7 @@ func (s *service) Create(ctx context.Context, request CreateTaskRequest) (Task, 
 				return
 			}
 			title = truncateRunes(title, s.config.MaxTitleRunes)
-			if err := s.storage.UpdateTask(titleCtx, taskID, UpdateTaskRequest{Title: &title}); err != nil {
+			if err := s.store.UpdateTask(titleCtx, taskID, UpdateTaskRequest{Title: &title}); err != nil {
 				slog.ErrorContext(titleCtx, "update task title", "task_id", taskID, "error", err)
 			}
 		}(task.ID, task.Goal, request.Model)
@@ -133,9 +135,27 @@ func (s *service) Create(ctx context.Context, request CreateTaskRequest) (Task, 
 }
 
 // startRun 为任务创建并启动一次运行。
-func (s *service) startRun(ctx context.Context, task Task) (run, error) {
-	// TODO: 创建运行、保存任务关联并启动执行。
-	return run{}, nil
+func (s *service) startRun(ctx context.Context, task Task, attachmentIDs []string) (run, error) {
+	runs, err := s.store.ListRuns(ctx, ListRunsRequest{TaskID: task.ID})
+	if err != nil {
+		return run{}, fmt.Errorf("list runs for task %q: %w", task.ID, err)
+	}
+	if len(runs) > 0 {
+		latest := runs[len(runs)-1]
+		if !latest.Status.IsTerminal() {
+			return run{}, fmt.Errorf("latest run for task %q is not terminal: %q", task.ID, latest.Status)
+		}
+	}
+	runID, err := newID("run")
+	if err != nil {
+		return run{}, fmt.Errorf("generate run id: %w", err)
+	}
+	item := run{ID: runID, Status: RunStatusPending}
+	if err := s.store.CreateRunWithAttachments(ctx, task.ID, item, attachmentIDs); err != nil {
+		return run{}, fmt.Errorf("create run with attachments: %w", err)
+	}
+	// TODO: 提交成功后启动执行。
+	return item, nil
 }
 
 // generateTitle 根据任务目标生成标题，不更新任务。
@@ -150,12 +170,6 @@ func (s *service) resolveModelMaxOutputTokens(ctx context.Context, model string)
 	providerName, modelID, ok := strings.Cut(model, "/")
 	if !ok || providerName == "" || modelID == "" {
 		return 0, fmt.Errorf("invalid model identifier %q: expected provider/model", model)
-	}
-	if s.modelManager == nil {
-		return 0, fmt.Errorf("model manager is not configured")
-	}
-	if s.providerManager == nil {
-		return 0, fmt.Errorf("provider manager is not configured")
 	}
 	models, err := s.modelManager.List(ctx)
 	if err != nil {

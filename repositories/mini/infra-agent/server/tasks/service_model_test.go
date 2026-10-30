@@ -110,7 +110,7 @@ func TestResolveModelMaxOutputTokens(t *testing.T) {
 				"provider_1": {ID: "provider_1", Name: "provider"},
 				"provider_2": {ID: "provider_2", Name: "other-provider"},
 			}}
-			taskService := NewTaskService(nil, workspaces.Config{}, Config{}, modelManager, providerManager).(*service)
+			taskService := NewTaskService(&stubWorkspaceService{}, workspaces.Config{}, Config{}, modelManager, providerManager).(*service)
 
 			got, err := taskService.resolveModelMaxOutputTokens(ctx, tt.model)
 			if tt.wantErr == "" {
@@ -141,7 +141,7 @@ func TestResolveModelMaxOutputTokensRejectsInvalidIdentifier(t *testing.T) {
 		t.Run(model, func(t *testing.T) {
 			modelManager := &stubModelManager{}
 			providerManager := &stubProviderManager{}
-			taskService := NewTaskService(nil, workspaces.Config{}, Config{}, modelManager, providerManager).(*service)
+			taskService := NewTaskService(&stubWorkspaceService{}, workspaces.Config{}, Config{}, modelManager, providerManager).(*service)
 
 			got, err := taskService.resolveModelMaxOutputTokens(context.Background(), model)
 			if err == nil || !strings.HasPrefix(err.Error(), "invalid model identifier ") {
@@ -152,37 +152,6 @@ func TestResolveModelMaxOutputTokensRejectsInvalidIdentifier(t *testing.T) {
 			}
 			if modelManager.calls != 0 || len(providerManager.ids) != 0 {
 				t.Error("invalid identifiers must not query managers")
-			}
-		})
-	}
-}
-
-func TestResolveModelMaxOutputTokensRejectsMissingManagers(t *testing.T) {
-	tests := []struct {
-		name            string
-		modelManager    providers.ModelManager
-		providerManager providers.Manager
-		wantErr         string
-	}{
-		{name: "both missing", wantErr: "model manager is not configured"},
-		{name: "model manager missing", providerManager: &stubProviderManager{}, wantErr: "model manager is not configured"},
-		{name: "provider manager missing", modelManager: &stubModelManager{}, wantErr: "provider manager is not configured"},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			taskService := NewTaskService(nil, workspaces.Config{}, Config{}, tt.modelManager, tt.providerManager).(*service)
-			got, err := taskService.resolveModelMaxOutputTokens(context.Background(), "provider/model")
-			if err == nil || err.Error() != tt.wantErr {
-				t.Fatalf("resolveModelMaxOutputTokens() error = %v, want %q", err, tt.wantErr)
-			}
-			if got != 0 {
-				t.Errorf("resolveModelMaxOutputTokens() = %d, want 0", got)
-			}
-			if manager, ok := tt.modelManager.(*stubModelManager); ok && manager.calls != 0 {
-				t.Error("missing dependencies must not query the model manager")
-			}
-			if manager, ok := tt.providerManager.(*stubProviderManager); ok && len(manager.ids) != 0 {
-				t.Error("missing dependencies must not query the provider manager")
 			}
 		})
 	}
@@ -207,7 +176,7 @@ func TestResolveModelMaxOutputTokensWrapsErrors(t *testing.T) {
 				err:    tt.listErr,
 			}
 			providerManager := &stubProviderManager{err: tt.getErr}
-			taskService := NewTaskService(nil, workspaces.Config{}, Config{}, modelManager, providerManager).(*service)
+			taskService := NewTaskService(&stubWorkspaceService{}, workspaces.Config{}, Config{}, modelManager, providerManager).(*service)
 
 			got, err := taskService.resolveModelMaxOutputTokens(context.Background(), "provider/model")
 			if !errors.Is(err, wantErr) {
