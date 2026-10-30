@@ -13,3 +13,7 @@
 ## 3. API 设计
 
 - [API 设计](api/API.md)：接口的资源建模、操作语义、请求与响应约定及演进规则。
+
+## 4. 设计模式
+
+- [设计模式](design-patterns/DesignPatterns.md)：常见设计问题的可复用解决思路及适用边界。
