@@ -28,7 +28,7 @@ type CreateTaskRequest struct {
 
 type service struct {
 	config           Config
-	manager          *manager
+	storage          storage
 	workspaceService workspaces.Service
 	workspaceConfig  workspaces.Config
 	modelManager     providers.ModelManager
@@ -48,7 +48,6 @@ func NewTaskService(
 	}
 	return &service{
 		config:           cfg,
-		manager:          newManager(),
 		workspaceService: workspaceService,
 		workspaceConfig:  workspaceConfig,
 		modelManager:     modelManager,
@@ -98,9 +97,10 @@ func (s *service) Create(ctx context.Context, request CreateTaskRequest) (Task, 
 		WorkspaceID:        workspaceID,
 		WorkspaceDirectory: workspaceDirectory,
 	}
-	task, err := s.manager.Create(ctx, task)
-	if err != nil {
-		return Task{}, fmt.Errorf("create task: %w", err)
+	if s.storage != nil {
+		if err := s.storage.CreateTask(ctx, task); err != nil {
+			return Task{}, fmt.Errorf("create task: %w", err)
+		}
 	}
 	if request.Model == "" {
 		request.Model = s.config.DefaultModel
@@ -108,7 +108,7 @@ func (s *service) Create(ctx context.Context, request CreateTaskRequest) (Task, 
 	if _, err := s.startRun(ctx, task); err != nil {
 		return Task{}, fmt.Errorf("start run: %w", err)
 	}
-	if s.config.AutoTitle {
+	if s.config.AutoTitle && s.storage != nil {
 		go func(taskID, goal, model string) {
 			// 保留请求上下文中的值，但使用独立的取消生命周期和超时。
 			titleCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), s.config.TitleTimeout)
@@ -124,7 +124,7 @@ func (s *service) Create(ctx context.Context, request CreateTaskRequest) (Task, 
 				return
 			}
 			title = truncateRunes(title, s.config.MaxTitleRunes)
-			if err := s.manager.Update(titleCtx, taskID, UpdateTaskRequest{Title: &title}); err != nil {
+			if err := s.storage.UpdateTask(titleCtx, taskID, UpdateTaskRequest{Title: &title}); err != nil {
 				slog.ErrorContext(titleCtx, "update task title", "task_id", taskID, "error", err)
 			}
 		}(task.ID, task.Goal, request.Model)
