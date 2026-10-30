@@ -19,7 +19,11 @@ const (
 
 // Task 表示一个任务。
 type Task struct {
-	TriggerType TriggerType
+	TriggerType        TriggerType
+	AgentID            string
+	Model              string
+	WorkspaceID        string
+	WorkspaceDirectory string
 }
 
 // createRun 创建任务的一次运行。

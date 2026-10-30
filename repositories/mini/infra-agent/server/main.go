@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 	"time"
 
@@ -20,9 +21,19 @@ import (
 	"infra-agent/server/routers"
 	"infra-agent/server/services"
 	"infra-agent/server/tasks"
+	"infra-agent/server/workspaces"
 )
 
+const defaultDataDirectory = "data"
+
 func main() {
+	// 本地开发使用当前工作目录下的 data 目录，通过配置注入任务服务。
+	dataDirectory, err := filepath.Abs(defaultDataDirectory)
+	if err != nil {
+		log.Fatalf("resolve data directory: %v", err)
+	}
+	workspaceConfig := workspaces.Config{DataDirectory: dataDirectory}
+
 	// 监听进程退出信号，供服务和关闭流程共同使用。
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
@@ -66,7 +77,7 @@ func main() {
 	healthService := services.NewHealthService()
 	healthHandler := handlers.NewHealthHandler(healthService)
 	// 工作区服务尚未实现，暂时不注入。
-	taskService := tasks.NewTaskService(nil)
+	taskService := tasks.NewTaskService(nil, workspaceConfig, tasks.Config{})
 	taskHandler := handlers.NewTaskHandler(taskService)
 	routerDependencies := routers.Dependencies{
 		HealthHandler: healthHandler,

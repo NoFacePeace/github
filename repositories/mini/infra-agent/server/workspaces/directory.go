@@ -6,19 +6,26 @@ import (
 	"path/filepath"
 )
 
+const (
+	// DefaultWorkspaceID 是未指定工作空间时使用的默认 ID。
+	DefaultWorkspaceID     = "default"
+	workspaceDirectoryName = "workspaces"
+	workspaceDirectoryMode = 0o755
+)
+
 // EnsureDirectory 根据配置确保工作目录存在，工作空间 ID 为空时使用 default。
 func EnsureDirectory(cfg Config, workspaceID string) (string, error) {
 	if !filepath.IsAbs(cfg.DataDirectory) {
 		return "", fmt.Errorf("data directory must be absolute: %q", cfg.DataDirectory)
 	}
 	if workspaceID == "" {
-		workspaceID = "default"
+		workspaceID = DefaultWorkspaceID
 	}
 	if !filepath.IsLocal(workspaceID) || filepath.Clean(workspaceID) != workspaceID || workspaceID == "." {
 		return "", fmt.Errorf("invalid workspace id %q", workspaceID)
 	}
-	directory := filepath.Join(cfg.DataDirectory, "workspaces", workspaceID)
-	if err := os.MkdirAll(directory, 0o755); err != nil {
+	directory := filepath.Join(cfg.DataDirectory, workspaceDirectoryName, workspaceID)
+	if err := os.MkdirAll(directory, workspaceDirectoryMode); err != nil {
 		return "", fmt.Errorf("create workspace directory %q: %w", directory, err)
 	}
 	return directory, nil
