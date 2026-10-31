@@ -128,6 +128,8 @@ func Slice() []int {
 
 函数因 panic 展开调用栈时，会执行相应函数中已登记的 defer。recover 需要在延迟调用的函数中直接调用，才能在符合条件时恢复当前 G 的 panic；它不能捕获其他 G 的 panic。
 
+具体调用规则、适用场景及任务边界的写法参见 [recover](../../builtins/Recover.md)。
+
 `os.Exit` 直接结束进程，不执行 defer。`main.main` 返回也不会等待其他 G 退出，更不会自动执行它们尚未触发的 defer。
 
 如果 defer 时保存的函数值是 nil，通常在退出时实际调用该函数才 panic；但登记时求值函数和参数的过程本身也可能立即 panic。

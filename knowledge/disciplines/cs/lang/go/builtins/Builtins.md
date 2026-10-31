@@ -13,7 +13,7 @@
 | 删除与清空 | `delete`、`clear` | 删除 map 条目，或清空 map、将切片元素置零 |
 | 最小与最大值 | `min`、`max` | 求有序值的最小值或最大值 |
 | 复数 | `complex`、`real`、`imag` | 构造复数、读取实部和虚部 |
-| 异常处理 | `panic`、`recover` | 发起和按条件恢复 panic |
+| 异常处理 | [panic](Panic.md)、[recover](Recover.md) | 发起和按条件恢复 panic |
 | 简单输出 | `print`、`println` | 实现相关的简单输出，不宜作为正式日志接口 |
 
 不同函数的支持版本和参数规则不同。例如 clear、min、max 从 Go 1.21 开始提供；new 的表达式参数形式从 Go 1.26 开始提供。
