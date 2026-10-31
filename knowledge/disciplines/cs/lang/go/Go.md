@@ -32,6 +32,6 @@ color: "#5B6CDA"
 
 - [Go 内建函数](builtins/Builtins.md)：make、new 等预声明内建函数的用途、行为和区别。
 
-## 8. 第三方库
+## 8. 库
 
-- [Go 第三方库](libraries/Libraries.md)：第三方依赖的接入、使用示例与资源管理。
+- [Go 库](libraries/Libraries.md)：标准库与第三方库的常用 API、使用示例及资源管理。
