@@ -19,6 +19,5 @@ color: "#5B6CDA"
 - [数据结构](data-structures/DataStructures.md)
 - [算法](algorithms/Algorithms.md)
 - [ACM](acm/ACM.md)：算法竞赛与解题笔记。
-- [架构](architecture/Architecture.md)
 - [软件工程](engineering/Engineering.md)
 - [项目](projects/Projects.md)：项目定位、设计与实现笔记。

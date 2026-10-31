@@ -7,3 +7,7 @@
 - [检索](retrieval/Retrieval.md)：索引构建、查询处理、候选召回与结果排序等组件的职责和协作方式。
 - [故障检测](failure-detection/FailureDetection.md)：通过心跳、健康探测等信号判断进程、节点或服务是否可能异常。
 - [协调](coordination/Coordination.md)：管理共享资源与执行权的归属、交接和失效隔离。
+
+## 1. 参考资料
+
+- [MicrosoftDocs：Azure Architecture Center](https://github.com/MicrosoftDocs/architecture-center/tree/main)：微软 Azure 架构中心的文档源码仓库，涵盖架构风格、设计模式、参考架构、技术选型和最佳实践。

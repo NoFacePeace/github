@@ -8,7 +8,7 @@ redo 与页修改紧密相关，但记录内容采用专门的恢复格式，不
 
 ## 2. 预写日志
 
-InnoDB 修改 Buffer Pool 中的页时产生相关 redo。将脏页写回数据文件前，必须确保恢复这些修改所需的 redo 已按规则持久化，这就是[预写日志（WAL）](../../../../../architecture/storage/WAL.md)的核心要求。
+InnoDB 修改 Buffer Pool 中的页时产生相关 redo。将脏页写回数据文件前，必须确保恢复这些修改所需的 redo 已按规则持久化，这就是[预写日志（WAL）](../../../../../engineering/architecture/storage/WAL.md)的核心要求。
 
 事务提交不要求立即写回所有修改过的数据页。通过先持久化日志，再逐步写回数据页，可以减少数据文件的随机写入压力。
 
