@@ -77,7 +77,10 @@ func main() {
 	healthService := services.NewHealthService()
 	healthHandler := handlers.NewHealthHandler(healthService)
 	// 工作区服务、模型及供应商管理器尚未实现，暂时不注入。
-	taskService := tasks.NewTaskService(nil, workspaceConfig, tasks.Config{}, nil, nil)
+	taskService, err := tasks.NewTaskService(nil, workspaceConfig, tasks.Config{}, nil, nil)
+	if err != nil {
+		log.Fatalf("initialize task service: %v", err)
+	}
 	taskHandler := handlers.NewTaskHandler(taskService)
 	routerDependencies := routers.Dependencies{
 		HealthHandler: healthHandler,

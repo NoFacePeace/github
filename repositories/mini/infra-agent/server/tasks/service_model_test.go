@@ -110,7 +110,7 @@ func TestResolveModelMaxOutputTokens(t *testing.T) {
 				"provider_1": {ID: "provider_1", Name: "provider"},
 				"provider_2": {ID: "provider_2", Name: "other-provider"},
 			}}
-			taskService := NewTaskService(&stubWorkspaceService{}, workspaces.Config{}, Config{}, modelManager, providerManager).(*service)
+			taskService := newTestTaskService(t, &stubWorkspaceService{}, workspaces.Config{}, Config{}, modelManager, providerManager)
 
 			got, err := taskService.resolveModelMaxOutputTokens(ctx, tt.model)
 			if tt.wantErr == "" {
@@ -141,7 +141,7 @@ func TestResolveModelMaxOutputTokensRejectsInvalidIdentifier(t *testing.T) {
 		t.Run(model, func(t *testing.T) {
 			modelManager := &stubModelManager{}
 			providerManager := &stubProviderManager{}
-			taskService := NewTaskService(&stubWorkspaceService{}, workspaces.Config{}, Config{}, modelManager, providerManager).(*service)
+			taskService := newTestTaskService(t, &stubWorkspaceService{}, workspaces.Config{}, Config{}, modelManager, providerManager)
 
 			got, err := taskService.resolveModelMaxOutputTokens(context.Background(), model)
 			if err == nil || !strings.HasPrefix(err.Error(), "invalid model identifier ") {
@@ -176,7 +176,7 @@ func TestResolveModelMaxOutputTokensWrapsErrors(t *testing.T) {
 				err:    tt.listErr,
 			}
 			providerManager := &stubProviderManager{err: tt.getErr}
-			taskService := NewTaskService(&stubWorkspaceService{}, workspaces.Config{}, Config{}, modelManager, providerManager).(*service)
+			taskService := newTestTaskService(t, &stubWorkspaceService{}, workspaces.Config{}, Config{}, modelManager, providerManager)
 
 			got, err := taskService.resolveModelMaxOutputTokens(context.Background(), "provider/model")
 			if !errors.Is(err, wantErr) {

@@ -28,6 +28,8 @@ type CreateTaskRequest struct {
 }
 
 type service struct {
+	executorID       string
+	executions       *executionRegistry
 	config           Config
 	store            store
 	workspaceService workspaces.Service
@@ -36,24 +38,32 @@ type service struct {
 	providerManager  providers.Manager
 }
 
-// NewTaskService 创建任务服务。
+// NewTaskService 创建任务服务，并为该执行器实例生成唯一标识。
 func NewTaskService(
 	workspaceService workspaces.Service,
 	workspaceConfig workspaces.Config,
 	cfg Config,
 	modelManager providers.ModelManager,
 	providerManager providers.Manager,
-) Service {
+) (Service, error) {
+	executorID, err := newID("executor")
+	if err != nil {
+		return nil, fmt.Errorf("generate executor id: %w", err)
+	}
 	if cfg.TitleTimeout <= 0 {
 		cfg.TitleTimeout = defaultTitleTimeout
 	}
 	return &service{
+		executorID: executorID,
+		executions: &executionRegistry{
+			active: make(map[string]*execution),
+		},
 		config:           cfg,
 		workspaceService: workspaceService,
 		workspaceConfig:  workspaceConfig,
 		modelManager:     modelManager,
 		providerManager:  providerManager,
-	}
+	}, nil
 }
 
 // Create 创建一个任务。
@@ -156,6 +166,12 @@ func (s *service) startRun(ctx context.Context, task Task, attachmentIDs []strin
 	}
 	// TODO: 提交成功后启动执行。
 	return item, nil
+}
+
+// launch 启动已创建的运行。
+func (s *service) launch(ctx context.Context, task Task, item run) error {
+	// TODO: 登记执行状态并启动运行。
+	return nil
 }
 
 // generateTitle 根据任务目标生成标题，不更新任务。

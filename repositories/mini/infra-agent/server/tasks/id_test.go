@@ -8,7 +8,7 @@ import (
 )
 
 func TestNewID(t *testing.T) {
-	for _, prefix := range []string{"task", "run", "attachment"} {
+	for _, prefix := range []string{"task", "run", "attachment", "executor"} {
 		t.Run(prefix, func(t *testing.T) {
 			id, err := newID(prefix)
 			if err != nil {

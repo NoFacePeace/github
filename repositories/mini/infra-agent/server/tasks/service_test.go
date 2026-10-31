@@ -8,12 +8,32 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"testing/iotest"
 	"testing/synctest"
 	"time"
 
+	"github.com/google/uuid"
+
 	"infra-agent/server/agents"
+	"infra-agent/server/providers"
 	"infra-agent/server/workspaces"
 )
+
+func newTestTaskService(
+	t *testing.T,
+	workspaceService workspaces.Service,
+	workspaceConfig workspaces.Config,
+	cfg Config,
+	modelManager providers.ModelManager,
+	providerManager providers.Manager,
+) *service {
+	t.Helper()
+	taskService, err := NewTaskService(workspaceService, workspaceConfig, cfg, modelManager, providerManager)
+	if err != nil {
+		t.Fatalf("NewTaskService() error = %v", err)
+	}
+	return taskService.(*service)
+}
 
 type stubWorkspaceService struct {
 	ctx       context.Context
@@ -82,13 +102,29 @@ func (s *stubTaskStore) AppendEvent(_ context.Context, _ Event) error {
 	return nil
 }
 
+func (s *stubTaskStore) AcquireLease(_ context.Context, _, _ string, _ time.Duration) (*lease, bool, error) {
+	return nil, false, nil
+}
+
+func (s *stubTaskStore) RenewLease(_ context.Context, _, _ string, _ int64, _ time.Duration) (bool, error) {
+	return false, nil
+}
+
+func (s *stubTaskStore) ReleaseLease(_ context.Context, _, _ string, _ int64) error {
+	return nil
+}
+
+func (s *stubTaskStore) ValidateLease(_ context.Context, _, _ string, _ int64) (bool, error) {
+	return false, nil
+}
+
 func TestNewTaskServiceInjectsDependencies(t *testing.T) {
 	workspaceService := &stubWorkspaceService{}
 	workspaceConfig := workspaces.Config{DataDirectory: t.TempDir()}
 	cfg := Config{DefaultModel: "provider/model", TitleTimeout: 5 * time.Second}
 	modelManager := &stubModelManager{}
 	providerManager := &stubProviderManager{}
-	taskService := NewTaskService(workspaceService, workspaceConfig, cfg, modelManager, providerManager).(*service)
+	taskService := newTestTaskService(t, workspaceService, workspaceConfig, cfg, modelManager, providerManager)
 	if taskService.workspaceService != workspaceService {
 		t.Fatal("NewTaskService() did not retain the workspace service")
 	}
@@ -106,6 +142,54 @@ func TestNewTaskServiceInjectsDependencies(t *testing.T) {
 	}
 }
 
+func TestNewTaskServiceGeneratesExecutorID(t *testing.T) {
+	first := newTestTaskService(t, &stubWorkspaceService{}, workspaces.Config{}, Config{}, &stubModelManager{}, &stubProviderManager{})
+	second := newTestTaskService(t, &stubWorkspaceService{}, workspaces.Config{}, Config{}, &stubModelManager{}, &stubProviderManager{})
+	assertPrefixedUUIDv7(t, first.executorID, "executor")
+	assertPrefixedUUIDv7(t, second.executorID, "executor")
+	if first.executorID == second.executorID {
+		t.Errorf("service instances share executor ID %q", first.executorID)
+	}
+}
+
+func TestNewTaskServiceInitializesExecutionRegistry(t *testing.T) {
+	first := newTestTaskService(t, &stubWorkspaceService{}, workspaces.Config{}, Config{}, &stubModelManager{}, &stubProviderManager{})
+	second := newTestTaskService(t, &stubWorkspaceService{}, workspaces.Config{}, Config{}, &stubModelManager{}, &stubProviderManager{})
+	if first.executions == nil || second.executions == nil {
+		t.Fatal("NewTaskService() did not initialize the execution registry")
+	}
+	if first.executions == second.executions {
+		t.Fatal("service instances share an execution registry")
+	}
+	if first.executions.active == nil || second.executions.active == nil {
+		t.Fatal("NewTaskService() did not initialize the execution maps")
+	}
+	if len(first.executions.active) != 0 || len(second.executions.active) != 0 {
+		t.Fatal("execution registries must initially be empty")
+	}
+	first.executions.active["run_123"] = &execution{}
+	if len(second.executions.active) != 0 {
+		t.Error("service instances share an execution map")
+	}
+}
+
+func TestNewTaskServiceReturnsExecutorIDError(t *testing.T) {
+	wantErr := errors.New("random source unavailable")
+	uuid.SetRand(iotest.ErrReader(wantErr))
+	t.Cleanup(func() { uuid.SetRand(nil) })
+
+	taskService, err := NewTaskService(&stubWorkspaceService{}, workspaces.Config{}, Config{}, &stubModelManager{}, &stubProviderManager{})
+	if !errors.Is(err, wantErr) {
+		t.Fatalf("NewTaskService() error = %v, want wrapped %v", err, wantErr)
+	}
+	if !strings.HasPrefix(err.Error(), "generate executor id: ") {
+		t.Errorf("NewTaskService() error = %v, want executor ID context", err)
+	}
+	if taskService != nil {
+		t.Errorf("NewTaskService() = %v, want nil service", taskService)
+	}
+}
+
 func TestNewTaskServiceTitleTimeout(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -119,7 +203,7 @@ func TestNewTaskServiceTitleTimeout(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := Config{TitleTimeout: tt.timeout}
-			taskService := NewTaskService(&stubWorkspaceService{}, workspaces.Config{}, cfg, &stubModelManager{}, &stubProviderManager{}).(*service)
+			taskService := newTestTaskService(t, &stubWorkspaceService{}, workspaces.Config{}, cfg, &stubModelManager{}, &stubProviderManager{})
 			if got := taskService.config.TitleTimeout; got != tt.want {
 				t.Errorf("TitleTimeout = %v, want %v", got, tt.want)
 			}
@@ -131,7 +215,7 @@ func TestServiceCreateSetsGoal(t *testing.T) {
 	const goal = "Add model enable support"
 	attachmentIDs := []string{"attachment_1", "attachment_2"}
 	taskStore := &stubTaskStore{}
-	taskService := NewTaskService(&stubWorkspaceService{}, workspaces.Config{}, Config{}, &stubModelManager{}, &stubProviderManager{}).(*service)
+	taskService := newTestTaskService(t, &stubWorkspaceService{}, workspaces.Config{}, Config{}, &stubModelManager{}, &stubProviderManager{})
 	taskService.store = taskStore
 
 	task, err := taskService.Create(context.Background(), CreateTaskRequest{
@@ -183,7 +267,7 @@ func TestServiceCreateSetsTitleFromGoal(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			taskStore := &stubTaskStore{}
 			cfg := Config{MaxTitleRunes: tt.maxTitleRunes}
-			taskService := NewTaskService(&stubWorkspaceService{}, workspaces.Config{}, cfg, &stubModelManager{}, &stubProviderManager{}).(*service)
+			taskService := newTestTaskService(t, &stubWorkspaceService{}, workspaces.Config{}, cfg, &stubModelManager{}, &stubProviderManager{})
 			taskService.store = taskStore
 
 			task, err := taskService.Create(context.Background(), CreateTaskRequest{
@@ -215,7 +299,7 @@ func TestServiceCreateAutoTitleKeepsFallback(t *testing.T) {
 		defer cancel()
 		taskStore := &stubTaskStore{}
 		cfg := Config{AutoTitle: true, MaxTitleRunes: 5}
-		taskService := NewTaskService(&stubWorkspaceService{}, workspaces.Config{}, cfg, &stubModelManager{}, &stubProviderManager{}).(*service)
+		taskService := newTestTaskService(t, &stubWorkspaceService{}, workspaces.Config{}, cfg, &stubModelManager{}, &stubProviderManager{})
 		taskService.store = taskStore
 
 		task, err := taskService.Create(ctx, CreateTaskRequest{
@@ -244,7 +328,7 @@ func TestServiceCreateGetsWorkspace(t *testing.T) {
 
 	workspaceService := &stubWorkspaceService{status: workspaces.StatusActive, directory: t.TempDir()}
 	taskStore := &stubTaskStore{}
-	taskService := NewTaskService(workspaceService, workspaces.Config{}, Config{}, &stubModelManager{}, &stubProviderManager{}).(*service)
+	taskService := newTestTaskService(t, workspaceService, workspaces.Config{}, Config{}, &stubModelManager{}, &stubProviderManager{})
 	taskService.store = taskStore
 	task, err := taskService.Create(ctx, CreateTaskRequest{
 		WorkspaceID:        "workspace_123",
@@ -280,7 +364,7 @@ func TestServiceCreateGetsWorkspace(t *testing.T) {
 func TestServiceCreateWrapsStoreError(t *testing.T) {
 	wantErr := errors.New("storage unavailable")
 	taskStore := &stubTaskStore{err: wantErr}
-	taskService := NewTaskService(&stubWorkspaceService{}, workspaces.Config{}, Config{}, &stubModelManager{}, &stubProviderManager{}).(*service)
+	taskService := newTestTaskService(t, &stubWorkspaceService{}, workspaces.Config{}, Config{}, &stubModelManager{}, &stubProviderManager{})
 	taskService.store = taskStore
 
 	task, err := taskService.Create(context.Background(), CreateTaskRequest{
@@ -304,7 +388,7 @@ func TestServiceCreateReturnsWorkspaceError(t *testing.T) {
 	wantErr := errors.New("workspace not found")
 	workspaceService := &stubWorkspaceService{err: wantErr}
 	taskStore := &stubTaskStore{}
-	taskService := NewTaskService(workspaceService, workspaces.Config{}, Config{}, &stubModelManager{}, &stubProviderManager{}).(*service)
+	taskService := newTestTaskService(t, workspaceService, workspaces.Config{}, Config{}, &stubModelManager{}, &stubProviderManager{})
 	taskService.store = taskStore
 
 	_, err := taskService.Create(context.Background(), CreateTaskRequest{
@@ -325,7 +409,7 @@ func TestServiceCreateReturnsWorkspaceError(t *testing.T) {
 func TestServiceCreateRejectsArchivedWorkspace(t *testing.T) {
 	workspaceService := &stubWorkspaceService{status: workspaces.StatusArchived}
 	taskStore := &stubTaskStore{}
-	taskService := NewTaskService(workspaceService, workspaces.Config{}, Config{}, &stubModelManager{}, &stubProviderManager{}).(*service)
+	taskService := newTestTaskService(t, workspaceService, workspaces.Config{}, Config{}, &stubModelManager{}, &stubProviderManager{})
 	taskService.store = taskStore
 
 	_, err := taskService.Create(context.Background(), CreateTaskRequest{
@@ -360,7 +444,7 @@ func TestServiceCreateUsesWorkspaceDirectory(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			taskStore := &stubTaskStore{}
-			taskService := NewTaskService(&stubWorkspaceService{}, workspaces.Config{}, Config{}, &stubModelManager{}, &stubProviderManager{}).(*service)
+			taskService := newTestTaskService(t, &stubWorkspaceService{}, workspaces.Config{}, Config{}, &stubModelManager{}, &stubProviderManager{})
 			taskService.store = taskStore
 
 			task, err := taskService.Create(context.Background(), CreateTaskRequest{
@@ -405,7 +489,7 @@ func TestServiceCreateRejectsWorkspaceDirectory(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			taskStore := &stubTaskStore{}
-			taskService := NewTaskService(&stubWorkspaceService{}, workspaces.Config{}, Config{}, &stubModelManager{}, &stubProviderManager{}).(*service)
+			taskService := newTestTaskService(t, &stubWorkspaceService{}, workspaces.Config{}, Config{}, &stubModelManager{}, &stubProviderManager{})
 			taskService.store = taskStore
 
 			_, err := taskService.Create(context.Background(), CreateTaskRequest{WorkspaceDirectory: tt.directory})
@@ -441,7 +525,7 @@ func TestServiceCreateEnsuresWorkspaceDirectory(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := workspaces.Config{DataDirectory: filepath.Join(t.TempDir(), "data")}
 			taskStore := &stubTaskStore{}
-			taskService := NewTaskService(&stubWorkspaceService{}, cfg, Config{}, &stubModelManager{}, &stubProviderManager{}).(*service)
+			taskService := newTestTaskService(t, &stubWorkspaceService{}, cfg, Config{}, &stubModelManager{}, &stubProviderManager{})
 			taskService.store = taskStore
 
 			task, err := taskService.Create(context.Background(), CreateTaskRequest{WorkspaceID: tt.workspaceID})
@@ -491,7 +575,7 @@ func TestServiceCreateReturnsEnsureDirectoryError(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			taskStore := &stubTaskStore{}
-			taskService := NewTaskService(&stubWorkspaceService{}, tt.cfg, Config{}, &stubModelManager{}, &stubProviderManager{}).(*service)
+			taskService := newTestTaskService(t, &stubWorkspaceService{}, tt.cfg, Config{}, &stubModelManager{}, &stubProviderManager{})
 			taskService.store = taskStore
 
 			_, err := taskService.Create(context.Background(), CreateTaskRequest{WorkspaceID: tt.workspaceID})
@@ -525,7 +609,7 @@ func TestServiceCreateAgentID(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			taskStore := &stubTaskStore{}
-			taskService := NewTaskService(&stubWorkspaceService{}, workspaces.Config{}, Config{}, &stubModelManager{}, &stubProviderManager{}).(*service)
+			taskService := newTestTaskService(t, &stubWorkspaceService{}, workspaces.Config{}, Config{}, &stubModelManager{}, &stubProviderManager{})
 			taskService.store = taskStore
 
 			task, err := taskService.Create(context.Background(), CreateTaskRequest{
@@ -564,7 +648,7 @@ func TestServiceCreateTriggerType(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			taskService := NewTaskService(&stubWorkspaceService{}, workspaces.Config{}, Config{}, &stubModelManager{}, &stubProviderManager{}).(*service)
+			taskService := newTestTaskService(t, &stubWorkspaceService{}, workspaces.Config{}, Config{}, &stubModelManager{}, &stubProviderManager{})
 			taskService.store = &stubTaskStore{}
 			task, err := taskService.Create(context.Background(), CreateTaskRequest{
 				TriggerType:        tt.triggerType,
