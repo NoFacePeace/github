@@ -6,3 +6,4 @@
 - [搜索](search/Search.md)
 - [检索](retrieval/Retrieval.md)
 - [动态规划](dp/DP.md)
+- [算法思想](thinking/Thinking.md)：设计算法与转化问题的通用方法。
