@@ -7,11 +7,15 @@ Anthropic 是开发 Claude 模型及相关应用、编程工具和 Agent 平台�
 - [Claude](claude/Claude.md)：Claude 模型与产品品牌，以及应用、编程工具和平台之间的定位关系。
 - [Claude Code](claude-code/ClaudeCode.md)：面向代码库和开发流程的编程 Agent。
 
-## 2. 安全研究
+## 2. 开发工具
+
+- [Claude Agent SDK](agent-sdk/ClaudeAgentSDK.md)：将 Claude Code 的 Agent 执行能力集成到应用中的开发工具包，支持工具扩展、权限回调与执行过程控制。
+
+## 3. 安全研究
 
 - [模型自主复制研究](SelfReplicatingAI.md)：模型在陌生硬件上部署推理服务，以及在受控环境中串联复制步骤的能力与风险。
 
-## 3. 参考资料
+## 4. 参考资料
 
 - [Anthropic 官网](https://www.anthropic.com/)
 - [Claude 产品介绍](https://claude.com/product/overview)
