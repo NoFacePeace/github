@@ -4,6 +4,11 @@ package tools
 // Tool 定义工具的能力。
 type Tool interface{}
 
+const (
+	NameAskUser      = "ask_user"
+	NameGetSkillFile = "get_skill_file"
+)
+
 // Status 表示工具调用的处理状态。
 type Status string
 

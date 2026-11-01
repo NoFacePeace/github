@@ -12,24 +12,36 @@ import (
 // Input 定义执行循环的输入。
 type Input struct {
 	Messages []llm.Message
-	Tools    []tools.Tool
+	Tools    []llm.ToolDefinition
+	// MaxSteps 限制本次执行的模型调用轮数。
+	MaxSteps int
+	// TokenBudget 限制每次模型请求的输入上下文大小。
+	TokenBudget int
+	// MaxOutputTokens 限制每次模型请求的输出 token 数量。
+	MaxOutputTokens int
 }
 
 // Runner 定义执行循环的能力。
 type Runner interface {
-	Run(ctx context.Context, input Input, executor ToolExecutor, recorder Recorder) error
+	Run(ctx context.Context, input Input, model llm.Model, executor ToolExecutor, recorder Recorder) error
 }
 
 // loop 实现模型与工具的执行循环。
-type loop struct{}
+type loop struct {
+	config Config
+}
 
 // New 创建执行循环实例。
-func New() Runner {
-	return &loop{}
+func New(config Config) Runner {
+	if config.TrimTriggerPercent <= 0 || config.TrimTriggerPercent > 100 {
+		config.TrimTriggerPercent = defaultTrimTriggerPercent
+	}
+	return &loop{config: config}
 }
 
 // Run 执行模型与工具循环。
-func (l *loop) Run(ctx context.Context, input Input, executor ToolExecutor, recorder Recorder) error {
+func (l *loop) Run(ctx context.Context, input Input, model llm.Model, executor ToolExecutor, recorder Recorder) error {
+	// 1. 处理已有消息中未完成的工具调用，追加结果；需要审批或输入时记录暂停并返回。
 	messages := append([]llm.Message(nil), input.Messages...)
 	if calls := pendingToolCalls(messages); len(calls) > 0 {
 		results, err := executor.Execute(ctx, calls)
@@ -56,7 +68,7 @@ func (l *loop) Run(ctx context.Context, input Input, executor ToolExecutor, reco
 		}
 		if len(waiting) > 0 {
 			if err := recorder.Record(ctx, Entry{
-				Type: EntryTypeExecutionPaused,
+				Type: EntryTypePaused,
 				Data: map[string]any{"waiting": waiting},
 			}); err != nil {
 				return fmt.Errorf("record execution pause: %w", err)
@@ -64,7 +76,53 @@ func (l *loop) Run(ctx context.Context, input Input, executor ToolExecutor, reco
 			return nil
 		}
 	}
-	// TODO: 使用更新后的消息继续模型调用与工具执行循环。
+
+	// 2. 进入主循环，检查取消信号、最大步数和上下文预算，必要时压缩上下文。
+	lastActualPromptTokens := 0
+	lastSentPromptEstimate := 0
+	promptTokenScale := 1.0
+	for step := 0; step < input.MaxSteps; step++ {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		promptEstimate := estimateRequestTokens(messages, input.Tools)
+		// TODO: 在模型调用后更新上一轮用量和修正比例。
+		predictedPromptTokens := predictPromptTokens(lastActualPromptTokens, lastSentPromptEstimate, promptEstimate, promptTokenScale)
+		if needsTrim(predictedPromptTokens, input.TokenBudget, l.config.TrimTriggerPercent) {
+			result := trimMessages(messages, input.TokenBudget)
+			if err := recorder.Record(ctx, Entry{
+				Type: EntryTypeContextTrimmed,
+				Data: map[string]any{
+					"before_tokens":          result.BeforeTokens,
+					"after_tokens":           result.AfterTokens,
+					"before_bytes":           result.BeforeBytes,
+					"after_bytes":            result.AfterBytes,
+					"trigger_threshold":      result.TriggerThreshold,
+					"retention_target_bytes": result.RetentionTargetBytes,
+					"dropped_blocks":         result.DroppedBlocks,
+					"truncated_tool_results": result.TruncatedToolResults,
+					"target_reached":         result.AfterBytes <= result.RetentionTargetBytes,
+				},
+			}); err != nil {
+				return fmt.Errorf("record context trim: %w", err)
+			}
+			trimmedEstimate := estimateRequestTokens(result.Messages, input.Tools)
+			trimmedPrediction := predictPromptTokens(lastActualPromptTokens, lastSentPromptEstimate, trimmedEstimate, promptTokenScale)
+			if needsTrim(trimmedPrediction, input.TokenBudget, l.config.TrimTriggerPercent) {
+				return fmt.Errorf("context remains above trim threshold")
+			}
+			messages = result.Messages
+		}
+
+		// 3. 校验工具调用与结果配对，构造请求并调用模型。
+
+		// 4. 记录模型回复，并追加到消息上下文。
+
+		// 5. 有工具调用时交给执行器，追加结果后进入下一轮；需要等待时记录暂停并返回。
+
+		// 6. 没有工具调用时记录完成并退出；故障或取消时返回错误。
+	}
+
 	return nil
 }
 

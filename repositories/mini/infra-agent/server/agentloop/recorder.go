@@ -11,7 +11,8 @@ type Recorder interface {
 type EntryType string
 
 const (
-	EntryTypeExecutionPaused EntryType = "execution_paused"
+	EntryTypePaused         EntryType = "paused"
+	EntryTypeContextTrimmed EntryType = "context_trimmed"
 )
 
 // Entry 描述一条执行记录，由记录器补充关联信息并保存。

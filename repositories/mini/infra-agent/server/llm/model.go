@@ -14,6 +14,14 @@ type Model interface {
 // Request 表示一次大模型调用请求。
 type Request struct {
 	Messages []Message
+	Tools    []ToolDefinition
+}
+
+// ToolDefinition 描述模型可调用的工具及其参数结构。
+type ToolDefinition struct {
+	Name        string
+	Description string
+	Parameters  json.RawMessage
 }
 
 // Role 表示消息的角色。
