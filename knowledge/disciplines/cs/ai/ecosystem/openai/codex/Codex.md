@@ -32,6 +32,8 @@ Harness 是围绕模型提供执行循环、工具调度和上下文管理等能
 
 Codex 产品与 Codex harness 需要区分：前者是用户使用的产品，后者是运行 Agent 的框架。
 
+开源仓库 `openai/codex` 的组件、Agent Loop、许可证与集成方式见 [Codex Harness](CodexHarness.md)。
+
 ## 5. 参考资料
 
 - [ChatGPT Work 与 Codex 的桌面差异](https://learn.chatgpt.com/docs/use-chatgpt)
