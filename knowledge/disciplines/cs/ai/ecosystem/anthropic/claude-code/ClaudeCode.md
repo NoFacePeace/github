@@ -31,7 +31,11 @@ Agent 是工作方式的通用概念，不是 Claude 或 Claude Code 的专有�
 
 Hook 可独立配置，也可随插件分发。脚本可以由已有工具执行，不会仅因存在于目录中就自动成为独立工具。
 
-## 4. 官方文档
+## 4. 会话管理
+
+- [检查点机制](Checkpointing.md)：记录代码状态、回退代码与对话，以及压缩上下文。
+
+## 5. 官方文档
 
 - [Claude Code 概览](https://code.claude.com/docs/en/overview)
 - [工作原理](https://code.claude.com/docs/en/how-claude-code-works)

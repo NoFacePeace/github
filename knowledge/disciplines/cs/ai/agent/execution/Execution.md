@@ -7,6 +7,7 @@
 - [运行时](runtime/Runtime.md)
 - [模型](model/Model.md)
 - [会话](session/Session.md)
+- [故障恢复](recovery/Recovery.md)
 - [消息](message/Message.md)
 - [运行事件](events/Events.md)
 - [沙箱](sandbox/Sandbox.md)
