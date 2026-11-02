@@ -1,6 +1,6 @@
 # Tree-sitter Go 使用
 
-`github.com/tree-sitter/go-tree-sitter` 是 Tree-sitter 的 Go 绑定。Go 程序可以在进程内解析源码，获取语法树并提取代码结构。跨语言的输入输出、增量解析与能力边界见 [Tree-sitter 原理](../../../../compiler/parsing/TreeSitter.md)。
+`github.com/tree-sitter/go-tree-sitter` 是 Tree-sitter 的 Go 绑定。Go 程序可以在进程内解析源码，获取语法树并提取代码结构。跨语言的输入输出、增量解析与能力边界见 [Tree-sitter 原理](../../../../../../tools/tree-sitter/TreeSitter.md)。
 
 ## 1. 依赖与构建
 
