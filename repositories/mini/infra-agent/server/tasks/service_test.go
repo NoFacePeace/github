@@ -78,6 +78,10 @@ func (s *stubTaskStore) CreateRun(_ context.Context, _ run) error {
 	return nil
 }
 
+func (s *stubTaskStore) UpdateRunStatus(_ context.Context, _ string, _ UpdateRunStatusRequest) (bool, error) {
+	return true, nil
+}
+
 func (s *stubTaskStore) CreateRunWithAttachments(ctx context.Context, taskID string, item run, attachmentIDs []string) error {
 	s.createRunWithAttachmentsCalls++
 	s.createRunWithAttachmentsCtx = ctx
@@ -102,8 +106,8 @@ func (s *stubTaskStore) AppendEvent(_ context.Context, _ Event) error {
 	return nil
 }
 
-func (s *stubTaskStore) AcquireLease(_ context.Context, _, _ string, _ time.Duration) (*lease, bool, error) {
-	return nil, false, nil
+func (s *stubTaskStore) AcquireLease(_ context.Context, _ string, owner string, ttl time.Duration) (*lease, bool, error) {
+	return &lease{Owner: owner, Epoch: 1, ExpiresAt: time.Now().Add(ttl)}, true, nil
 }
 
 func (s *stubTaskStore) RenewLease(_ context.Context, _, _ string, _ int64, _ time.Duration) (bool, error) {
@@ -125,6 +129,9 @@ func TestNewTaskServiceInjectsDependencies(t *testing.T) {
 	modelManager := &stubModelManager{}
 	providerManager := &stubProviderManager{}
 	taskService := newTestTaskService(t, workspaceService, workspaceConfig, cfg, modelManager, providerManager)
+	if taskService.runner == nil {
+		t.Fatal("NewTaskService() did not initialize the runner")
+	}
 	if taskService.workspaceService != workspaceService {
 		t.Fatal("NewTaskService() did not retain the workspace service")
 	}

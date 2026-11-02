@@ -2,10 +2,12 @@ package tasks
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"strings"
 
+	"infra-agent/server/agentloop"
 	"infra-agent/server/agents"
 	"infra-agent/server/providers"
 	"infra-agent/server/workspaces"
@@ -30,6 +32,7 @@ type CreateTaskRequest struct {
 type service struct {
 	executorID       string
 	executions       *executionRegistry
+	runner           agentloop.Runner
 	config           Config
 	store            store
 	workspaceService workspaces.Service
@@ -59,6 +62,7 @@ func NewTaskService(
 			active: make(map[string]*execution),
 		},
 		config:           cfg,
+		runner:           agentloop.New(agentloop.Config{}),
 		workspaceService: workspaceService,
 		workspaceConfig:  workspaceConfig,
 		modelManager:     modelManager,
@@ -164,13 +168,111 @@ func (s *service) startRun(ctx context.Context, task Task, attachmentIDs []strin
 	if err := s.store.CreateRunWithAttachments(ctx, task.ID, item, attachmentIDs); err != nil {
 		return run{}, fmt.Errorf("create run with attachments: %w", err)
 	}
-	// TODO: 提交成功后启动执行。
+	if err := s.launch(ctx, task, item); err != nil {
+		return run{}, fmt.Errorf("launch run: %w", err)
+	}
 	return item, nil
 }
 
 // launch 启动已创建的运行。
 func (s *service) launch(ctx context.Context, task Task, item run) error {
-	// TODO: 登记执行状态并启动运行。
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	// 请求结束不取消后台执行，保留链路等上下文值。
+	execCtx, cancel := context.WithCancel(context.WithoutCancel(ctx))
+	execution, err := s.executions.Register(item.ID, cancel)
+	if err != nil {
+		cancel()
+		return fmt.Errorf("register run %q execution: %w", item.ID, err)
+	}
+	cleanupExecution := func() {
+		execution.cancel()
+		s.executions.Unregister(item.ID, execution)
+		close(execution.done)
+	}
+	leaseTTL := s.config.LeaseTTL
+	if leaseTTL <= 0 {
+		leaseTTL = defaultLeaseTTL
+	}
+	cleanupTimeout := s.config.CleanupTimeout
+	if cleanupTimeout <= 0 {
+		cleanupTimeout = defaultCleanupTimeout
+	}
+	credential, acquired, err := s.store.AcquireLease(ctx, item.ID, s.executorID, leaseTTL)
+	if err != nil {
+		cleanupExecution()
+		return fmt.Errorf("acquire run %q lease: %w", item.ID, err)
+	}
+	if !acquired {
+		cleanupExecution()
+		return fmt.Errorf("run %q lease is held by another executor", item.ID)
+	}
+	if credential == nil {
+		cleanupExecution()
+		return fmt.Errorf("acquire run %q lease: store returned an empty credential", item.ID)
+	}
+	execution.lease = credential
+	renewDone := make(chan struct{})
+	go func() {
+		defer close(renewDone)
+		defer func() {
+			if recovered := recover(); recovered != nil {
+				slog.ErrorContext(execCtx, "run lease renewal panic", "run_id", item.ID, "panic", recovered)
+				execution.leaseLost.Store(true)
+				execution.cancel()
+			}
+		}()
+		s.renewLease(execCtx, item.ID, execution, leaseTTL)
+	}()
+	go func() {
+		defer cleanupExecution()
+		var runErr error
+		started := false
+		defer func() {
+			if recovered := recover(); recovered != nil {
+				slog.ErrorContext(execCtx, "run execution panic", "run_id", item.ID, "panic", recovered)
+				runErr = fmt.Errorf("run execution panic: %v", recovered)
+			}
+			if started && runErr != nil && !execution.leaseLost.Load() {
+				status := RunStatusFailed
+				if errors.Is(runErr, context.Canceled) {
+					status = RunStatusCancelled
+				}
+				statusCtx, statusCancel := context.WithTimeout(context.WithoutCancel(execCtx), cleanupTimeout)
+				changed, err := s.updateRunStatus(statusCtx, task, item, execution.lease, status, runErr.Error())
+				statusCancel()
+				if err != nil {
+					slog.ErrorContext(execCtx, "persist run failure status", "run_id", item.ID, "error", err)
+				} else if !changed {
+					slog.WarnContext(execCtx, "run failure status was not updated", "run_id", item.ID)
+				}
+			}
+			// 停止并等待续租，避免释放租约时还有续租请求在执行。
+			execution.cancel()
+			<-renewDone
+			cleanupCtx, cleanupCancel := context.WithTimeout(context.WithoutCancel(execCtx), cleanupTimeout)
+			defer cleanupCancel()
+			if err := s.store.ReleaseLease(cleanupCtx, item.ID, execution.lease.Owner, execution.lease.Epoch); err != nil {
+				slog.ErrorContext(cleanupCtx, "release run lease", "run_id", item.ID, "error", err)
+			}
+		}()
+		// TODO: 准备 Input，并注入模型客户端、执行器和 Recorder。
+		changed, err := s.updateRunStatus(execCtx, task, item, execution.lease, RunStatusRunning, "")
+		if err != nil {
+			slog.ErrorContext(execCtx, "start run execution", "run_id", item.ID, "error", err)
+			return
+		}
+		if !changed {
+			return
+		}
+		started = true
+		runErr = s.runner.Run(execCtx, agentloop.Input{}, nil, nil, nil)
+		if runErr != nil {
+			slog.ErrorContext(execCtx, "run agent loop", "run_id", item.ID, "error", runErr)
+		}
+		// 完成与等待状态由 Task 侧 Recorder 处理，Loop 返回 nil 不代表一定完成。
+	}()
 	return nil
 }
 

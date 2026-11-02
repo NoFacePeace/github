@@ -13,6 +13,10 @@ const (
 	EventTaskCreated EventType = "task_created"
 	// EventMessageReceived 表示收到用户消息。
 	EventMessageReceived EventType = "message_received"
+	EventRunStarted      EventType = "run_started"
+	EventRunResumed      EventType = "run_resumed"
+	EventRunFailed       EventType = "run_failed"
+	EventRunCancelled    EventType = "run_cancelled"
 )
 
 // Event 表示一条关联任务和运行的业务事件。

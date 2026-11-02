@@ -6,6 +6,8 @@ import (
 	"slices"
 	"strings"
 	"testing"
+
+	"infra-agent/server/agentloop"
 )
 
 func TestStartRunChecksLatestStatus(t *testing.T) {
@@ -34,7 +36,7 @@ func TestStartRunChecksLatestStatus(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 			store := &stubTaskStore{runs: tt.runs}
-			s := &service{store: store}
+			s := &service{store: store, runner: agentloop.New(agentloop.Config{})}
 
 			item, err := s.startRun(ctx, Task{ID: "task_123"}, tt.attachmentIDs)
 			if (err != nil) != tt.wantErr {
