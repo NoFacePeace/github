@@ -69,7 +69,11 @@ Python SDK 的公开源码主要实现应用与运行时之间的接入、通信
 
 - [用户输入与审批](UserInput.md)：通过权限回调处理工具审批与澄清问题，在任务执行期间等待用户决策后继续。
 
-## 6. 参考资料
+## 6. 会话管理
+
+- [会话](Sessions.md)：保存对话历史，通过 Continue、Resume 和 Fork 继续或分叉会话，以及跨主机恢复的条件。
+
+## 7. 参考资料
 
 - [Claude Agent SDK 官方文档](https://platform.claude.com/docs/en/agent-sdk/overview)
 - [Python SDK 仓库与 README](https://github.com/anthropics/claude-agent-sdk-python)
