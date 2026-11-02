@@ -7,6 +7,7 @@ type Tool interface{}
 const (
 	NameAskUser      = "ask_user"
 	NameGetSkillFile = "get_skill_file"
+	NameUpdatePlan   = "update_plan"
 )
 
 // Status 表示工具调用的处理状态。

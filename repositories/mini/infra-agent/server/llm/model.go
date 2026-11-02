@@ -13,9 +13,18 @@ type Model interface {
 
 // Request 表示一次大模型调用请求。
 type Request struct {
-	Messages []Message
-	Tools    []ToolDefinition
+	Messages        []Message
+	Tools           []ToolDefinition
+	MaxOutputTokens int
+	ToolChoice      ToolChoice
 }
+
+// ToolChoice 表示模型调用工具的选择策略，零值使用客户端默认策略。
+type ToolChoice string
+
+const (
+	ToolChoiceNone ToolChoice = "none"
+)
 
 // ToolDefinition 描述模型可调用的工具及其参数结构。
 type ToolDefinition struct {
@@ -51,5 +60,14 @@ type ToolCall struct {
 
 // Response 表示一次大模型调用结果。
 type Response struct {
-	Content string
+	Content   string
+	ToolCalls []ToolCall
+	Usage     Usage
+}
+
+// Usage 表示供应商报告的本次模型调用 token 用量。
+type Usage struct {
+	PromptTokens     int
+	CompletionTokens int
+	TotalTokens      int
 }
