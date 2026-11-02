@@ -257,7 +257,7 @@ func (s *service) launch(ctx context.Context, task Task, item run) error {
 				slog.ErrorContext(cleanupCtx, "release run lease", "run_id", item.ID, "error", err)
 			}
 		}()
-		// TODO: 准备 Input，并注入模型客户端、执行器和 Recorder。
+		// TODO: 准备 Input，并注入模型客户端和执行器。
 		changed, err := s.updateRunStatus(execCtx, task, item, execution.lease, RunStatusRunning, "")
 		if err != nil {
 			slog.ErrorContext(execCtx, "start run execution", "run_id", item.ID, "error", err)
@@ -267,7 +267,13 @@ func (s *service) launch(ctx context.Context, task Task, item run) error {
 			return
 		}
 		started = true
-		runErr = s.runner.Run(execCtx, agentloop.Input{}, nil, nil, nil)
+		runRecorder := &recorder{
+			store:  s.store,
+			taskID: task.ID,
+			runID:  item.ID,
+			lease:  execution.lease,
+		}
+		runErr = s.runner.Run(execCtx, agentloop.Input{}, nil, nil, runRecorder)
 		if runErr != nil {
 			slog.ErrorContext(execCtx, "run agent loop", "run_id", item.ID, "error", runErr)
 		}
