@@ -4,7 +4,15 @@ import (
 	"context"
 	"sync"
 	"sync/atomic"
+
+	"infra-agent/server/tools"
 )
+
+// ToolExecution 表示从持久化记录还原的单次工具调用状态。
+type ToolExecution struct {
+	Started bool
+	Result  *tools.Result
+}
 
 // execution 保存单次运行的取消能力、结束通知和租约凭证。
 type execution struct {

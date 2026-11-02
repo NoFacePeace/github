@@ -82,6 +82,34 @@ func (s *stubTaskStore) UpdateRunStatus(_ context.Context, _ string, _ UpdateRun
 	return true, nil
 }
 
+func (s *stubTaskStore) GetToolExecution(_ context.Context, _, _ string) (ToolExecution, error) {
+	return ToolExecution{}, nil
+}
+
+func (s *stubTaskStore) FindToolAuthorization(context.Context, ToolAuthorizationQuery) (*ToolAuthorization, error) {
+	return nil, nil
+}
+
+func (s *stubTaskStore) CreateToolAuthorization(context.Context, ToolAuthorization) error {
+	return nil
+}
+
+func (s *stubTaskStore) GetNetworkAuthorization(context.Context, string) (*NetworkAuthorization, error) {
+	return nil, nil
+}
+
+func (s *stubTaskStore) CreateNetworkAuthorization(context.Context, NetworkAuthorization) error {
+	return nil
+}
+
+func (s *stubTaskStore) ListPathAuthorizations(context.Context, string) ([]PathAuthorization, error) {
+	return nil, nil
+}
+
+func (s *stubTaskStore) CreatePathAuthorization(context.Context, PathAuthorization) error {
+	return nil
+}
+
 func (s *stubTaskStore) CreateRunWithAttachments(ctx context.Context, taskID string, item run, attachmentIDs []string) error {
 	s.createRunWithAttachmentsCalls++
 	s.createRunWithAttachmentsCtx = ctx
@@ -119,7 +147,7 @@ func (s *stubTaskStore) ReleaseLease(_ context.Context, _, _ string, _ int64) er
 }
 
 func (s *stubTaskStore) ValidateLease(_ context.Context, _, _ string, _ int64) (bool, error) {
-	return false, nil
+	return true, nil
 }
 
 func TestNewTaskServiceInjectsDependencies(t *testing.T) {

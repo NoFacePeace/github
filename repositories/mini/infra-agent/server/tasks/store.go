@@ -26,6 +26,15 @@ type ListRunsRequest struct {
 	TaskID string
 }
 
+// ToolAuthorizationQuery 表示工具授权的匹配条件。
+type ToolAuthorizationQuery struct {
+	ToolName    string
+	Key         string
+	ToolCallID  string
+	RunID       string
+	WorkspaceID string
+}
+
 // store 定义任务数据的持久化能力。
 type store interface {
 	CreateTask(ctx context.Context, task Task) error
@@ -39,6 +48,22 @@ type store interface {
 	CreateRunWithAttachments(ctx context.Context, taskID string, item run, attachmentIDs []string) error
 	// ListRuns 根据查询条件获取运行列表，按创建顺序升序返回，最新运行位于末尾。
 	ListRuns(ctx context.Context, request ListRunsRequest) ([]run, error)
+	// GetToolExecution 从完整的执行记录中还原工具状态，无记录时返回零值。
+	// 读取失败或记录损坏必须返回错误，不得视为尚未执行。
+	GetToolExecution(ctx context.Context, runID, toolCallID string) (ToolExecution, error)
+	// FindToolAuthorization 按工具名和匹配键查询适用于当前调用、运行或工作区的授权。
+	// 未找到返回 nil、nil；空的范围标识不得匹配对应范围的授权。
+	FindToolAuthorization(ctx context.Context, query ToolAuthorizationQuery) (*ToolAuthorization, error)
+	// CreateToolAuthorization 保存已批准的工具授权，并校验作用域所需的标识。
+	CreateToolAuthorization(ctx context.Context, authorization ToolAuthorization) error
+	// GetNetworkAuthorization 查询指定运行的联网授权，未找到返回 nil、nil。
+	GetNetworkAuthorization(ctx context.Context, runID string) (*NetworkAuthorization, error)
+	// CreateNetworkAuthorization 保存指定运行已获准联网的授权。
+	CreateNetworkAuthorization(ctx context.Context, authorization NetworkAuthorization) error
+	// ListPathAuthorizations 查询工作区的路径授权，由调用方匹配路径覆盖范围及读写权限。
+	ListPathAuthorizations(ctx context.Context, workspaceID string) ([]PathAuthorization, error)
+	// CreatePathAuthorization 保存已批准的路径授权。
+	CreatePathAuthorization(ctx context.Context, authorization PathAuthorization) error
 	// AppendEvent 追加一条业务事件。
 	AppendEvent(ctx context.Context, event Event) error
 	// AcquireLease 原子获取运行租约并递增版本，返回租约及是否获取成功。

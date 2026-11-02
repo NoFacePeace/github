@@ -11,10 +11,13 @@ type Recorder interface {
 type EntryType string
 
 const (
-	EntryTypePaused           EntryType = "paused"
-	EntryTypeContextTrimmed   EntryType = "context_trimmed"
-	EntryTypeAssistantMessage EntryType = "assistant_message"
-	EntryTypeCompleted        EntryType = "completed"
+	EntryTypePaused            EntryType = "paused"
+	EntryTypeContextTrimmed    EntryType = "context_trimmed"
+	EntryTypeAssistantMessage  EntryType = "assistant_message"
+	EntryTypeCompleted         EntryType = "completed"
+	EntryTypeToolResult        EntryType = "tool_result"
+	EntryTypeToolStarted       EntryType = "tool_started"
+	EntryTypeApprovalRequested EntryType = "approval_requested"
 )
 
 // Entry 描述一条执行记录，由记录器补充关联信息并保存。
