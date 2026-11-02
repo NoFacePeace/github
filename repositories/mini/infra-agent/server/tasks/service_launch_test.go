@@ -159,27 +159,14 @@ func TestLaunchStatusTransitions(t *testing.T) {
 						if released || ctx.Err() != nil || id != "run_1" || request.Owner != "executor_1" || request.Epoch != 9 {
 							t.Error("status update must happen before release with a usable context and acquired credential")
 						}
-						if request.Event.TaskID != "task_1" || request.Event.RunID != id || request.Event.ID == "" {
-							t.Error("status event missing identity")
-						}
 						if request.To == RunStatusRunning {
-							wantType := EventRunStarted
-							if tt.startStatus != RunStatusPending {
-								wantType = EventRunResumed
-							}
-							if request.Event.Type != wantType || !reflect.DeepEqual(request.From, []RunStatus{tt.startStatus}) {
-								t.Error("unexpected start event or source status")
+							if !reflect.DeepEqual(request.From, []RunStatus{tt.startStatus}) {
+								t.Error("unexpected source status")
 							}
 							return !tt.rejectStart, tt.startErr
 						}
 						if _, ok := ctx.Deadline(); !ok {
 							t.Error("failure cleanup must have a timeout")
-						}
-						if request.To == RunStatusFailed && request.Event.Type != EventRunFailed {
-							t.Error("missing failure event")
-						}
-						if request.To == RunStatusCancelled && request.Event.Type != EventRunCancelled {
-							t.Error("missing cancellation event")
 						}
 						return true, nil
 					},

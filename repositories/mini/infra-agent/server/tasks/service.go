@@ -240,7 +240,10 @@ func (s *service) launch(ctx context.Context, task Task, item run) error {
 					status = RunStatusCancelled
 				}
 				statusCtx, statusCancel := context.WithTimeout(context.WithoutCancel(execCtx), cleanupTimeout)
-				changed, err := s.updateRunStatus(statusCtx, task, item, execution.lease, status, runErr.Error())
+				changed, err := s.store.UpdateRunStatus(statusCtx, item.ID, UpdateRunStatusRequest{
+					From: []RunStatus{RunStatusPending, RunStatusRunning, RunStatusWaitingForApproval, RunStatusWaitingForInput},
+					To:   status, Owner: execution.lease.Owner, Epoch: execution.lease.Epoch,
+				})
 				statusCancel()
 				if err != nil {
 					slog.ErrorContext(execCtx, "persist run failure status", "run_id", item.ID, "error", err)
@@ -258,7 +261,10 @@ func (s *service) launch(ctx context.Context, task Task, item run) error {
 			}
 		}()
 		// TODO: 准备 Input，并注入模型客户端和执行器。
-		changed, err := s.updateRunStatus(execCtx, task, item, execution.lease, RunStatusRunning, "")
+		changed, err := s.store.UpdateRunStatus(execCtx, item.ID, UpdateRunStatusRequest{
+			From: []RunStatus{item.Status}, To: RunStatusRunning,
+			Owner: execution.lease.Owner, Epoch: execution.lease.Epoch,
+		})
 		if err != nil {
 			slog.ErrorContext(execCtx, "start run execution", "run_id", item.ID, "error", err)
 			return
