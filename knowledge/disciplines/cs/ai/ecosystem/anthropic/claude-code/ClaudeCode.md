@@ -35,7 +35,11 @@ Hook 可独立配置，也可随插件分发。脚本可以由已有工具执行
 
 - [检查点机制](Checkpointing.md)：记录代码状态、回退代码与对话，以及压缩上下文。
 
-## 5. 官方文档
+## 5. 执行控制
+
+- [沙箱](Sandbox.md)：本地 Shell 命令及子进程的隔离、文件与网络边界，以及不在沙箱内的工具。
+
+## 6. 官方文档
 
 - [Claude Code 概览](https://code.claude.com/docs/en/overview)
 - [工作原理](https://code.claude.com/docs/en/how-claude-code-works)
