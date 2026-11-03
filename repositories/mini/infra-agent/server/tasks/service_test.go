@@ -78,6 +78,15 @@ func (s *stubTaskStore) CreateRun(_ context.Context, _ run) error {
 	return nil
 }
 
+func (s *stubTaskStore) GetRun(_ context.Context, id string) (*run, error) {
+	for _, item := range s.runs {
+		if item.ID == id {
+			return &item, nil
+		}
+	}
+	return &run{ID: id, Status: RunStatusPending}, nil
+}
+
 func (s *stubTaskStore) UpdateRunStatus(_ context.Context, _ string, _ UpdateRunStatusRequest) (bool, error) {
 	return true, nil
 }

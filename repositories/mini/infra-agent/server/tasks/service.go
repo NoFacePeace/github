@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
+	"sync"
 
 	"infra-agent/server/agentloop"
 	"infra-agent/server/agents"
@@ -16,6 +17,8 @@ import (
 // Service 定义任务模块对外提供的业务接口。
 type Service interface {
 	Create(ctx context.Context, request CreateTaskRequest) (Task, error)
+	// CancelRun 请求取消指定运行。
+	CancelRun(ctx context.Context, runID string) error
 }
 
 // CreateTaskRequest 表示创建任务的请求。
@@ -30,6 +33,8 @@ type CreateTaskRequest struct {
 }
 
 type service struct {
+	// operationMu 协调本进程的启动、取消与执行退出。
+	operationMu      sync.Mutex
 	executorID       string
 	executions       *executionRegistry
 	runner           agentloop.Runner
@@ -39,6 +44,49 @@ type service struct {
 	workspaceConfig  workspaces.Config
 	modelManager     providers.ModelManager
 	providerManager  providers.Manager
+}
+
+// CancelRun 请求取消指定运行。
+func (s *service) CancelRun(ctx context.Context, runID string) error {
+	s.operationMu.Lock()
+	defer s.operationMu.Unlock()
+	// 取消一旦受理，不随 HTTP 断开而中断；存储操作仍设置超时。
+	timeout := s.config.CleanupTimeout
+	if timeout <= 0 {
+		timeout = defaultCleanupTimeout
+	}
+	cancelCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), timeout)
+	defer cancel()
+	item, err := s.store.GetRun(cancelCtx, runID)
+	if err != nil {
+		return fmt.Errorf("get run %q: %w", runID, err)
+	}
+	if item == nil {
+		return fmt.Errorf("run %q not found", runID)
+	}
+	// 即使状态已结束，也通知尚未退出的本地执行停止。
+	active := s.executions.Cancel(runID)
+	if item.Status.IsTerminal() || active {
+		return nil
+	}
+	// 用户控制操作不携带执行凭证；存储层同时使待审批、待输入请求失效。
+	changed, err := s.store.UpdateRunStatus(cancelCtx, runID, UpdateRunStatusRequest{
+		From: []RunStatus{RunStatusPending, RunStatusRunning, RunStatusWaitingForApproval, RunStatusWaitingForInput},
+		To:   RunStatusCancelled,
+	})
+	if err != nil {
+		return fmt.Errorf("cancel run %q: %w", runID, err)
+	}
+	if !changed {
+		current, err := s.store.GetRun(cancelCtx, runID)
+		if err != nil {
+			return fmt.Errorf("get run %q after cancellation: %w", runID, err)
+		}
+		if current == nil || !current.Status.IsTerminal() {
+			return fmt.Errorf("run %q cancellation was not applied", runID)
+		}
+	}
+	return nil
 }
 
 // NewTaskService 创建任务服务，并为该执行器实例生成唯一标识。
@@ -176,8 +224,17 @@ func (s *service) startRun(ctx context.Context, task Task, attachmentIDs []strin
 
 // launch 启动已创建的运行。
 func (s *service) launch(ctx context.Context, task Task, item run) error {
+	s.operationMu.Lock()
+	defer s.operationMu.Unlock()
 	if err := ctx.Err(); err != nil {
 		return err
+	}
+	current, err := s.store.GetRun(ctx, item.ID)
+	if err != nil {
+		return fmt.Errorf("get run %q before launch: %w", item.ID, err)
+	}
+	if current == nil || current.Status.IsTerminal() {
+		return fmt.Errorf("run %q is missing or terminal", item.ID)
 	}
 	// 请求结束不取消后台执行，保留链路等上下文值。
 	execCtx, cancel := context.WithCancel(context.WithoutCancel(ctx))
@@ -226,23 +283,25 @@ func (s *service) launch(ctx context.Context, task Task, item run) error {
 		s.renewLease(execCtx, item.ID, execution, leaseTTL)
 	}()
 	go func() {
-		defer cleanupExecution()
 		var runErr error
 		started := false
 		defer func() {
+			s.operationMu.Lock()
+			defer s.operationMu.Unlock()
+			defer cleanupExecution()
 			if recovered := recover(); recovered != nil {
 				slog.ErrorContext(execCtx, "run execution panic", "run_id", item.ID, "panic", recovered)
 				runErr = fmt.Errorf("run execution panic: %v", recovered)
 			}
-			if started && runErr != nil && !execution.leaseLost.Load() {
+			if ((started && runErr != nil) || execution.cancelRequested.Load()) && !execution.leaseLost.Load() {
 				status := RunStatusFailed
-				if errors.Is(runErr, context.Canceled) {
+				if execution.cancelRequested.Load() || errors.Is(runErr, context.Canceled) {
 					status = RunStatusCancelled
 				}
 				statusCtx, statusCancel := context.WithTimeout(context.WithoutCancel(execCtx), cleanupTimeout)
 				changed, err := s.store.UpdateRunStatus(statusCtx, item.ID, UpdateRunStatusRequest{
 					From: []RunStatus{RunStatusPending, RunStatusRunning, RunStatusWaitingForApproval, RunStatusWaitingForInput},
-					To:   status, Owner: execution.lease.Owner, Epoch: execution.lease.Epoch,
+					To:   status, Execution: &ExecutionToken{Owner: execution.lease.Owner, Epoch: execution.lease.Epoch},
 				})
 				statusCancel()
 				if err != nil {
@@ -263,7 +322,7 @@ func (s *service) launch(ctx context.Context, task Task, item run) error {
 		// TODO: 准备 Input，并注入模型客户端和执行器。
 		changed, err := s.store.UpdateRunStatus(execCtx, item.ID, UpdateRunStatusRequest{
 			From: []RunStatus{item.Status}, To: RunStatusRunning,
-			Owner: execution.lease.Owner, Epoch: execution.lease.Epoch,
+			Execution: &ExecutionToken{Owner: execution.lease.Owner, Epoch: execution.lease.Epoch},
 		})
 		if err != nil {
 			slog.ErrorContext(execCtx, "start run execution", "run_id", item.ID, "error", err)

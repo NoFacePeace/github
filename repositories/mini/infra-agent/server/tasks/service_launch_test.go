@@ -66,7 +66,7 @@ func TestLaunchAcquiresAndReleasesLease(t *testing.T) {
 				return nil
 			},
 		}
-		s := &service{store: store, runner: agentloop.New(agentloop.Config{}), executorID: "executor_1", config: Config{LeaseTTL: 40 * time.Second, CleanupTimeout: 2 * time.Second}}
+		s := &service{executions: &executionRegistry{}, store: store, runner: agentloop.New(agentloop.Config{}), executorID: "executor_1", config: Config{LeaseTTL: 40 * time.Second, CleanupTimeout: 2 * time.Second}}
 		if err := s.launch(ctx, Task{}, run{ID: "run_1"}); err != nil {
 			t.Fatal(err)
 		}
@@ -101,7 +101,7 @@ func TestLaunchLeaseFailure(t *testing.T) {
 					return nil
 				},
 			}
-			s := &service{store: store}
+			s := &service{executions: &executionRegistry{}, store: store}
 			err := s.launch(context.Background(), Task{}, run{ID: "run_1"})
 			if err == nil || (tt.err != nil && !errors.Is(err, tt.err)) {
 				t.Fatalf("unexpected launch error: %v", err)
@@ -113,7 +113,7 @@ func TestLaunchLeaseFailure(t *testing.T) {
 func TestLaunchCancelledBeforeAcquire(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	s := &service{store: &launchStore{acquire: func(context.Context, string, string, time.Duration) (*lease, bool, error) {
+	s := &service{executions: &executionRegistry{}, store: &launchStore{acquire: func(context.Context, string, string, time.Duration) (*lease, bool, error) {
 		t.Fatal("lease acquired after request cancellation")
 		return nil, false, nil
 	}}}
@@ -156,7 +156,7 @@ func TestLaunchStatusTransitions(t *testing.T) {
 					},
 					transition: func(ctx context.Context, id string, request UpdateRunStatusRequest) (bool, error) {
 						statuses = append(statuses, request.To)
-						if released || ctx.Err() != nil || id != "run_1" || request.Owner != "executor_1" || request.Epoch != 9 {
+						if released || ctx.Err() != nil || id != "run_1" || request.Execution == nil || request.Execution.Owner != "executor_1" || request.Execution.Epoch != 9 {
 							t.Error("status update must happen before release with a usable context and acquired credential")
 						}
 						if request.To == RunStatusRunning {
@@ -171,7 +171,7 @@ func TestLaunchStatusTransitions(t *testing.T) {
 						return true, nil
 					},
 				}
-				s := &service{store: store, runner: launchRunnerFunc(func(ctx context.Context, _ agentloop.Input, _ llm.Model, _ agentloop.ToolExecutor, _ agentloop.Recorder) error {
+				s := &service{executions: &executionRegistry{}, store: store, runner: launchRunnerFunc(func(ctx context.Context, _ agentloop.Input, _ llm.Model, _ agentloop.ToolExecutor, _ agentloop.Recorder) error {
 					called = true
 					if tt.panicRun {
 						panic("broken runner")

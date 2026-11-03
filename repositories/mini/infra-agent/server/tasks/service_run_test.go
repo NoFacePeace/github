@@ -36,7 +36,7 @@ func TestStartRunChecksLatestStatus(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 			store := &stubTaskStore{runs: tt.runs}
-			s := &service{store: store, runner: agentloop.New(agentloop.Config{})}
+			s := &service{executions: &executionRegistry{}, store: store, runner: agentloop.New(agentloop.Config{})}
 
 			item, err := s.startRun(ctx, Task{ID: "task_123"}, tt.attachmentIDs)
 			if (err != nil) != tt.wantErr {
@@ -78,7 +78,7 @@ func TestStartRunChecksLatestStatus(t *testing.T) {
 func TestStartRunWrapsListError(t *testing.T) {
 	wantErr := errors.New("storage unavailable")
 	store := &stubTaskStore{listRunsErr: wantErr}
-	s := &service{store: store}
+	s := &service{executions: &executionRegistry{}, store: store}
 	_, err := s.startRun(context.Background(), Task{ID: "task_123"}, nil)
 	if !errors.Is(err, wantErr) {
 		t.Fatalf("startRun() error = %v, want wrapped %v", err, wantErr)
@@ -94,7 +94,7 @@ func TestStartRunWrapsListError(t *testing.T) {
 func TestStartRunWrapsCreateError(t *testing.T) {
 	wantErr := errors.New("store unavailable")
 	store := &stubTaskStore{createRunWithAttachmentsErr: wantErr}
-	s := &service{store: store}
+	s := &service{executions: &executionRegistry{}, store: store}
 	item, err := s.startRun(context.Background(), Task{ID: "task_123"}, nil)
 	if !errors.Is(err, wantErr) {
 		t.Fatalf("startRun() error = %v, want wrapped %v", err, wantErr)
@@ -112,7 +112,7 @@ func TestStartRunWrapsCreateError(t *testing.T) {
 
 func TestStartRunQueriesHistoryWithoutTaskID(t *testing.T) {
 	store := &stubTaskStore{runs: []run{{Status: RunStatusRunning}}}
-	s := &service{store: store}
+	s := &service{executions: &executionRegistry{}, store: store}
 	_, err := s.startRun(context.Background(), Task{}, nil)
 	if err == nil || !strings.Contains(err.Error(), "is not terminal") {
 		t.Fatalf("startRun() error = %v, want non-terminal status error", err)

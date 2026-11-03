@@ -12,12 +12,18 @@ type UpdateTaskRequest struct {
 	CurrentRunID *string
 }
 
-// UpdateRunStatusRequest 表示受租约保护的运行状态转换。
-type UpdateRunStatusRequest struct {
-	From  []RunStatus
-	To    RunStatus
+// ExecutionToken 表示执行器写入时使用的租约身份。
+type ExecutionToken struct {
 	Owner string
 	Epoch int64
+}
+
+// UpdateRunStatusRequest 表示运行状态转换。
+type UpdateRunStatusRequest struct {
+	From []RunStatus
+	To   RunStatus
+	// Execution 为 nil 表示用户控制操作；执行器写入必须提供有效租约身份。
+	Execution *ExecutionToken
 }
 
 // ListRunsRequest 表示运行列表的查询参数。
@@ -40,7 +46,10 @@ type store interface {
 	CreateTask(ctx context.Context, task Task) error
 	UpdateTask(ctx context.Context, taskID string, request UpdateTaskRequest) error
 	CreateRun(ctx context.Context, item run) error
-	// UpdateRunStatus 校验原状态、租约身份及有效期，并原子更新状态。
+	// GetRun 查询运行，不存在时返回 nil、nil。
+	GetRun(ctx context.Context, runID string) (*run, error)
+	// UpdateRunStatus 校验原状态，并在提供 Execution 时校验租约身份及有效期，原子更新状态。
+	// 更新为 cancelled 时，须在同一事务中使该运行的待审批、待输入请求失效。
 	// 条件不匹配返回 false、nil；存储故障返回错误。
 	UpdateRunStatus(ctx context.Context, runID string, request UpdateRunStatusRequest) (bool, error)
 	// CreateRunWithAttachments 在同一事务中创建运行、更新任务的 CurrentRunID 并绑定附件。

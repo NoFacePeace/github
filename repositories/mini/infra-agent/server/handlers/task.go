@@ -26,3 +26,12 @@ func (h *TaskHandler) Create(c *gin.Context) {
 	}
 	c.JSON(http.StatusCreated, task)
 }
+
+// CancelRun 取消指定运行。
+func (h *TaskHandler) CancelRun(c *gin.Context) {
+	if err := h.taskService.CancelRun(c.Request.Context(), c.Param("id")); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "cancel run"})
+		return
+	}
+	c.Status(http.StatusAccepted)
+}
