@@ -1,8 +1,14 @@
 package knowledge
 
 import (
+	"bytes"
 	"context"
 	"errors"
+	"fmt"
+	"math"
+	"strings"
+
+	"github.com/coder/hnsw"
 )
 
 // Indexer 定义文档索引的同步构建接口。
@@ -66,7 +72,7 @@ func (i *indexer) Build(ctx context.Context, doc Document) error {
 	}
 	// 4. 全文索引需要构建时，根据文本块生成全文索引产物。
 	if errors.Is(fulltextErr, ErrIndexNotFound) {
-		fulltextIndex, err = buildFulltextIndex(chunks, i.config.Fulltext)
+		fulltextIndex, err = i.buildFulltextIndex(ctx, chunks)
 		if err != nil {
 			return err
 		}
@@ -74,15 +80,7 @@ func (i *indexer) Build(ctx context.Context, doc Document) error {
 
 	// 5. 向量索引需要构建时，调用向量模型，校验结果数量、维度和数值有效性，再生成向量索引产物。
 	if errors.Is(vectorErr, ErrIndexNotFound) {
-		embeddings := make([][]float32, len(chunks))
-		for position, chunk := range chunks {
-			embeddings[position], err = i.embedder.Embed(ctx, chunk.Content)
-			if err != nil {
-				return err
-			}
-		}
-		// 向量维度和数值有效性校验待在构建函数中实现。
-		vectorIndex, err = buildVectorIndex(chunks, embeddings, i.config.Vector)
+		vectorIndex, err = i.buildVectorIndex(ctx, chunks)
 		if err != nil {
 			return err
 		}
@@ -142,16 +140,68 @@ type VectorConfig struct{}
 // FulltextIndex 表示用于关键词检索的全文索引产物。
 type FulltextIndex struct{}
 
-// buildFulltextIndex 根据文本块和配置构建全文索引，具体逻辑待实现。
-func buildFulltextIndex(chunks []Chunk, config FulltextConfig) (FulltextIndex, error) {
+// buildFulltextIndex 根据文本块及构建器持有的全文配置构建索引，具体逻辑待实现。
+func (i *indexer) buildFulltextIndex(ctx context.Context, chunks []Chunk) (FulltextIndex, error) {
 	panic("not implemented")
 }
 
 // VectorIndex 表示用于语义检索的向量索引产物。
-type VectorIndex struct{}
+type VectorIndex struct {
+	Dimensions int
+	// Graph 保存 HNSW 导出的图数据，包含文本块 ID、向量及节点连接。
+	Graph []byte
+}
 
-// buildVectorIndex 根据文本块及对应向量构建向量索引，具体逻辑待实现。
-// embeddings 按 chunks 的顺序提供，由调用方生成。
-func buildVectorIndex(chunks []Chunk, embeddings [][]float32, config VectorConfig) (VectorIndex, error) {
-	panic("not implemented")
+// buildVectorIndex 生成文本块向量，使用 HNSW 库默认参数构建并导出索引。
+func (i *indexer) buildVectorIndex(ctx context.Context, chunks []Chunk) (VectorIndex, error) {
+	graph := hnsw.NewGraph[string]()
+	dimensions := 0
+	seen := make(map[string]bool, len(chunks))
+	for _, chunk := range chunks {
+		if err := ctx.Err(); err != nil {
+			return VectorIndex{}, err
+		}
+		if chunk.ID == "" || seen[chunk.ID] {
+			return VectorIndex{}, fmt.Errorf("chunk id must be nonempty and unique: %q", chunk.ID)
+		}
+		seen[chunk.ID] = true
+		input := chunk.Content
+		if heading := strings.Join(chunk.HeadingPath, " > "); heading != "" {
+			input = heading + "\n" + input
+		}
+		vector, err := i.embedder.Embed(ctx, input)
+		if err != nil {
+			return VectorIndex{}, err
+		}
+		if len(vector) == 0 {
+			return VectorIndex{}, fmt.Errorf("empty embedding for chunk %s", chunk.ID)
+		}
+		if dimensions == 0 {
+			dimensions = len(vector)
+		}
+		if len(vector) != dimensions {
+			return VectorIndex{}, fmt.Errorf("embedding dimension mismatch for chunk %s: got %d, want %d", chunk.ID, len(vector), dimensions)
+		}
+		var norm float64
+		for _, value := range vector {
+			v := float64(value)
+			if math.IsNaN(v) || math.IsInf(v, 0) {
+				return VectorIndex{}, fmt.Errorf("non-finite embedding for chunk %s", chunk.ID)
+			}
+			norm += v * v
+		}
+		// 默认使用余弦距离，零向量没有有效的余弦相似度。
+		if norm == 0 {
+			return VectorIndex{}, fmt.Errorf("zero embedding for chunk %s", chunk.ID)
+		}
+		graph.Add(hnsw.Node[string]{Key: chunk.ID, Value: append([]float32(nil), vector...)})
+	}
+	if err := ctx.Err(); err != nil {
+		return VectorIndex{}, err
+	}
+	var encoded bytes.Buffer
+	if err := graph.Export(&encoded); err != nil {
+		return VectorIndex{}, fmt.Errorf("export vector index: %w", err)
+	}
+	return VectorIndex{Dimensions: dimensions, Graph: encoded.Bytes()}, nil
 }

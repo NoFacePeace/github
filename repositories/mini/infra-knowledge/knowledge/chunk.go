@@ -16,6 +16,8 @@ type Chunk struct {
 	ID         string
 	DocumentID string
 	ChapterID  string
+	// HeadingPath 表示文本块来源小节的共同标题层级，用于补充检索上下文。
+	HeadingPath []string
 	// Position 表示文本块在文档中的序号，从 0 开始。
 	Position int
 	Content  string
@@ -60,7 +62,7 @@ func splitChunks(doc Document, config SplitConfig) ([]Chunk, error) {
 
 	// 4. 逐个章节按文本块上限切分：能放下时生成一个文本块，否则按固定词元窗口切分，不重叠。
 	//    章节预算控制内容组织，文本块上限控制最终块大小，两者独立。
-	// 5. 为文本块记录文档 ID、章节 ID、文档内的块序号和来源小节路径。
+	// 5. 为文本块记录文档 ID、章节 ID、标题层级、文档内的块序号和来源小节路径。
 	chunks := make([]Chunk, 0)
 	for _, chapter := range chapters {
 		text, sources := chapter.render()
@@ -75,8 +77,18 @@ func splitChunks(doc Document, config SplitConfig) ([]Chunk, error) {
 				to = tokens[end].start
 			}
 			paths := make([]string, 0)
+			var headingPath []string
 			for _, source := range sources {
 				if source.start < to && source.end > from {
+					if len(paths) == 0 {
+						headingPath = append([]string(nil), source.headingPath...)
+					} else {
+						common := 0
+						for common < len(headingPath) && common < len(source.headingPath) && headingPath[common] == source.headingPath[common] {
+							common++
+						}
+						headingPath = headingPath[:common]
+					}
 					paths = append(paths, source.path)
 				}
 			}
@@ -85,6 +97,7 @@ func splitChunks(doc Document, config SplitConfig) ([]Chunk, error) {
 				ID:           fmt.Sprintf("%s:chunk:%d", doc.ID, position),
 				DocumentID:   doc.ID,
 				ChapterID:    doc.ID + ":" + chapter.path,
+				HeadingPath:  headingPath,
 				Position:     position,
 				Content:      text[from:to],
 				TokenCount:   end - start,
@@ -102,12 +115,13 @@ func splitChunks(doc Document, config SplitConfig) ([]Chunk, error) {
 
 // sectionNode 记录标题树及其在原始正文中的行范围。
 type sectionNode struct {
-	level    int
-	path     string
-	start    int
-	body     int
-	end      int
-	children []*sectionNode
+	headingPath []string
+	level       int
+	path        string
+	start       int
+	body        int
+	end         int
+	children    []*sectionNode
 }
 
 // parseSections 使用 Markdown 解析器识别标题，再以栈组织章节层级。
@@ -145,7 +159,9 @@ func parseSections(lines []string) *sectionNode {
 		if parent.path != "" {
 			path = parent.path + "." + path
 		}
-		node := &sectionNode{level: heading.Level, path: path, start: start, body: body}
+		title := strings.Join(strings.Fields(string(heading.Text(source))), " ")
+		headingPath := append(append([]string(nil), parent.headingPath...), title)
+		node := &sectionNode{level: heading.Level, path: path, start: start, body: body, headingPath: headingPath}
 		parent.children = append(parent.children, node)
 		stack = append(stack, node)
 	}
@@ -164,8 +180,9 @@ func assignSectionEnds(node *sectionNode, end int) {
 }
 
 type sectionPiece struct {
-	path    string
-	content string
+	path        string
+	content     string
+	headingPath []string
 }
 
 type splitChapter struct {
@@ -174,8 +191,9 @@ type splitChapter struct {
 }
 
 type sectionSpan struct {
-	path       string
-	start, end int
+	path        string
+	start, end  int
+	headingPath []string
 }
 
 // render 保留小节原文，并记录各小节在合并正文中的字节范围。
@@ -188,7 +206,7 @@ func (c splitChapter) render() (string, []sectionSpan) {
 		}
 		start := text.Len()
 		text.WriteString(piece.content)
-		spans = append(spans, sectionSpan{path: piece.path, start: start, end: text.Len()})
+		spans = append(spans, sectionSpan{path: piece.path, start: start, end: text.Len(), headingPath: piece.headingPath})
 	}
 	return text.String(), spans
 }
@@ -203,7 +221,7 @@ func organizeChapters(node *sectionNode, lines []string, budget int) []splitChap
 	if len(node.children) > 0 {
 		ownEnd = node.children[0].start
 	}
-	own := sectionPiece{path: node.path, content: strings.TrimSpace(strings.Join(lines[node.start:ownEnd], "\n"))}
+	own := sectionPiece{path: node.path, content: strings.TrimSpace(strings.Join(lines[node.start:ownEnd], "\n")), headingPath: node.headingPath}
 	merged := splitChapter{path: node.path, pieces: []sectionPiece{own}}
 	for _, child := range children {
 		merged.pieces = append(merged.pieces, child.pieces...)

@@ -150,6 +150,34 @@ func TestSplitTokenSpans(t *testing.T) {
 	}
 }
 
+func TestSplitChunksHeadingPath(t *testing.T) {
+	for _, tt := range []struct {
+		name, content string
+		config        SplitConfig
+		paths         [][]string
+	}{
+		{"plain", "body", SplitConfig{}, [][]string{nil}},
+		{"long section", "# Root\n## Child\none two three four five six", SplitConfig{ChapterMaxTokens: 1, ChunkMaxTokens: 2}, [][]string{{"Root"}, {"Root", "Child"}, {"Root", "Child"}, {"Root", "Child"}}},
+		{"merged siblings", "# Root\nintro\n## A\none two\n## B\nthree four", SplitConfig{ChapterMaxTokens: 6, ChunkMaxTokens: 20}, [][]string{{"Root"}, {"Root"}}},
+		{"setext", "Title\n=====\nbody", SplitConfig{}, [][]string{{"Title"}}},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			chunks, err := splitChunks(Document{ID: "doc", Content: tt.content}, tt.config)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(chunks) != len(tt.paths) {
+				t.Fatalf("unexpected chunks: %+v", chunks)
+			}
+			for index, chunk := range chunks {
+				if !reflect.DeepEqual(chunk.HeadingPath, tt.paths[index]) {
+					t.Fatalf("chunk %d headings: got %q, want %q", index, chunk.HeadingPath, tt.paths[index])
+				}
+			}
+		})
+	}
+}
+
 func TestParseSectionsMarkdownBlocks(t *testing.T) {
 	for _, tt := range []struct {
 		name, content string
