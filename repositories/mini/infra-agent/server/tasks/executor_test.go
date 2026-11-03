@@ -89,11 +89,7 @@ func TestExecutorEvaluatesSafetyByRequirement(t *testing.T) {
 				}),
 			}
 			_, err := e.Execute(ctx, []llm.ToolCall{{ID: "a", Name: "read", Arguments: []byte(`{}`)}})
-			if requirement == tools.ApprovalRequired {
-				if err != nil || count != 0 {
-					t.Fatalf("evaluations=%d, err=%v", count, err)
-				}
-			} else if !errors.Is(err, wantErr) || count != 1 {
+			if !errors.Is(err, wantErr) || count != 1 {
 				t.Fatalf("evaluations=%d, err=%v", count, err)
 			}
 		})

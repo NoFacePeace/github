@@ -27,6 +27,45 @@ func (t approvalRiskTool) Risk(context.Context, json.RawMessage, tools.Env) (too
 	return t.risk, nil
 }
 
+func TestExecutorRequiredApprovalPreservesSafetyDecision(t *testing.T) {
+	for _, action := range []DecisionAction{DecisionAllow, DecisionDeny, DecisionRequireApproval} {
+		t.Run(string(action), func(t *testing.T) {
+			var entries []agentloop.Entry
+			e := &toolExecutor{
+				tools: map[string]tools.Tool{"read": approvalTool{namedTool("read"), tools.ApprovalRequired}},
+				store: &stubTaskStore{},
+				safetyEvaluator: safetyEvaluatorFunc(func(context.Context, SafetyRequest) (Decision, error) {
+					return Decision{Action: action, Reason: "policy reason"}, nil
+				}),
+				recorder: toolRecorderFunc(func(_ context.Context, entry agentloop.Entry) error {
+					entries = append(entries, entry)
+					return nil
+				}),
+			}
+			results, err := e.Execute(context.Background(), []llm.ToolCall{{ID: "a", Name: "read", Arguments: []byte(`{}`)}})
+			if err != nil || len(results) != 1 || len(entries) != 1 {
+				t.Fatalf("results=%v, entries=%v, err=%v", results, entries, err)
+			}
+			if action == DecisionDeny {
+				if results[0].Status != tools.StatusCompleted || !strings.Contains(results[0].Content, "policy reason") || entries[0].Type != agentloop.EntryTypeToolResult {
+					t.Fatalf("policy denial lost: results=%v, entries=%v", results, entries)
+				}
+			} else {
+				if results[0].Status != tools.StatusWaitingForApproval || entries[0].Type != agentloop.EntryTypeApprovalRequested {
+					t.Fatalf("required approval lost: results=%v, entries=%v", results, entries)
+				}
+				wantReason := "policy reason"
+				if action == DecisionAllow {
+					wantReason = "tool requires approval"
+				}
+				if entries[0].Data["reason"] != wantReason {
+					t.Fatalf("reason=%v, want %s", entries[0].Data["reason"], wantReason)
+				}
+			}
+		})
+	}
+}
+
 func TestExecutorApprovalMode(t *testing.T) {
 	for _, tt := range []struct {
 		name       string

@@ -59,7 +59,8 @@ func TestExecutorReusesAuthorizations(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var entries []agentloop.EntryType
 			e := &toolExecutor{
-				approvalMode: tt.mode, runID: "run_1", workspaceID: "workspace_1",
+				safetyEvaluator: safetyEvaluatorFunc(allowSafety),
+				approvalMode:    tt.mode, runID: "run_1", workspaceID: "workspace_1",
 				store: &tt.store, lease: &lease{},
 				tools: map[string]tools.Tool{"read": approvalRiskTool{approvalTool{namedTool("read"), tools.ApprovalRequired}, tt.risk}},
 				recorder: toolRecorderFunc(func(_ context.Context, entry agentloop.Entry) error {

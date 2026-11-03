@@ -146,19 +146,22 @@ func (e *toolExecutor) Execute(ctx context.Context, calls []llm.ToolCall) ([]too
 		// Manual 要求人工决定；Policy 按策略决定；Auto 只自动批准允许自动处理的权限。
 		// 各分支统一遵守硬性限制和当前调用的拒绝决定，不被自动审批或复用授权覆盖。
 		// 复用授权需匹配工具、参数范围、作用域和有效期，全部所需权限满足后才允许执行。
-		var decision Decision
+		// 所有工具先检查安全策略，再合并工具自身的审批要求。
+		decision, err := e.safetyEvaluator.Evaluate(ctx, SafetyRequest{
+			ToolName: call.Name,
+			Risk:     risk,
+			Env:      env,
+		})
+		if err != nil {
+			return results, fmt.Errorf("evaluate safety for call %s: %w", call.ID, err)
+		}
 		switch requirement := selected.ApprovalRequirement(); requirement {
 		case tools.ApprovalNone, tools.ApprovalPolicy:
-			decision, err = e.safetyEvaluator.Evaluate(ctx, SafetyRequest{
-				ToolName: call.Name,
-				Risk:     risk,
-				Env:      env,
-			})
-			if err != nil {
-				return results, fmt.Errorf("evaluate safety for call %s: %w", call.ID, err)
-			}
+			// 保留安全策略决定。
 		case tools.ApprovalRequired:
-			decision = Decision{Action: DecisionRequireApproval, Reason: "tool requires approval"}
+			if decision.Action == DecisionAllow {
+				decision = Decision{Action: DecisionRequireApproval, Reason: "tool requires approval"}
+			}
 		default:
 			return results, fmt.Errorf("unknown approval requirement %q for tool %s", requirement, call.Name)
 		}
