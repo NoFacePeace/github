@@ -5,6 +5,7 @@ import (
 	"sort"
 	"strings"
 	"unicode"
+	"unicode/utf8"
 
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/ast"
@@ -272,6 +273,7 @@ func organizeChapters(node *sectionNode, lines []string, budget int) []splitChap
 
 type splitTokenSpan struct {
 	start int
+	end   int
 }
 
 // splitTokenSpans 将常用汉字逐字计数，其余连续字母和数字计作一个词元。
@@ -282,11 +284,13 @@ func splitTokenSpans(text string) []splitTokenSpan {
 	for index, char := range text {
 		switch {
 		case char >= 0x4E00 && char <= 0x9FFF:
-			tokens = append(tokens, splitTokenSpan{start: index})
+			tokens = append(tokens, splitTokenSpan{start: index, end: index + utf8.RuneLen(char)})
 			inWord = false
 		case unicode.IsLetter(char) || unicode.IsDigit(char):
 			if !inWord {
-				tokens = append(tokens, splitTokenSpan{start: index})
+				tokens = append(tokens, splitTokenSpan{start: index, end: index + utf8.RuneLen(char)})
+			} else {
+				tokens[len(tokens)-1].end = index + utf8.RuneLen(char)
 			}
 			inWord = true
 		default:

@@ -3,12 +3,101 @@ package knowledge
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"math"
+	"reflect"
 	"testing"
 
 	"github.com/coder/hnsw"
 )
+
+func TestBuildFulltextIndex(t *testing.T) {
+	chunks := []Chunk{
+		{ID: "a", DocumentID: "doc", ChapterID: "doc:1", Position: 0, Content: "Redis redis 配置 max_memory=512", HeadingPath: []string{"Guide"}, SectionPaths: []string{"1"}},
+		{ID: "b", DocumentID: "doc", Position: 1, Content: "REDIS cache"},
+		{ID: "c", DocumentID: "doc", Position: 2, Content: "... !!!"},
+	}
+	index, err := (&indexer{}).buildFulltextIndex(context.Background(), chunks)
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantPostings := map[string]map[string]int{
+		"redis": {"a": 2, "b": 1}, "配": {"a": 1}, "置": {"a": 1},
+		"max": {"a": 1}, "memory": {"a": 1}, "512": {"a": 1}, "cache": {"b": 1},
+	}
+	if !reflect.DeepEqual(index.Postings, wantPostings) {
+		t.Fatalf("unexpected postings: %+v", index.Postings)
+	}
+	wantDocFreq := map[string]int{"redis": 2, "配": 1, "置": 1, "max": 1, "memory": 1, "512": 1, "cache": 1}
+	if !reflect.DeepEqual(index.DocFreq, wantDocFreq) || index.AvgLen != 3 {
+		t.Fatalf("unexpected statistics: %+v, %v", index.DocFreq, index.AvgLen)
+	}
+	for position, count := range []int{7, 2, 0} {
+		if index.Chunks[position].Content != chunks[position].Content || index.Chunks[position].Position != position || index.Chunks[position].TokenCount != count {
+			t.Fatalf("chunk content, order, or length changed: %+v", index.Chunks[position])
+		}
+	}
+	if chunks[0].TokenCount != 0 || index.Chunks[0].ChapterID != "doc:1" {
+		t.Fatal("input was mutated or chapter metadata was lost")
+	}
+	chunks[0].HeadingPath[0] = "Changed"
+	chunks[0].SectionPaths[0] = "changed"
+	chunks[0].Content = "changed"
+	if index.Chunks[0].HeadingPath[0] != "Guide" || index.Chunks[0].SectionPaths[0] != "1" || index.Chunks[0].Content == "changed" {
+		t.Fatal("index shares mutable data with the input")
+	}
+	encoded, err := json.Marshal(index)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var restored FulltextIndex
+	if err := json.Unmarshal(encoded, &restored); err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(index, restored) {
+		t.Fatal("index did not survive JSON round trip")
+	}
+}
+
+func TestBuildFulltextIndexUnicodeTerms(t *testing.T) {
+	index, err := (&indexer{}).buildFulltextIndex(context.Background(), []Chunk{{ID: "a", Content: "CAFÉ café 中文 foo_bar 123"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := map[string]map[string]int{"café": {"a": 2}, "中": {"a": 1}, "文": {"a": 1}, "foo": {"a": 1}, "bar": {"a": 1}, "123": {"a": 1}}
+	if !reflect.DeepEqual(index.Postings, want) || index.Chunks[0].TokenCount != 7 {
+		t.Fatalf("unexpected Unicode terms: %+v", index)
+	}
+}
+
+func TestBuildFulltextIndexEmpty(t *testing.T) {
+	index, err := (&indexer{}).buildFulltextIndex(context.Background(), nil)
+	if err != nil || len(index.Chunks) != 0 || len(index.Postings) != 0 || len(index.DocFreq) != 0 || index.AvgLen != 0 {
+		t.Fatalf("expected empty index, got %+v, %v", index, err)
+	}
+}
+
+func TestBuildFulltextIndexCanceled(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	_, err := (&indexer{}).buildFulltextIndex(ctx, []Chunk{{ID: "a", Content: "body"}})
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("expected cancellation, got %v", err)
+	}
+}
+
+func TestBuildFulltextIndexInvalidChunkIDs(t *testing.T) {
+	for _, chunks := range [][]Chunk{
+		{{Content: "body"}},
+		{{ID: "a", Content: "first"}, {ID: "a", Content: "second"}},
+	} {
+		index, err := (&indexer{}).buildFulltextIndex(context.Background(), chunks)
+		if err == nil || len(index.Chunks) != 0 || len(index.Postings) != 0 {
+			t.Fatalf("expected error and no partial index, got %+v, %v", index, err)
+		}
+	}
+}
 
 type recordingEmbedder struct {
 	input   string

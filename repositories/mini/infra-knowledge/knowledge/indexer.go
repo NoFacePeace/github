@@ -138,11 +138,80 @@ type FulltextConfig struct{}
 type VectorConfig struct{}
 
 // FulltextIndex 表示用于关键词检索的全文索引产物。
-type FulltextIndex struct{}
+type FulltextIndex struct {
+	Chunks []Chunk
+	// Postings 保存词到文本块 ID 及块内词频的映射。
+	Postings map[string]map[string]int
+	// DocFreq 保存每个词出现的文本块数量。
+	DocFreq map[string]int
+	// AvgLen 表示所有文本块的平均词元长度。
+	AvgLen float64
+}
 
-// buildFulltextIndex 根据文本块及构建器持有的全文配置构建索引，具体逻辑待实现。
+// buildFulltextIndex 根据文本块构建倒排表和 BM25 所需统计数据。
 func (i *indexer) buildFulltextIndex(ctx context.Context, chunks []Chunk) (FulltextIndex, error) {
-	panic("not implemented")
+	if err := ctx.Err(); err != nil {
+		return FulltextIndex{}, err
+	}
+	index := FulltextIndex{
+		Chunks:   make([]Chunk, 0, len(chunks)),
+		Postings: make(map[string]map[string]int),
+		DocFreq:  make(map[string]int),
+	}
+	seen := make(map[string]bool, len(chunks))
+	totalTokens := 0
+
+	// 1. 遍历文本块，对 Content 分词并统一大小写，统计各词在当前块中的出现次数。
+	for _, chunk := range chunks {
+		if err := ctx.Err(); err != nil {
+			return FulltextIndex{}, err
+		}
+		if chunk.ID == "" || seen[chunk.ID] {
+			return FulltextIndex{}, fmt.Errorf("chunk id must be nonempty and unique: %q", chunk.ID)
+		}
+		seen[chunk.ID] = true
+		frequencies := make(map[string]int)
+		spans := splitTokenSpans(chunk.Content)
+		for _, span := range spans {
+			if err := ctx.Err(); err != nil {
+				return FulltextIndex{}, err
+			}
+			term := strings.ToLower(chunk.Content[span.start:span.end])
+			frequencies[term]++
+		}
+
+		// 2. 建立倒排表：词 -> 文本块 ID -> 词频，同时保留文本块正文和关联元数据。
+		for term, frequency := range frequencies {
+			if index.Postings[term] == nil {
+				index.Postings[term] = make(map[string]int)
+			}
+			index.Postings[term][chunk.ID] = frequency
+		}
+		// 从实际分词结果记录长度，并复制切片，避免产物与输入共享可变数据。
+		chunk.TokenCount = len(spans)
+		chunk.HeadingPath = append([]string(nil), chunk.HeadingPath...)
+		chunk.SectionPaths = append([]string(nil), chunk.SectionPaths...)
+		index.Chunks = append(index.Chunks, chunk)
+		totalTokens += chunk.TokenCount
+	}
+
+	// 3. 汇总每个词出现的文本块数量，以及所有文本块的平均词元长度。
+	for term, posting := range index.Postings {
+		if err := ctx.Err(); err != nil {
+			return FulltextIndex{}, err
+		}
+		index.DocFreq[term] = len(posting)
+	}
+	if len(index.Chunks) > 0 {
+		index.AvgLen = float64(totalTokens) / float64(len(index.Chunks))
+	}
+
+	// 4. 将文本块、倒排表和统计数据组织为全文索引产物，供调用方保存。
+	//    查询时根据词频、块长度和上述统计计算 BM25 分数，构建时不预先计算分数。
+	if err := ctx.Err(); err != nil {
+		return FulltextIndex{}, err
+	}
+	return index, nil
 }
 
 // VectorIndex 表示用于语义检索的向量索引产物。
