@@ -137,6 +137,12 @@ type FulltextConfig struct{}
 // 向量索引的构建指纹由公共切分配置和此配置共同计算。
 type VectorConfig struct{}
 
+// Candidate 表示单路检索返回的候选文本块及分数。
+type Candidate struct {
+	ChunkID string
+	Score   float64
+}
+
 // FulltextIndex 表示用于关键词检索的全文索引产物。
 type FulltextIndex struct {
 	Chunks []Chunk
@@ -146,6 +152,16 @@ type FulltextIndex struct {
 	DocFreq map[string]int
 	// AvgLen 表示所有文本块的平均词元长度。
 	AvgLen float64
+}
+
+// Search 根据查询文本检索全文索引，具体逻辑待实现。
+func (index FulltextIndex) Search(ctx context.Context, query string, limit int) ([]Candidate, error) {
+	panic("not implemented")
+}
+
+// mergeFulltextIndexes 合并多份全文索引及其统计数据，具体逻辑待实现。
+func mergeFulltextIndexes(indexes []FulltextIndex) (FulltextIndex, error) {
+	panic("not implemented")
 }
 
 // buildFulltextIndex 根据文本块构建倒排表和 BM25 所需统计数据。
@@ -219,6 +235,16 @@ type VectorIndex struct {
 	Dimensions int
 	// Graph 保存 HNSW 导出的图数据，包含文本块 ID、向量及节点连接。
 	Graph []byte
+}
+
+// Search 根据查询向量检索向量索引，具体逻辑待实现。
+func (index VectorIndex) Search(ctx context.Context, vector []float32, limit int) ([]Candidate, error) {
+	panic("not implemented")
+}
+
+// mergeVectorIndexes 使用已有向量合并多份索引并重建 HNSW 图，不重新生成向量，具体逻辑待实现。
+func mergeVectorIndexes(indexes []VectorIndex) (VectorIndex, error) {
+	panic("not implemented")
 }
 
 // buildVectorIndex 生成文本块向量，使用 HNSW 库默认参数构建并导出索引。
