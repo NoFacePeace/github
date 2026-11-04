@@ -11,3 +11,4 @@ color: "#4A90D9"
 - [Graphify](graphify/Graphify.md)：将代码与相关资料组织为可查询、可视化的知识图谱。
 - [ripgrep](ripgrep/Ripgrep.md)：跨平台文本搜索工具，命令名为 `rg`。
 - [Tree-sitter](tree-sitter/TreeSitter.md)：解析器生成工具和增量解析库，提供具体语法树及多语言绑定。
+- [LXCFS](lxcfs/LXCFS.md)：基于 FUSE 为容器提供与资源限制相适应的系统资源视图。
