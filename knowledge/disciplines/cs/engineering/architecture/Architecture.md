@@ -8,6 +8,9 @@
 - [检索](retrieval/Retrieval.md)：索引构建、查询处理、候选召回与结果排序等组件的职责和协作方式。
 - [故障检测](failure-detection/FailureDetection.md)：通过心跳、健康探测等信号判断进程、节点或服务是否可能异常。
 - [协调](coordination/Coordination.md)：管理共享资源与执行权的归属、交接和失效隔离。
+- [行为建模](behavior-modeling/BehaviorModeling.md)：描述对象的状态、事件及合法的行为变化。
+- [可靠性设计](reliability/Reliability.md)：处理重复请求、暂时失败与结果不确定，保护业务效果。
+- [消息协作](messaging/Messaging.md)：设计组件之间的消息投递与处理，协调业务数据和事件。
 
 ## 1. 参考资料
 

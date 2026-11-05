@@ -16,3 +16,7 @@
 ## 3. 事务
 
 - [事务](transactions/Transactions.md)：操作边界、提交与中止、并发控制及不同场景的保证范围。
+
+## 4. 执行控制
+
+- [执行控制](execution-control/ExecutionControl.md)：控制运行中的工作如何响应取消、停止与退出。

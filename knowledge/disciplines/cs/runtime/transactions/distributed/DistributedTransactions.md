@@ -21,7 +21,7 @@
 - [Saga](Saga.md)：通过本地事务和补偿动作协调长业务流程。
 - [TCC](TCC.md)：通过 Try、Confirm、Cancel 协调资源预留和最终处理。
 
-如果需求只是数据库更新后可靠地产生消息，可以考虑 Transactional Outbox：在同一个本地事务中写入业务数据和待发送事件，再由后台投递。它解决本地数据与事件记录的一致性，不会把下游消费者的执行纳入同一个原子事务。
+如果需求只是数据库更新后可靠地产生消息，可以考虑[事务发件箱（Transactional Outbox）](../../../engineering/architecture/messaging/TransactionalOutbox.md)：在同一个本地事务中写入业务数据和待发送事件，再由后台投递。它解决本地数据与事件记录的一致性，不会把下游消费者的执行纳入同一个原子事务。
 
 ## 3. 共同的故障处理要求
 
