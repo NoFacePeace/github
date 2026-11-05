@@ -108,22 +108,62 @@ func (s *service) createTask(ctx context.Context, input InvokeTaskInput) (*Task,
 }
 
 func (s *service) resumeTask(ctx context.Context, input InvokeTaskInput) (*Task, error) {
-	// TODO: 实现任务继续执行。
-	return nil, errors.New("resumeTask is not implemented")
+	task, err := s.store.GetTask(ctx, input.TaskID)
+	if err != nil {
+		return nil, err
+	}
+	lastSession, err := s.store.GetLastSession(ctx, task.ID)
+	if err != nil {
+		return nil, err
+	}
+	if lastSession != nil && (lastSession.Status == SessionStatusPending || lastSession.Status == SessionStatusRunning) {
+		return nil, errors.New("task already has an active session")
+	}
+	// 继续任务始终沿用 Task 绑定的版本，不读取 Agent 当前发布版本或草稿。
+	version, err := s.store.GetVersion(ctx, task.AgentVersionID)
+	if err != nil {
+		return nil, err
+	}
+	session := &Session{
+		ID:     rand.Text(),
+		TaskID: task.ID,
+		Prompt: input.Prompt,
+		Status: SessionStatusPending,
+	}
+	if lastSession != nil {
+		session.RunnerID = lastSession.RunnerID
+		session.ExecutorSessionID = lastSession.ExecutorSessionID
+	}
+	// CreateSession 的存储实现须通过活跃会话唯一约束保证并发安全。
+	if err := s.store.CreateSession(ctx, session); err != nil {
+		return nil, err
+	}
+	if err := s.runSession(ctx, task, session, version); err != nil {
+		return nil, err
+	}
+	return task, nil
 }
 
 func (s *service) runSession(ctx context.Context, task *Task, session *Session, version *AgentVersion) error {
 	job := &Job{
-		TaskID:         task.ID,
-		SessionID:      session.ID,
-		RunnerID:       session.RunnerID,
-		Prompt:         session.Prompt,
-		AgentVersionID: task.AgentVersionID,
-		Engine:         version.Engine,
-		Model:          version.Model,
-		SystemPrompt:   version.SystemPrompt,
+		TaskID:            task.ID,
+		SessionID:         session.ID,
+		RunnerID:          session.RunnerID,
+		ExecutorSessionID: session.ExecutorSessionID,
+		Prompt:            session.Prompt,
+		AgentVersionID:    task.AgentVersionID,
+		Engine:            version.Engine,
+		Model:             version.Model,
+		SystemPrompt:      version.SystemPrompt,
 	}
 	if err := s.submitJob(ctx, job); err != nil {
+		// 请求取消后仍尝试保存失败状态，但限制收尾耗时。
+		cleanupCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
+		defer cancel()
+		failErr := s.store.FailSession(cleanupCtx, session.ID, err.Error())
+		if failErr != nil {
+			return errors.Join(err, fmt.Errorf("fail session after job submission error: %w", failErr))
+		}
 		return err
 	}
 	s.wakeScheduler()

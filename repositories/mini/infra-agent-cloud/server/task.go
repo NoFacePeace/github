@@ -20,7 +20,9 @@ type Session struct {
 	ID       string
 	TaskID   string
 	RunnerID string
-	Prompt   string
-	Status   SessionStatus
-	Error    string
+	// ExecutorSessionID 是引擎侧的会话标识，继续任务时复用以恢复上下文。
+	ExecutorSessionID string
+	Prompt            string
+	Status            SessionStatus
+	Error             string
 }

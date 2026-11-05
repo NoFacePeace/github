@@ -10,7 +10,20 @@ type Store interface {
 	GetAgent(ctx context.Context, agentID string) (*Agent, error)
 	GetVersion(ctx context.Context, versionID string) (*AgentVersion, error)
 	CreateTask(ctx context.Context, task *Task) error
+	GetTask(ctx context.Context, taskID string) (*Task, error)
+	// GetLastSession 返回任务的上一轮 Session，无记录时返回 nil, nil。
+	// 实现须按稳定的执行轮次顺序取最新一条，不能按随机 ID 判断先后。
+	GetLastSession(ctx context.Context, taskID string) (*Session, error)
+	// CreateSession 创建会话，须通过数据库唯一约束保证同一 Task 最多有一个 pending 或 running 的 Session。
+	// MySQL 可使用生成列：活跃状态时取 TaskID，其他状态取 NULL，再对该列建立唯一索引。
+	// 历史会话不受影响；并发创建触发唯一键冲突时，应返回任务已有活跃会话的错误。
+	// 状态更新进入活跃状态时同样受此约束保护，不能仅依赖 Service 先查询后创建。
 	CreateSession(ctx context.Context, session *Session) error
+	// FailSession 将未结束的 Session 原子标记为 failed 并保存原因，不覆盖已有终态。
+	// 失败状态作为撤销执行授权的依据，后续预留和执行续约须检查并拒绝该 Session。
+	// 不立即清除执行 token、执行租约期限或释放容量，等待退出确认或原租约到期后回收。
+	// 重复调用不改变已记录的终态；本方法不发送停止指令，也不保证远程进程已退出。
+	FailSession(ctx context.Context, sessionID, reason string) error
 	// EnqueueJob 按 SessionID 原子去重，首次提交时保存 Job 并加入待调度队列。
 	// 重复提交不重复入队，也不覆盖已有 Job；若所属 Task 不一致则返回冲突错误。
 	// 数据库实现须通过 SessionID 唯一约束保证并发安全，不能只依赖先查后插。
