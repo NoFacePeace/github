@@ -1,5 +1,7 @@
 package server
 
+import "time"
+
 // RunnerStatus 表示执行节点的在线状态。
 type RunnerStatus string
 
@@ -23,4 +25,24 @@ type Runner struct {
 	// ActiveSessions 是当前占用的并发名额，包含已预留但尚未启动的执行。
 	// 选择节点后仍需原子预留容量，不能仅凭此字段判断就直接投递。
 	ActiveSessions int
+}
+
+type RunnerCommandType string
+
+const (
+	RunnerCommandTypeStop RunnerCommandType = "stop"
+)
+
+// RunnerCommand 表示发送到指定 Runner 的执行控制指令。
+type RunnerCommand struct {
+	// ID 标识同一条命令，重试发送时复用。
+	ID        string
+	Type      RunnerCommandType
+	RunnerID  string
+	TaskID    string
+	SessionID string
+	// ExecutionToken 限定目标执行，防止迟到命令误停其他执行。
+	ExecutionToken string
+	// ExpiresAt 表示命令有效期，Runner 不处理已过期的命令。
+	ExpiresAt time.Time
 }

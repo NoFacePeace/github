@@ -14,6 +14,7 @@ type Store interface {
 	// GetLastSession 返回任务的上一轮 Session，无记录时返回 nil, nil。
 	// 实现须按稳定的执行轮次顺序取最新一条，不能按随机 ID 判断先后。
 	GetLastSession(ctx context.Context, taskID string) (*Session, error)
+	GetSession(ctx context.Context, sessionID string) (*Session, error)
 	// CreateSession 创建会话，须通过数据库唯一约束保证同一 Task 最多有一个 pending 或 running 的 Session。
 	// MySQL 可使用生成列：活跃状态时取 TaskID，其他状态取 NULL，再对该列建立唯一索引。
 	// 历史会话不受影响；并发创建触发唯一键冲突时，应返回任务已有活跃会话的错误。
@@ -28,6 +29,8 @@ type Store interface {
 	// 重复提交不重复入队，也不覆盖已有 Job；若所属 Task 不一致则返回冲突错误。
 	// 数据库实现须通过 SessionID 唯一约束保证并发安全，不能只依赖先查后插。
 	EnqueueJob(ctx context.Context, job *Job) error
+	// GetJob 按 SessionID 查询当前保存的 Job，包含最新调度状态和执行归属；不存在时返回 nil, nil。
+	GetJob(ctx context.Context, sessionID string) (*Job, error)
 	// ClaimJob 每次在短事务中领取一条可调度任务，无任务时返回 nil, nil。
 	// 候选任务须没有领取 token 或领取已过期；按入队顺序选取。
 	// 未超过 Deadline 的任务还须 NextAttemptAt 为零值或已到期，才允许领取。
@@ -70,6 +73,10 @@ type Store interface {
 	// 发布去重标记与消息写入须原子完成；不向 Runner 暴露调度领取 token 等内部字段。
 	// 成功仅表示消息已投递，不表示 Runner 已开始执行；结果不确定时返回错误，供同消息重试。
 	PublishJob(ctx context.Context, job *Job) error
+	// PublishCommand 将控制指令发送至 command.RunnerID 对应的命令通道。
+	// 同一命令重试时复用 ID 和目标执行 token，Runner 须支持重复消费并校验执行归属及有效期。
+	// 成功仅表示命令已发送，不保证执行已停止；本方法不清除执行租约或释放容量。
+	PublishCommand(ctx context.Context, command *RunnerCommand) error
 	// CompleteJobDispatch 原子校验调度领取 token 和有效期，将 Job 标记为 dispatched 并清除领取信息。
 	// 保留执行 token 和执行租约期限，Session 保持 pending，等待 Runner 上报开始执行。
 	// 同一有效领取下重复确认已投递记录应视为成功，不覆盖取消或失败等终态。

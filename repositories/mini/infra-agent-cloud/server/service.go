@@ -160,7 +160,7 @@ func (s *service) runSession(ctx context.Context, task *Task, session *Session, 
 		// 请求取消后仍尝试保存失败状态，但限制收尾耗时。
 		cleanupCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
 		defer cancel()
-		failErr := s.store.FailSession(cleanupCtx, session.ID, err.Error())
+		failErr := s.failSession(cleanupCtx, session.ID, err.Error())
 		if failErr != nil {
 			return errors.Join(err, fmt.Errorf("fail session after job submission error: %w", failErr))
 		}
@@ -168,6 +168,31 @@ func (s *service) runSession(ctx context.Context, task *Task, session *Session, 
 	}
 	s.wakeScheduler()
 	return nil
+}
+
+func (s *service) failSession(ctx context.Context, sessionID, reason string) error {
+	if err := s.store.FailSession(ctx, sessionID, reason); err != nil {
+		return err
+	}
+	job, err := s.store.GetJob(ctx, sessionID)
+	if err != nil {
+		return err
+	}
+	if job == nil || job.RunnerID == "" || job.ExecutionToken == "" {
+		return nil
+	}
+	if !time.Now().Before(job.ExecutionExpiresAt) {
+		return nil
+	}
+	return s.store.PublishCommand(ctx, &RunnerCommand{
+		ID:             rand.Text(),
+		Type:           RunnerCommandTypeStop,
+		RunnerID:       job.RunnerID,
+		TaskID:         job.TaskID,
+		SessionID:      job.SessionID,
+		ExecutionToken: job.ExecutionToken,
+		ExpiresAt:      job.ExecutionExpiresAt,
+	})
 }
 
 func (s *service) submitJob(ctx context.Context, job *Job) error {
@@ -246,13 +271,46 @@ func (s *service) dispatchPending(ctx context.Context) error {
 		if job == nil {
 			return nil
 		}
+		session, err := s.store.GetSession(ctx, job.SessionID)
+		if err != nil {
+			return err
+		}
+		if session.Status == SessionStatusFailed || session.Status == SessionStatusStopped {
+			if err := s.failSession(ctx, session.ID, session.Error); err != nil {
+				return err
+			}
+			if _, err := s.store.FailJob(ctx, job.SessionID, job.ClaimToken, "session has ended"); err != nil {
+				return err
+			}
+			continue
+		}
 		if !job.Deadline.IsZero() && !time.Now().Before(job.Deadline) {
 			if _, err := s.store.FailJob(ctx, job.SessionID, job.ClaimToken, "job dispatch deadline exceeded"); err != nil {
 				return err
 			}
 			continue
 		}
-		if err := s.dispatchWithClaimRenewal(ctx, job); err != nil {
+		dispatchErr := s.dispatchWithClaimRenewal(ctx, job)
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+		// 分发后复查，已失败或停止的 Session 不再安排重试。
+		session, err = s.store.GetSession(ctx, job.SessionID)
+		if err != nil {
+			return errors.Join(dispatchErr, err)
+		}
+		if session.Status == SessionStatusFailed || session.Status == SessionStatusStopped {
+			if err := s.failSession(ctx, session.ID, session.Error); err != nil {
+				return errors.Join(dispatchErr, err)
+			}
+			if dispatchErr != nil {
+				if _, err := s.store.FailJob(ctx, job.SessionID, job.ClaimToken, "session has ended"); err != nil {
+					return err
+				}
+			}
+			continue
+		}
+		if err := dispatchErr; err != nil {
 			if ctx.Err() != nil {
 				return ctx.Err()
 			}
