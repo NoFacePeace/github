@@ -22,6 +22,10 @@
 
 沙箱提供隔离，不直接判断操作是否符合任务目标。有外部副作用的操作仍需应用结合权限和业务规则控制。
 
-## 4. 相关实现
+## 4. 远程执行
+
+- [远程沙箱](remote/RemoteSandbox.md)：执行位置、通信方式、常见实现，以及节点故障后的环境恢复。
+
+## 5. 相关实现
 
 - [Perplexity SPACE](../../../ecosystem/perplexity/SPACE.md)：基于 Firecracker microVM 的开源沙箱平台，用于隔离运行 Agent 和用户代码。
