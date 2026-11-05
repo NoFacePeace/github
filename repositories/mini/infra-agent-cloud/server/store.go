@@ -41,4 +41,25 @@ type Store interface {
 	// 仅允许未结束调度且未超过 Deadline 的 Job 重试，不将 Session 标记为失败。
 	// 成功返回 true, nil；领取失效、调度已结束或已超时返回 false, nil；存储异常返回错误。
 	RetryJob(ctx context.Context, sessionID, claimToken, reason string, nextAttemptAt time.Time) (bool, error)
+	// ReserveExecution 原子校验调度领取 token 和有效期，并为 Job 预留目标 Runner 的并发名额。
+	// 须检查 Runner 在线、支持 Job 的引擎且仍有容量；已绑定 Runner 的任务不得改投其他节点。
+	// 首次预留生成执行 token，以存储端当前时间加 ttl 设置执行租约期限，ttl 必须为正数。
+	// 同时保存 Job 和 Session 的 Runner 绑定，将 Job 状态设为 dispatching，返回更新后的 Job。
+	// 重复预留须复用已保存且有效的同一执行租约，不能重复占用名额或更换目标 Runner。
+	// 已有执行租约失效时返回错误，由调用方处理恢复，不得静默生成新租约重新投递。
+	// 领取失效、Runner 不可用、容量不足或存储异常均返回错误；本方法不投递消息或启动执行。
+	ReserveExecution(ctx context.Context, sessionID, claimToken, runnerID string, ttl time.Duration) (*Job, error)
+	// ListRunners 返回执行节点的状态、引擎能力和容量快照，无节点时返回空列表。
+	// Service 用于查找已绑定节点或选择候选节点，实际预留仍须原子复查节点状态与容量。
+	ListRunners(ctx context.Context) ([]Runner, error)
+	// PublishJob 将已确定的执行消息幂等投递至 job.RunnerID 对应的执行通道。
+	// 须校验执行租约有效，使用固定的 MessageID 和消息内容；重试不得重复发布同一消息。
+	// 发布去重标记与消息写入须原子完成；不向 Runner 暴露调度领取 token 等内部字段。
+	// 成功仅表示消息已投递，不表示 Runner 已开始执行；结果不确定时返回错误，供同消息重试。
+	PublishJob(ctx context.Context, job *Job) error
+	// CompleteJobDispatch 原子校验调度领取 token 和有效期，将 Job 标记为 dispatched 并清除领取信息。
+	// 保留执行 token 和执行租约期限，Session 保持 pending，等待 Runner 上报开始执行。
+	// 同一有效领取下重复确认已投递记录应视为成功，不覆盖取消或失败等终态。
+	// 成功返回 true, nil；领取失效或状态不允许确认时返回 false, nil；存储异常返回错误。
+	CompleteJobDispatch(ctx context.Context, sessionID, claimToken string) (bool, error)
 }

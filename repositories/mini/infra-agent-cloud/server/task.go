@@ -17,9 +17,10 @@ const (
 )
 
 type Session struct {
-	ID     string
-	TaskID string
-	Prompt string
-	Status SessionStatus
-	Error  string
+	ID       string
+	TaskID   string
+	RunnerID string
+	Prompt   string
+	Status   SessionStatus
+	Error    string
 }

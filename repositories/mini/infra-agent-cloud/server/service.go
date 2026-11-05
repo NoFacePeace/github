@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"runtime/debug"
+	"slices"
 	"time"
 )
 
@@ -115,6 +116,7 @@ func (s *service) runSession(ctx context.Context, task *Task, session *Session, 
 	job := &Job{
 		TaskID:         task.ID,
 		SessionID:      session.ID,
+		RunnerID:       session.RunnerID,
 		Prompt:         session.Prompt,
 		AgentVersionID: task.AgentVersionID,
 		Engine:         version.Engine,
@@ -129,6 +131,9 @@ func (s *service) runSession(ctx context.Context, task *Task, session *Session, 
 }
 
 func (s *service) submitJob(ctx context.Context, job *Job) error {
+	if job.MessageID == "" {
+		job.MessageID = rand.Text()
+	}
 	if job.Status == "" {
 		job.Status = JobStatusQueued
 	}
@@ -287,6 +292,38 @@ func (s *service) dispatchWithClaimRenewal(ctx context.Context, job *Job) error 
 }
 
 func (s *service) dispatchJob(ctx context.Context, job *Job) error {
-	// TODO: 选择 Runner、建立执行归属并投递任务。
-	return errors.New("dispatchJob is not implemented")
+	if job.RunnerID == "" {
+		runners, err := s.store.ListRunners(ctx)
+		if err != nil {
+			return err
+		}
+		for _, runner := range runners {
+			if runner.Status != RunnerStatusOnline ||
+				!slices.Contains(runner.Engines, job.Engine) ||
+				runner.ActiveSessions >= runner.Capacity {
+				continue
+			}
+			job.RunnerID = runner.ID
+			break
+		}
+		if job.RunnerID == "" {
+			return errors.New("no available compatible runner")
+		}
+	}
+	reserved, err := s.store.ReserveExecution(ctx, job.SessionID, job.ClaimToken, job.RunnerID, 5*time.Minute)
+	if err != nil {
+		return err
+	}
+	*job = *reserved
+	if err := s.store.PublishJob(ctx, job); err != nil {
+		return err
+	}
+	completed, err := s.store.CompleteJobDispatch(ctx, job.SessionID, job.ClaimToken)
+	if err != nil {
+		return err
+	}
+	if !completed {
+		return errors.New("job dispatch confirmation rejected")
+	}
+	return nil
 }
