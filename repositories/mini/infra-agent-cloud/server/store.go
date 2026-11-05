@@ -15,6 +15,12 @@ type Store interface {
 	// 实现须按稳定的执行轮次顺序取最新一条，不能按随机 ID 判断先后。
 	GetLastSession(ctx context.Context, taskID string) (*Session, error)
 	GetSession(ctx context.Context, sessionID string) (*Session, error)
+	// ListRecoverableSessions 分页查询恢复候选：早于 pendingBefore 创建且仍 pending 的会话、
+	// 执行租约已失效的 running 会话，以及已 failed 或 stopped 但仍持有有效执行租约的会话。
+	// 租约有效性以存储端当前时间判断；候选仅供 Service 复查，不代表可直接更新状态。
+	// cursor 为空表示第一页，limit 须为正数；使用稳定游标分页，返回的下一页游标为空表示扫描结束。
+	// TODO: 补充 Session 创建时间字段，供长期 pending 的筛选使用。
+	ListRecoverableSessions(ctx context.Context, pendingBefore time.Time, cursor string, limit int) ([]Session, string, error)
 	// CreateSession 创建会话，须通过数据库唯一约束保证同一 Task 最多有一个 pending 或 running 的 Session。
 	// MySQL 可使用生成列：活跃状态时取 TaskID，其他状态取 NULL，再对该列建立唯一索引。
 	// 历史会话不受影响；并发创建触发唯一键冲突时，应返回任务已有活跃会话的错误。

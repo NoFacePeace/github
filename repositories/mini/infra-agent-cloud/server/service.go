@@ -252,10 +252,33 @@ func (s *service) runSchedulerOnce(ctx context.Context) (stopped bool) {
 			return true
 		case <-s.schedulerWake:
 		case <-ticker.C:
+			if err := s.recoverSessions(ctx); err != nil {
+				slog.Error("Failed to recover sessions", "error", err)
+			}
 		}
 		if err := s.dispatchPending(ctx); err != nil {
 			slog.Error("Failed to dispatch pending jobs", "error", err)
 		}
+	}
+}
+
+func (s *service) recoverSessions(ctx context.Context) error {
+	pendingBefore := time.Now().Add(-5 * time.Minute)
+	cursor := ""
+	for {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		sessions, nextCursor, err := s.store.ListRecoverableSessions(ctx, pendingBefore, cursor, 100)
+		if err != nil {
+			return err
+		}
+		slog.Debug("Session recovery candidates loaded", "count", len(sessions))
+		// TODO: 逐条复查当前状态和 Job，处理提交失败、执行租约过期和未完成的停止补偿。
+		if nextCursor == "" {
+			return nil
+		}
+		cursor = nextCursor
 	}
 }
 
