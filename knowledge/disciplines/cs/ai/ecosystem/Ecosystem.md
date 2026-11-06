@@ -26,3 +26,4 @@ AI 生态包括模型、应用产品、开发框架、托管平台与编排服�
 
 - [Gemini Agent](GeminiAgent.md)：Google 面向企业工作的智能体产品。
 - [Multica](Multica.md)：面向人类与多个 AI 智能体的任务管理与协作平台，支持连接已有编程智能体和自托管。
+- [DS Bot](ds-bot/DSBot.md)：基于 DeepSeek Harness 的社区开源 Bot 应用，支持长期角色、记忆、群聊协作与任务执行。
