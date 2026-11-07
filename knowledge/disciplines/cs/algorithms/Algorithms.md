@@ -2,6 +2,7 @@
 
 算法（Algorithm）是解决问题的一组明确、有限的步骤。本目录用于整理常用算法的原理、实现、适用场景，以及时间复杂度和空间复杂度分析。
 
+- [算法基础](basics/Basics.md)：递归、迭代等组织计算过程的基础概念。
 - [排序](sorting/Sorting.md)
 - [搜索](search/Search.md)
 - [检索](retrieval/Retrieval.md)
