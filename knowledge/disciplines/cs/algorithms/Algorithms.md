@@ -4,6 +4,7 @@
 
 - [算法基础](basics/Basics.md)：递归、迭代等组织计算过程的基础概念。
 - [排序](sorting/Sorting.md)
+- [快速选择](sorting/quick-sort/QuickSelect.md)：通过划分区间查找第 k 小或第 k 大的元素，无须完整排序。
 - [搜索](search/Search.md)
 - [检索](retrieval/Retrieval.md)
 - [动态规划](dp/DP.md)
