@@ -3,5 +3,6 @@
 本目录用于整理算法竞赛中与数组相关的基础知识、常见操作、解题技巧和题目解析。
 
 - [两数之和](TwoSum.md)
+- [三数之和](ThreeSum.md)
 - [统计封闭岛屿的数目](NumberOfClosedIslands.md)
 - [统计镜子反射路径数目](TwistedMirrorPathCount.md)

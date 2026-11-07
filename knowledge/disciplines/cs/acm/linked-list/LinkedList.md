@@ -5,3 +5,4 @@
 相关知识：[链表](../../data-structures/linked-list/LinkedList.md)。
 
 - [反转链表](ReverseLinkedList.md)
+- [合并两个有序链表](MergeTwoSortedLists.md)
