@@ -6,5 +6,6 @@
 
 ## 1. 常见思想
 
+- [分治](DivideAndConquer.md)：将原问题拆成多个规模更小的同类子问题，分别求解后组合结果。
 - [等价转化](EquivalentTransformation.md)：在保留目标所需性质的前提下，将问题转化为更容易求解的形式。
 - [逆向思维](ReverseThinking.md)：从目标、结果或反向过程出发寻找解法。
