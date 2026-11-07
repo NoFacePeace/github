@@ -1,6 +1,7 @@
 # 数据结构
 
-- [跳表](Skiplist.md)
+- [链表](linked-list/LinkedList.md)
+- [跳表](linked-list/Skiplist.md)
 - [B+ 树](BPlusTree.md)
 - [哈希表](hash-table/HashTable.md)
 - [图](graph/Graph.md)

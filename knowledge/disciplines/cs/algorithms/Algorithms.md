@@ -6,4 +6,6 @@
 - [搜索](search/Search.md)
 - [检索](retrieval/Retrieval.md)
 - [动态规划](dp/DP.md)
+- [双指针](two-pointers/TwoPointers.md)：通过两个位置的协同移动减少重复遍历。
+- [淘汰](eviction/Eviction.md)：资源容量不足时，按一定规则选择移除的数据。
 - [算法思想](thinking/Thinking.md)：设计算法与转化问题的通用方法。

@@ -4,4 +4,6 @@
 
 - [数组](array/Array.md)：数组基础、常见操作与解题技巧。
 - [字符串](string/String.md)：字符串基础、常见操作与解题技巧。
+- [链表](linked-list/LinkedList.md)：链表常见操作、解题技巧与题目解析。
 - [图](graph/Graph.md)：图相关算法、解题技巧与题目解析。
+- [数据结构设计](design/Design.md)：数据结构设计类题目的结构组合、操作实现与复杂度分析。

@@ -31,6 +31,8 @@
 
 ## 3. Go 实现
 
+使用[滑动窗口](../../algorithms/two-pointers/SlidingWindow.md)维护不含重复字符的连续区间。右边界遇到重复字符时，左边界移过窗口中原有的同一字符，并更新字符记录；遍历过程中记录合法窗口的最大长度。
+
 ```go
 func lengthOfLongestSubstring(s string) int {
     l, r := 0, 0
