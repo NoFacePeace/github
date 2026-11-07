@@ -21,7 +21,7 @@
 
 ## 2. 使用 Lomuto 划分
 
-[Lomuto 划分](LomutoPartition.md)返回基准的最终位置 `p`，因此可以直接比较目标下标与 `p`。
+[Lomuto 划分](../basics/partition/LomutoPartition.md)返回基准的最终位置 `p`，因此可以直接比较目标下标与 `p`。
 
 下面调用该文档中的 `lomutoPartition` 函数。所有实现都要求数组非空，且 `0 <= target < len(nums)`，并直接修改原数组。
 
@@ -48,7 +48,7 @@ func QuickSelectLomuto(nums []int, target int) int {
 
 ## 3. 使用 Hoare 划分
 
-[Hoare 划分](HoarePartition.md)返回分区边界 `b`，不保证基准归位。下面调用该文档中返回单个边界的 `hoarePartition` 函数。
+[Hoare 划分](../basics/partition/HoarePartition.md)返回分区边界 `b`，不保证基准归位。下面调用该文档中返回单个边界的 `hoarePartition` 函数。
 
 ```go
 func QuickSelectHoare(nums []int, target int) int {
