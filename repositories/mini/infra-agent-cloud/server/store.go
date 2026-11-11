@@ -2,7 +2,11 @@ package server
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"time"
+
+	"github.com/redis/go-redis/v9"
 )
 
 // Store 定义任务创建流程所需的数据存取接口。
@@ -32,8 +36,8 @@ type Store interface {
 	// 重复调用不改变已记录的终态；本方法不发送停止指令，也不保证远程进程已退出。
 	FailSession(ctx context.Context, sessionID, reason string) error
 	// EnqueueJob 按 SessionID 原子去重，首次提交时保存 Job 并加入待调度队列。
-	// 重复提交不重复入队，也不覆盖已有 Job；若所属 Task 不一致则返回冲突错误。
-	// 数据库实现须通过 SessionID 唯一约束保证并发安全，不能只依赖先查后插。
+	// SessionID 对应的 Job 已存在时直接成功，不重复入队，也不覆盖已有 Job。
+	// Redis 实现通过 Lua 原子保存记录和队列成员；数据库实现须使用 SessionID 唯一约束。
 	EnqueueJob(ctx context.Context, job *Job) error
 	// GetJob 按 SessionID 查询当前保存的 Job，包含最新调度状态和执行归属；不存在时返回 nil, nil。
 	GetJob(ctx context.Context, sessionID string) (*Job, error)
@@ -88,4 +92,41 @@ type Store interface {
 	// 同一有效领取下重复确认已投递记录应视为成功，不覆盖取消或失败等终态。
 	// 成功返回 true, nil；领取失效或状态不允许确认时返回 false, nil；存储异常返回错误。
 	CompleteJobDispatch(ctx context.Context, sessionID, claimToken string) (bool, error)
+}
+
+// store 是统一存储入口，数据库连接及接口方法后续补充。
+type store struct {
+	redis *redis.Client
+}
+
+// NewStore 注入 Redis 客户端，客户端由调用方创建和关闭。
+func NewStore(client *redis.Client) *store {
+	return &store{redis: client}
+}
+
+const (
+	jobKeyPrefix = "infra-agent-cloud:{dispatch}:job:"
+	jobQueueKey  = "infra-agent-cloud:{dispatch}:pending"
+)
+
+var enqueueJobScript = redis.NewScript(`
+if redis.call('EXISTS', KEYS[1]) == 1 then return 0 end
+redis.call('SET', KEYS[1], ARGV[1])
+redis.call('ZADD', KEYS[2], ARGV[2], ARGV[3])
+return 1
+`)
+
+// EnqueueJob 按 SessionID 原子去重，保存 Job 并按 QueuedAt 加入待调度集合。
+func (s *store) EnqueueJob(ctx context.Context, job *Job) error {
+	data, err := json.Marshal(job)
+	if err != nil {
+		return fmt.Errorf("marshal job: %w", err)
+	}
+	if err := enqueueJobScript.Run(ctx, s.redis,
+		[]string{jobKeyPrefix + job.SessionID, jobQueueKey},
+		string(data), job.QueuedAt.UnixMilli(), job.SessionID,
+	).Err(); err != nil {
+		return fmt.Errorf("enqueue job: %w", err)
+	}
+	return nil
 }
