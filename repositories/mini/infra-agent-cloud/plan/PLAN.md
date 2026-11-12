@@ -39,9 +39,9 @@ Task 表示整件事，Session 表示其中一轮执行。继续任务时创建�
 
 ### 2.2 状态与一致性
 
-- Session 状态：`pending → running → completed / failed / stopped`；启动失败可由 `pending` 直接进入 `failed`，排队取消可直接进入 `stopped`。
+- Session 创建即为 `running`，覆盖排队、调度和执行，结束后进入 `completed / failed / stopped`；实际启动进度由调度记录和执行事件表达。
 - 超时和执行失联暂归为 `failed`，通过错误原因区分；停止请求只在进程退出确认后收敛为 `stopped`。
-- Task 状态反映最近一轮 Session 的状态；继续任务时重新进入 `pending`，历史 Session 保留。
+- Task 状态反映最近一轮 Session 的状态；继续任务创建新的 `running` Session，历史 Session 保留。
 - 同一个 Task 同时最多存在一个待执行或运行中的 Session。
 - 同一个 Session 同时最多存在一个有效执行归属；任务领取、容量预留和归属创建需要原子处理。
 - 已发布 AgentVersion 不修改；Task 绑定具体版本，继续任务仍使用该版本。

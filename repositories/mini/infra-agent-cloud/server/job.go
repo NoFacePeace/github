@@ -36,6 +36,15 @@ type Job struct {
 	ExecutionExpiresAt time.Time
 	// Deadline 表示排队调度的截止时间，不是 Runner 执行超时。
 	Deadline time.Time
-	// NextAttemptAt 表示下次允许领取的时间，零值表示无需等待。
-	NextAttemptAt time.Time
+}
+
+// ExecutionLease 保存本次执行的归属和有效期，与 Job 分 key 存储。
+type ExecutionLease struct {
+	TaskID             string
+	SessionID          string
+	RunnerID           string
+	ExecutionToken     string
+	ExecutionExpiresAt time.Time
+	// LastSeq 是最后接受的执行事件序号。
+	LastSeq int64
 }

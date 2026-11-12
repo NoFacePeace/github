@@ -9,7 +9,7 @@ type Task struct {
 type SessionStatus string
 
 const (
-	SessionStatusPending   SessionStatus = "pending"
+	// SessionStatusRunning 覆盖排队、调度和执行阶段，表示本轮会话尚未结束。
 	SessionStatusRunning   SessionStatus = "running"
 	SessionStatusCompleted SessionStatus = "completed"
 	SessionStatusFailed    SessionStatus = "failed"

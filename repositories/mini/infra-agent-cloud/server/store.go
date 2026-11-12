@@ -2,7 +2,9 @@ package server
 
 import (
 	"context"
+	"crypto/rand"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
@@ -19,14 +21,15 @@ type Store interface {
 	// 实现须按稳定的执行轮次顺序取最新一条，不能按随机 ID 判断先后。
 	GetLastSession(ctx context.Context, taskID string) (*Session, error)
 	GetSession(ctx context.Context, sessionID string) (*Session, error)
-	// ListRecoverableSessions 分页查询恢复候选：早于 pendingBefore 创建且仍 pending 的会话、
+	// ListRecoverableSessions 分页查询恢复候选：早于 startupBefore 创建且尚未启动执行的 running 会话、
 	// 执行租约已失效的 running 会话，以及已 failed 或 stopped 但仍持有有效执行租约的会话。
 	// 租约有效性以存储端当前时间判断；候选仅供 Service 复查，不代表可直接更新状态。
 	// cursor 为空表示第一页，limit 须为正数；使用稳定游标分页，返回的下一页游标为空表示扫描结束。
-	// TODO: 补充 Session 创建时间字段，供长期 pending 的筛选使用。
-	ListRecoverableSessions(ctx context.Context, pendingBefore time.Time, cursor string, limit int) ([]Session, string, error)
-	// CreateSession 创建会话，须通过数据库唯一约束保证同一 Task 最多有一个 pending 或 running 的 Session。
-	// MySQL 可使用生成列：活跃状态时取 TaskID，其他状态取 NULL，再对该列建立唯一索引。
+	// Service 须结合 Job 调度状态和截止时间复查，不能仅因尚无执行租约就判定排队会话失败。
+	// TODO: 补充 Session 创建时间字段，供长期未启动会话的筛选使用。
+	ListRecoverableSessions(ctx context.Context, startupBefore time.Time, cursor string, limit int) ([]Session, string, error)
+	// CreateSession 创建即为 running，须通过数据库唯一约束保证同一 Task 最多有一个 running 的 Session。
+	// MySQL 可使用生成列：running 时取 TaskID，其他状态取 NULL，再对该列建立唯一索引。
 	// 历史会话不受影响；并发创建触发唯一键冲突时，应返回任务已有活跃会话的错误。
 	// 状态更新进入活跃状态时同样受此约束保护，不能仅依赖 Service 先查询后创建。
 	CreateSession(ctx context.Context, session *Session) error
@@ -39,34 +42,27 @@ type Store interface {
 	// SessionID 对应的 Job 已存在时直接成功，不重复入队，也不覆盖已有 Job。
 	// Redis 实现通过 Lua 原子保存记录和队列成员；数据库实现须使用 SessionID 唯一约束。
 	EnqueueJob(ctx context.Context, job *Job) error
-	// GetJob 按 SessionID 查询当前保存的 Job，包含最新调度状态和执行归属；不存在时返回 nil, nil。
+	// ListPendingJobIDs 按入队顺序返回待调度 Job 的标识，当前使用 SessionID。
+	ListPendingJobIDs(ctx context.Context) ([]string, error)
+	// ClaimJob 获取指定 Job 的独立调度锁，未获取到时返回空 token 和 nil。
+	// ttl 仅控制调度锁的有效期，不设置 Job 的过期时间，也不移除队列成员。
+	ClaimJob(ctx context.Context, sessionID string, ttl time.Duration) (string, error)
+	// GetJob 按 SessionID 查询最新 Job，包含调度状态和执行归属；不存在时返回 nil, nil。
+	// 调度流程先获取锁再读取，其他查询场景无需获取调度锁。
 	GetJob(ctx context.Context, sessionID string) (*Job, error)
-	// ClaimJob 每次在短事务中领取一条可调度任务，无任务时返回 nil, nil。
-	// 候选任务须没有领取 token 或领取已过期；按入队顺序选取。
-	// 未超过 Deadline 的任务还须 NextAttemptAt 为零值或已到期，才允许领取。
-	// 已超过 Deadline 的任务忽略 NextAttemptAt，允许领取后由 Service 判断超时并收尾，
-	// 但仍不能抢占尚未过期的有效领取。
-	// MySQL 实现通过 FOR UPDATE SKIP LOCKED 配合 LIMIT 1 锁定记录，
-	// 写入新的随机领取 token、领取过期时间及处理中状态，提交后释放行锁并返回 Job。
-	// 分发在事务外执行；领取未过期的任务不能被再次领取，领取过期则允许其他调度器接手。
-	// 排队截止与领取过期是不同概念；Service 对超时任务标记失败，不再分发或安排重试。
-	// 后续续期和状态更新须校验领取 token，防止旧持有者覆盖新持有者的结果。
-	// TODO: 补充调度状态和排队时间字段，以及完成领取、失败恢复和超时处理逻辑。
-	ClaimJob(ctx context.Context) (*Job, error)
-	// RenewJobClaim 校验领取 token 且领取尚未过期后，按 ttl 延长占有期限。
-	// ttl 必须为正数，过期时间以存储端当前时间为基准计算。
-	// 任务不存在、已结束领取或 token 失效时返回 false, nil。
-	RenewJobClaim(ctx context.Context, sessionID, claimToken string, ttl time.Duration) (bool, error)
+	// RenewJobClaim 校验独立调度锁的 token 后按 ttl 续期，锁失效时返回 false, nil。
+	RenewJobClaim(ctx context.Context, sessionID, token string, ttl time.Duration) (bool, error)
+	// ReleaseJobClaim 仅删除 token 匹配的调度锁，锁不存在或已换持有者时不删除。
+	ReleaseJobClaim(ctx context.Context, sessionID, token string) error
 	// FailJob 在同一事务中校验领取 token 和有效期，将 Job 及对应 Session 标记为失败并保存原因。
 	// 同时清除领取信息，使 Job 不再参与调度；不得覆盖已结束的 Session 状态。
 	// 成功返回 true, nil；领取失效或 Job 已结束调度时返回 false, nil；存储异常返回错误。
 	FailJob(ctx context.Context, sessionID, claimToken, reason string) (bool, error)
-	// RetryJob 原子校验领取 token 和有效期，记录失败原因并设置下次允许领取的时间。
-	// 清除领取 token 和领取过期时间，使原 Job 可在 nextAttemptAt 到期后重新领取。
-	// 保留原 QueuedAt、Deadline 及已确定的执行消息和投递阶段，避免延长总期限或重复分配执行。
-	// 仅允许未结束调度且未超过 Deadline 的 Job 重试，不将 Session 标记为失败。
-	// 成功返回 true, nil；领取失效、调度已结束或已超时返回 false, nil；存储异常返回错误。
-	RetryJob(ctx context.Context, sessionID, claimToken, reason string, nextAttemptAt time.Time) (bool, error)
+	// GetExecutionLease 查询 Session 当前的执行租约，不存在时返回 nil, nil。
+	GetExecutionLease(ctx context.Context, sessionID string) (*ExecutionLease, error)
+	// ReleaseExecutionLease 校验执行 token 后，原子释放对应租约和 Runner 容量占用。
+	// 租约不存在或 token 不匹配时返回 false, nil，不影响其他执行。
+	ReleaseExecutionLease(ctx context.Context, sessionID, executionToken string) (bool, error)
 	// ReserveExecution 原子校验调度领取 token 和有效期，并为 Job 预留目标 Runner 的并发名额。
 	// 须检查 Runner 在线、支持 Job 的引擎且仍有容量；已绑定 Runner 的任务不得改投其他节点。
 	// 首次预留生成执行 token，以存储端当前时间加 ttl 设置执行租约期限，ttl 必须为正数。
@@ -88,7 +84,7 @@ type Store interface {
 	// 成功仅表示命令已发送，不保证执行已停止；本方法不清除执行租约或释放容量。
 	PublishCommand(ctx context.Context, command *RunnerCommand) error
 	// CompleteJobDispatch 原子校验调度领取 token 和有效期，将 Job 标记为 dispatched 并清除领取信息。
-	// 保留执行 token 和执行租约期限，Session 保持 pending，等待 Runner 上报开始执行。
+	// 保留执行 token 和执行租约期限，Session 保持 running，实际启动进度由 Runner 事件表达。
 	// 同一有效领取下重复确认已投递记录应视为成功，不覆盖取消或失败等终态。
 	// 成功返回 true, nil；领取失效或状态不允许确认时返回 false, nil；存储异常返回错误。
 	CompleteJobDispatch(ctx context.Context, sessionID, claimToken string) (bool, error)
@@ -105,14 +101,38 @@ func NewStore(client *redis.Client) *store {
 }
 
 const (
-	jobKeyPrefix = "infra-agent-cloud:{dispatch}:job:"
-	jobQueueKey  = "infra-agent-cloud:{dispatch}:pending"
+	jobKeyPrefix            = "infra-agent-cloud:{dispatch}:job:"
+	jobQueueKey             = "infra-agent-cloud:{dispatch}:pending"
+	executionLeaseKeyPrefix = "infra-agent-cloud:{dispatch}:lease:"
+	runnerCapacityKeyPrefix = "infra-agent-cloud:{dispatch}:capacity:"
 )
 
 var enqueueJobScript = redis.NewScript(`
 if redis.call('EXISTS', KEYS[1]) == 1 then return 0 end
 redis.call('SET', KEYS[1], ARGV[1])
 redis.call('ZADD', KEYS[2], ARGV[2], ARGV[3])
+return 1
+`)
+
+var renewJobClaimScript = redis.NewScript(`
+if redis.call('GET', KEYS[1]) ~= ARGV[1] then return 0 end
+return redis.call('PEXPIRE', KEYS[1], ARGV[2])
+`)
+
+var releaseJobClaimScript = redis.NewScript(`
+if redis.call('GET', KEYS[1]) ~= ARGV[1] then return 0 end
+return redis.call('DEL', KEYS[1])
+`)
+
+var releaseExecutionLeaseScript = redis.NewScript(`
+local raw = redis.call('GET', KEYS[1])
+if not raw then return 0 end
+local lease = cjson.decode(raw)
+if lease.ExecutionToken ~= ARGV[1] or lease.RunnerID ~= ARGV[2] then return 0 end
+redis.call('ZREM', KEYS[2], ARGV[1])
+redis.call('DEL', KEYS[1])
+local latest = redis.call('ZREVRANGE', KEYS[2], 0, 0, 'WITHSCORES')
+if #latest > 0 then redis.call('PEXPIREAT', KEYS[2], latest[2]) end
 return 1
 `)
 
@@ -129,4 +149,76 @@ func (s *store) EnqueueJob(ctx context.Context, job *Job) error {
 		return fmt.Errorf("enqueue job: %w", err)
 	}
 	return nil
+}
+
+func (s *store) ListPendingJobIDs(ctx context.Context) ([]string, error) {
+	return s.redis.ZRange(ctx, jobQueueKey, 0, -1).Result()
+}
+
+// ClaimJob 为指定 Job 获取独立调度锁，token 在内部生成。
+func (s *store) ClaimJob(ctx context.Context, sessionID string, ttl time.Duration) (string, error) {
+	token := rand.Text()
+	key := jobKeyPrefix + sessionID + ":claim"
+	ok, err := s.redis.SetNX(ctx, key, token, ttl).Result()
+	if err != nil {
+		return "", fmt.Errorf("claim job: %w", err)
+	}
+	if !ok {
+		return "", nil
+	}
+	return token, nil
+}
+
+func (s *store) GetJob(ctx context.Context, sessionID string) (*Job, error) {
+	return nil, errors.New("job lookup is not implemented")
+}
+
+func (s *store) RenewJobClaim(ctx context.Context, sessionID, token string, ttl time.Duration) (bool, error) {
+	key := jobKeyPrefix + sessionID + ":claim"
+	result, err := renewJobClaimScript.Run(ctx, s.redis, []string{key}, token, ttl.Milliseconds()).Int64()
+	if err != nil {
+		return false, fmt.Errorf("renew job claim: %w", err)
+	}
+	return result == 1, nil
+}
+
+func (s *store) ReleaseJobClaim(ctx context.Context, sessionID, token string) error {
+	key := jobKeyPrefix + sessionID + ":claim"
+	if err := releaseJobClaimScript.Run(ctx, s.redis, []string{key}, token).Err(); err != nil {
+		return fmt.Errorf("release job claim: %w", err)
+	}
+	return nil
+}
+
+func (s *store) GetExecutionLease(ctx context.Context, sessionID string) (*ExecutionLease, error) {
+	data, err := s.redis.Get(ctx, executionLeaseKeyPrefix+sessionID).Bytes()
+	if errors.Is(err, redis.Nil) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("get execution lease: %w", err)
+	}
+	var lease ExecutionLease
+	if err := json.Unmarshal(data, &lease); err != nil {
+		return nil, fmt.Errorf("decode execution lease: %w", err)
+	}
+	return &lease, nil
+}
+
+func (s *store) ReleaseExecutionLease(ctx context.Context, sessionID, executionToken string) (bool, error) {
+	lease, err := s.GetExecutionLease(ctx, sessionID)
+	if err != nil {
+		return false, err
+	}
+	if lease == nil || lease.ExecutionToken != executionToken {
+		return false, nil
+	}
+	result, err := releaseExecutionLeaseScript.Run(ctx, s.redis,
+		[]string{executionLeaseKeyPrefix + sessionID, runnerCapacityKeyPrefix + lease.RunnerID},
+		executionToken, lease.RunnerID,
+	).Int64()
+	if err != nil {
+		return false, fmt.Errorf("release execution lease: %w", err)
+	}
+	return result == 1, nil
 }

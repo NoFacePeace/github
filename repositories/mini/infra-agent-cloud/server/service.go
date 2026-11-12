@@ -95,7 +95,7 @@ func (s *service) createTask(ctx context.Context, input InvokeTaskInput) (*Task,
 		ID:     rand.Text(),
 		TaskID: task.ID,
 		Prompt: input.Prompt,
-		Status: SessionStatusPending,
+		Status: SessionStatusRunning,
 	}
 	if err := s.store.CreateSession(ctx, session); err != nil {
 		return nil, err
@@ -116,7 +116,7 @@ func (s *service) resumeTask(ctx context.Context, input InvokeTaskInput) (*Task,
 	if err != nil {
 		return nil, err
 	}
-	if lastSession != nil && (lastSession.Status == SessionStatusPending || lastSession.Status == SessionStatusRunning) {
+	if lastSession != nil && lastSession.Status == SessionStatusRunning {
 		return nil, errors.New("task already has an active session")
 	}
 	// 继续任务始终沿用 Task 绑定的版本，不读取 Agent 当前发布版本或草稿。
@@ -128,7 +128,7 @@ func (s *service) resumeTask(ctx context.Context, input InvokeTaskInput) (*Task,
 		ID:     rand.Text(),
 		TaskID: task.ID,
 		Prompt: input.Prompt,
-		Status: SessionStatusPending,
+		Status: SessionStatusRunning,
 	}
 	if lastSession != nil {
 		session.RunnerID = lastSession.RunnerID
@@ -263,13 +263,13 @@ func (s *service) runSchedulerOnce(ctx context.Context) (stopped bool) {
 }
 
 func (s *service) recoverSessions(ctx context.Context) error {
-	pendingBefore := time.Now().Add(-5 * time.Minute)
+	startupBefore := time.Now().Add(-5 * time.Minute)
 	cursor := ""
 	for {
 		if err := ctx.Err(); err != nil {
 			return err
 		}
-		sessions, nextCursor, err := s.store.ListRecoverableSessions(ctx, pendingBefore, cursor, 100)
+		sessions, nextCursor, err := s.store.ListRecoverableSessions(ctx, startupBefore, cursor, 100)
 		if err != nil {
 			return err
 		}
@@ -283,90 +283,124 @@ func (s *service) recoverSessions(ctx context.Context) error {
 }
 
 func (s *service) dispatchPending(ctx context.Context) error {
-	for {
+	sessionIDs, err := s.store.ListPendingJobIDs(ctx)
+	if err != nil {
+		return err
+	}
+	for _, sessionID := range sessionIDs {
 		if err := ctx.Err(); err != nil {
 			return err
 		}
-		job, err := s.store.ClaimJob(ctx)
-		if err != nil {
+		if err := s.dispatchPendingJob(ctx, sessionID); err != nil {
 			return err
-		}
-		if job == nil {
-			return nil
-		}
-		session, err := s.store.GetSession(ctx, job.SessionID)
-		if err != nil {
-			return err
-		}
-		if session.Status == SessionStatusFailed || session.Status == SessionStatusStopped {
-			if err := s.failSession(ctx, session.ID, session.Error); err != nil {
-				return err
-			}
-			if _, err := s.store.FailJob(ctx, job.SessionID, job.ClaimToken, "session has ended"); err != nil {
-				return err
-			}
-			continue
-		}
-		if !job.Deadline.IsZero() && !time.Now().Before(job.Deadline) {
-			if _, err := s.store.FailJob(ctx, job.SessionID, job.ClaimToken, "job dispatch deadline exceeded"); err != nil {
-				return err
-			}
-			continue
-		}
-		dispatchErr := s.dispatchWithClaimRenewal(ctx, job)
-		if ctx.Err() != nil {
-			return ctx.Err()
-		}
-		// 分发后复查，已失败或停止的 Session 不再安排重试。
-		session, err = s.store.GetSession(ctx, job.SessionID)
-		if err != nil {
-			return errors.Join(dispatchErr, err)
-		}
-		if session.Status == SessionStatusFailed || session.Status == SessionStatusStopped {
-			if err := s.failSession(ctx, session.ID, session.Error); err != nil {
-				return errors.Join(dispatchErr, err)
-			}
-			if dispatchErr != nil {
-				if _, err := s.store.FailJob(ctx, job.SessionID, job.ClaimToken, "session has ended"); err != nil {
-					return err
-				}
-			}
-			continue
-		}
-		if err := dispatchErr; err != nil {
-			if ctx.Err() != nil {
-				return ctx.Err()
-			}
-			now := time.Now()
-			if !job.Deadline.IsZero() && !now.Before(job.Deadline) {
-				if _, failErr := s.store.FailJob(ctx, job.SessionID, job.ClaimToken, "job dispatch deadline exceeded"); failErr != nil {
-					return failErr
-				}
-				continue
-			}
-			// 暂按可重试错误处理，后续补充确定失败与投递结果不确定的分类。
-			retried, retryErr := s.store.RetryJob(ctx, job.SessionID, job.ClaimToken, err.Error(), now.Add(30*time.Second))
-			if retryErr != nil {
-				return retryErr
-			}
-			slog.Warn("Job dispatch failed", "sessionID", job.SessionID, "retryScheduled", retried, "error", err)
 		}
 	}
+	return nil
 }
 
-func (s *service) dispatchWithClaimRenewal(ctx context.Context, job *Job) error {
+// dispatchPendingJob 处理单条 Job，持锁期间的所有返回路径都会释放本次调度锁。
+func (s *service) dispatchPendingJob(ctx context.Context, sessionID string) (err error) {
+	claimToken, err := s.store.ClaimJob(ctx, sessionID, 30*time.Second)
+	if err != nil {
+		return err
+	}
+	if claimToken == "" {
+		return nil
+	}
+	defer func() {
+		releaseCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
+		defer cancel()
+		err = errors.Join(err, s.store.ReleaseJobClaim(releaseCtx, sessionID, claimToken))
+	}()
+	renewCtx, stopRenewal, err := s.startJobClaimRenewal(ctx, sessionID, claimToken)
+	if err != nil {
+		return err
+	}
+	ctx = renewCtx
+	// 先停止并等待续约退出，再由前面的 defer 释放调度锁。
+	defer func() {
+		err = errors.Join(err, stopRenewal())
+	}()
+	job, err := s.store.GetJob(ctx, sessionID)
+	if err != nil {
+		return err
+	}
+	if job == nil {
+		return nil
+	}
+	job.ClaimToken = claimToken
+	session, err := s.store.GetSession(ctx, job.SessionID)
+	if err != nil {
+		return err
+	}
+	if session.Status != SessionStatusRunning {
+		return s.handleSessionEnded(ctx, job, session)
+	}
+	if job.Status == JobStatusQueued && !job.Deadline.IsZero() && !time.Now().Before(job.Deadline) {
+		return s.handleDispatchError(ctx, job, session, errors.New("job dispatch deadline exceeded"))
+	}
+	switch job.Status {
+	case JobStatusQueued:
+		lease, err := s.store.GetExecutionLease(ctx, job.SessionID)
+		if err != nil {
+			return err
+		}
+		if lease != nil {
+			// queued 尚无可发布的固定消息，先清理遗留预占。
+			released, err := s.store.ReleaseExecutionLease(ctx, job.SessionID, lease.ExecutionToken)
+			if err != nil {
+				return err
+			}
+			if !released {
+				return nil
+			}
+		}
+		// TODO: 选择 Runner 并预占，保存固定 Job 后改为 dispatching。
+	case JobStatusDispatching:
+		// TODO: 复用固定 Job 和执行租约进行幂等投递，成功后改为 dispatched。
+	case JobStatusDispatched:
+		// TODO: 进入共同收尾，同步业务状态并确认移出待调度集合。
+	case JobStatusFailed, JobStatusCancelled:
+		// TODO: 进入共同收尾，清理未发布的预占并同步业务状态，确认后移出待调度集合。
+	}
+	dispatchErr := s.dispatchJob(ctx, job)
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
+	// 分发后复查，已结束的 Session 不再安排重试。
+	session, err = s.store.GetSession(ctx, job.SessionID)
+	if err != nil {
+		return errors.Join(dispatchErr, err)
+	}
+	if session.Status != SessionStatusRunning {
+		return s.handleSessionEnded(ctx, job, session)
+	}
+	if dispatchErr != nil {
+		return s.handleDispatchError(ctx, job, session, dispatchErr)
+	}
+	return nil
+}
+
+// handleSessionEnded 处理 Session 已结束后的取消排队或停止补偿。
+func (s *service) handleSessionEnded(ctx context.Context, job *Job, session *Session) error {
+	return errors.New("ended session handling is not implemented")
+}
+
+// handleDispatchError 处理调度异常，区分可重试错误与确定失败，必要时更新 Session。
+func (s *service) handleDispatchError(ctx context.Context, job *Job, session *Session, cause error) error {
+	return errors.New("dispatch error handling is not implemented")
+}
+
+// startJobClaimRenewal 在读取 Job 前确认调度锁并启动续约，失去锁时取消返回的 Context。
+func (s *service) startJobClaimRenewal(ctx context.Context, sessionID, claimToken string) (context.Context, func() error, error) {
 	const claimTTL = 30 * time.Second
 	const renewalInterval = 10 * time.Second
-	if job.ClaimToken == "" {
-		return errors.New("job claim token is required")
-	}
 
-	dispatchCtx, cancel := context.WithCancelCause(ctx)
-	defer cancel(nil)
+	renewCtx, cancel := context.WithCancelCause(ctx)
 	renew := func() error {
-		renewCtx, stop := context.WithTimeout(dispatchCtx, renewalInterval)
+		requestCtx, stop := context.WithTimeout(renewCtx, renewalInterval)
 		defer stop()
-		ok, err := s.store.RenewJobClaim(renewCtx, job.SessionID, job.ClaimToken, claimTTL)
+		ok, err := s.store.RenewJobClaim(requestCtx, sessionID, claimToken, claimTTL)
 		if err != nil {
 			return fmt.Errorf("renew job claim: %w", err)
 		}
@@ -375,9 +409,10 @@ func (s *service) dispatchWithClaimRenewal(ctx context.Context, job *Job) error 
 		}
 		return nil
 	}
-	// 分发前先确认领取有效，并统一延长到续约周期所需的期限。
+	// 认领后立即确认锁有效，后续读取和处理共用受续约控制的 Context。
 	if err := renew(); err != nil {
-		return err
+		cancel(err)
+		return nil, nil, err
 	}
 
 	done := make(chan struct{})
@@ -393,7 +428,7 @@ func (s *service) dispatchWithClaimRenewal(ctx context.Context, job *Job) error 
 		defer ticker.Stop()
 		for {
 			select {
-			case <-dispatchCtx.Done():
+			case <-renewCtx.Done():
 				return
 			case <-ticker.C:
 				if err := renew(); err != nil {
@@ -403,13 +438,16 @@ func (s *service) dispatchWithClaimRenewal(ctx context.Context, job *Job) error 
 			}
 		}
 	}()
-	defer func() {
-		cancel(nil)
+	stopped := errors.New("job claim renewal stopped")
+	stopRenewal := func() error {
+		cancel(stopped)
 		<-done
-	}()
-
-	err := s.dispatchJob(dispatchCtx, job)
-	return errors.Join(err, context.Cause(dispatchCtx))
+		if cause := context.Cause(renewCtx); cause != stopped {
+			return cause
+		}
+		return nil
+	}
+	return renewCtx, stopRenewal, nil
 }
 
 func (s *service) dispatchJob(ctx context.Context, job *Job) error {
