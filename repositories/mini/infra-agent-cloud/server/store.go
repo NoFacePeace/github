@@ -22,6 +22,10 @@ type Store interface {
 	// 实现须按稳定的执行轮次顺序取最新一条，不能按随机 ID 判断先后。
 	GetLastSession(ctx context.Context, taskID string) (*Session, error)
 	GetSession(ctx context.Context, sessionID string) (*Session, error)
+	// StopSession 在数据库事务中锁定最新 Session，将 running 改为 stopped 并返回最新快照。
+	// 重复停止须幂等，不覆盖 completed、failed 等已有终态；不存在时返回 nil, nil。
+	// 不释放执行租约或容量；非 running 状态须拒绝后续执行续约。
+	StopSession(ctx context.Context, sessionID string) (*Session, error)
 	// UpdateSessionDispatch 在数据库事务内锁定并读取最新 Session，返回更新后的快照。
 	// 仅对 running 会话更新 Dispatch；已有更晚阶段的摘要时，忽略迟到的 queued 摘要。
 	// failed 调度将 running 会话置为 failed 并记录错误，cancelled 调度置为 stopped。
@@ -68,6 +72,10 @@ type Store interface {
 	// 保存成功返回 true；锁不存在或 token 不匹配返回 false, nil，不覆盖记录。
 	// 不修改执行租约、Session 或待调度集合，也不释放调度锁。
 	SaveJob(ctx context.Context, job *Job, claimToken string) (bool, error)
+	// CancelQueuedJob 原子将 queued 改为 cancelled，并删除调度锁，阻止旧调度器继续保存。
+	// 已 cancelled 返回 true；记录不存在或已进入其他状态返回 false，不覆盖其状态。
+	// 保留调度记录和 pending 成员，由业务同步及确认流程完成收尾；不释放执行租约或容量。
+	CancelQueuedJob(ctx context.Context, sessionID string) (bool, error)
 	// AcknowledgeJobDispatch 校验调度锁 token，确认 Job 为 dispatched、failed 或 cancelled 后，
 	// 从待调度集合移除 SessionID，并将调度记录保留 24 小时；重复确认可安全重试。
 	// 锁失效、记录不存在或状态不符返回 false, nil；不释放执行租约、容量或调度锁。
@@ -149,6 +157,20 @@ var saveJobScript = redis.NewScript(`
 if redis.call('GET', KEYS[2]) ~= ARGV[1] then return 0 end
 -- 保存调用方准备好的状态和固定消息，保留待调度集合成员及当前锁。
 redis.call('SET', KEYS[1], ARGV[2])
+return 1
+`)
+
+var cancelQueuedJobScript = redis.NewScript(`
+-- 仅在排队阶段取消，不能覆盖已经形成固定消息的投递阶段。
+local raw = redis.call('GET', KEYS[1])
+if not raw then return 0 end
+local job = cjson.decode(raw)
+if job.Status == 'cancelled' then return 1 end
+if job.Status ~= 'queued' then return 0 end
+job.Status = 'cancelled'
+redis.call('SET', KEYS[1], cjson.encode(job))
+-- 使旧调度器的带 token 保存失效，pending 成员仍保留供后续收尾。
+redis.call('DEL', KEYS[2])
 return 1
 `)
 
@@ -283,6 +305,16 @@ func (s *store) SaveJob(ctx context.Context, job *Job, claimToken string) (bool,
 	result, err := saveJobScript.Run(ctx, s.redis, []string{key, key + ":claim"}, claimToken, string(data)).Int64()
 	if err != nil {
 		return false, fmt.Errorf("save job: %w", err)
+	}
+	return result == 1, nil
+}
+
+// CancelQueuedJob 不依赖调用方持有调度锁，以状态条件更新和锁失效阻止继续准备。
+func (s *store) CancelQueuedJob(ctx context.Context, sessionID string) (bool, error) {
+	key := jobKeyPrefix + sessionID
+	result, err := cancelQueuedJobScript.Run(ctx, s.redis, []string{key, key + ":claim"}).Int64()
+	if err != nil {
+		return false, fmt.Errorf("cancel queued job: %w", err)
 	}
 	return result == 1, nil
 }

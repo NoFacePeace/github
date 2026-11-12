@@ -42,6 +42,8 @@ type Service interface {
 
 	// InvokeTask 创建任务或继续已有任务，并发起一轮执行。
 	InvokeTask(ctx context.Context, input InvokeTaskInput) (*Task, error)
+	// StopSession 持久化业务停止状态，再取消排队或发送停止命令；不保证远程执行已退出。
+	StopSession(ctx context.Context, sessionID string) error
 }
 
 type service struct {
@@ -64,6 +66,45 @@ func (s *service) InvokeTask(ctx context.Context, input InvokeTaskInput) (*Task,
 		return s.resumeTask(ctx, input)
 	}
 	return s.createTask(ctx, input)
+}
+
+func (s *service) StopSession(ctx context.Context, sessionID string) error {
+	session, err := s.store.StopSession(ctx, sessionID)
+	if err != nil {
+		return err
+	}
+	if session == nil {
+		return errors.New("session not found")
+	}
+	if session.Status != SessionStatusStopped {
+		return nil
+	}
+	// 停止状态已持久化，即使后面的操作失败，也唤醒后台调度进行补偿。
+	s.wakeScheduler()
+	cancelled, err := s.store.CancelQueuedJob(ctx, sessionID)
+	if err != nil {
+		return err
+	}
+	if cancelled {
+		return nil
+	}
+	lease, err := s.store.GetExecutionLease(ctx, sessionID)
+	if err != nil {
+		return err
+	}
+	if lease == nil {
+		return nil
+	}
+	// 使用当前租约定位执行，重试复用命令 ID；租约和容量等待确认退出或到期后释放。
+	return s.store.PublishCommand(ctx, &RunnerCommand{
+		ID:             "stop:" + lease.ExecutionToken,
+		Type:           RunnerCommandTypeStop,
+		RunnerID:       lease.RunnerID,
+		TaskID:         lease.TaskID,
+		SessionID:      lease.SessionID,
+		ExecutionToken: lease.ExecutionToken,
+		ExpiresAt:      lease.ExecutionExpiresAt,
+	})
 }
 
 func (s *service) createTask(ctx context.Context, input InvokeTaskInput) (*Task, error) {
