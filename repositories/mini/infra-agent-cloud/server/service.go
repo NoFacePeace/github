@@ -92,10 +92,11 @@ func (s *service) createTask(ctx context.Context, input InvokeTaskInput) (*Task,
 	}
 
 	session := &Session{
-		ID:     rand.Text(),
-		TaskID: task.ID,
-		Prompt: input.Prompt,
-		Status: SessionStatusRunning,
+		ID:        rand.Text(),
+		TaskID:    task.ID,
+		Prompt:    input.Prompt,
+		Status:    SessionStatusRunning,
+		CreatedAt: time.Now(),
 	}
 	if err := s.store.CreateSession(ctx, session); err != nil {
 		return nil, err
@@ -125,10 +126,11 @@ func (s *service) resumeTask(ctx context.Context, input InvokeTaskInput) (*Task,
 		return nil, err
 	}
 	session := &Session{
-		ID:     rand.Text(),
-		TaskID: task.ID,
-		Prompt: input.Prompt,
-		Status: SessionStatusRunning,
+		ID:        rand.Text(),
+		TaskID:    task.ID,
+		Prompt:    input.Prompt,
+		Status:    SessionStatusRunning,
+		CreatedAt: time.Now(),
 	}
 	if lastSession != nil {
 		session.RunnerID = lastSession.RunnerID
@@ -274,12 +276,71 @@ func (s *service) recoverSessions(ctx context.Context) error {
 			return err
 		}
 		slog.Debug("Session recovery candidates loaded", "count", len(sessions))
-		// TODO: 逐条复查当前状态和 Job，处理提交失败、执行租约过期和未完成的停止补偿。
+		for _, session := range sessions {
+			if err := ctx.Err(); err != nil {
+				return err
+			}
+			if err := s.recoverSession(ctx, session.ID, startupBefore); err != nil {
+				if ctx.Err() != nil {
+					return ctx.Err()
+				}
+				slog.Warn("Session recovery requires retry", "sessionID", session.ID, "error", err)
+			}
+		}
 		if nextCursor == "" {
 			return nil
 		}
 		cursor = nextCursor
 	}
+}
+
+// recoverSession 复查单条候选，调度未完成时交给调度器，已投递后的异常按执行租约处理。
+// 当前跳过事件续期和终态事件回放，已有业务终态保持不变。
+func (s *service) recoverSession(ctx context.Context, sessionID string, startupBefore time.Time) error {
+	session, err := s.store.GetSession(ctx, sessionID)
+	if err != nil {
+		return err
+	}
+	if session == nil || session.Status == SessionStatusCompleted {
+		return nil
+	}
+	job, err := s.store.GetJob(ctx, sessionID)
+	if err != nil {
+		return err
+	}
+	if job != nil && job.Status != JobStatusDispatched {
+		// 排队、投递重试及调度终态同步均由 pending 调度流程处理。
+		s.wakeScheduler()
+		return nil
+	}
+	lease, err := s.store.GetExecutionLease(ctx, sessionID)
+	if err != nil {
+		return err
+	}
+	if lease != nil {
+		if session.Status != SessionStatusFailed && session.Status != SessionStatusStopped {
+			return nil
+		}
+		// 按当前租约补发幂等停止命令；不提前释放执行租约和容量。
+		return s.store.PublishCommand(ctx, &RunnerCommand{
+			ID:             "stop:" + lease.ExecutionToken,
+			Type:           RunnerCommandTypeStop,
+			RunnerID:       lease.RunnerID,
+			TaskID:         lease.TaskID,
+			SessionID:      lease.SessionID,
+			ExecutionToken: lease.ExecutionToken,
+			ExpiresAt:      lease.ExecutionExpiresAt,
+		})
+	}
+	if session.Status != SessionStatusRunning {
+		return nil
+	}
+	if session.CreatedAt.IsZero() || session.CreatedAt.After(startupBefore) {
+		return nil
+	}
+	// 写入前由 Store 复查，避免扫描期间已有终态或新租约时被误标为失败。
+	_, err = s.store.FailSessionIfLeaseExpired(ctx, sessionID, startupBefore, "execution lease expired")
+	return err
 }
 
 func (s *service) dispatchPending(ctx context.Context) error {
@@ -292,7 +353,11 @@ func (s *service) dispatchPending(ctx context.Context) error {
 			return err
 		}
 		if err := s.dispatchPendingJob(ctx, sessionID); err != nil {
-			return err
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
+			// 单条失败保留待调度记录，继续处理其他 Job。
+			slog.Warn("Job dispatch requires recovery", "sessionID", sessionID, "error", err)
 		}
 	}
 	return nil
@@ -329,18 +394,36 @@ func (s *service) dispatchPendingJob(ctx context.Context, sessionID string) (err
 		return nil
 	}
 	job.ClaimToken = claimToken
-	session, err := s.store.GetSession(ctx, job.SessionID)
-	if err != nil {
-		return err
-	}
-	if session.Status != SessionStatusRunning {
-		return s.handleSessionEnded(ctx, job, session)
+	if job.Status == JobStatusQueued {
+		// 准备前同步排队状态，业务层可能根据最新 Session 取消排队。
+		if _, err := s.syncSessionDispatch(ctx, job); err != nil {
+			return err
+		}
+		latest, err := s.store.GetJob(ctx, sessionID)
+		if err != nil {
+			return err
+		}
+		if latest == nil || latest.Status != JobStatusQueued {
+			return nil
+		}
+		job = latest
+		job.ClaimToken = claimToken
 	}
 	if job.Status == JobStatusQueued && !job.Deadline.IsZero() && !time.Now().Before(job.Deadline) {
-		return s.handleDispatchError(ctx, job, session, errors.New("job dispatch deadline exceeded"))
+		failed := *job
+		failed.Status = JobStatusFailed
+		failed.Error = "job dispatch deadline exceeded"
+		// 先保存调度失败，再由后面的统一入口同步 Session。
+		saved, err := s.store.SaveJob(ctx, &failed, claimToken)
+		if err != nil {
+			return err
+		}
+		if !saved {
+			return nil
+		}
+		*job = failed
 	}
-	switch job.Status {
-	case JobStatusQueued:
+	if job.Status == JobStatusQueued {
 		lease, err := s.store.GetExecutionLease(ctx, job.SessionID)
 		if err != nil {
 			return err
@@ -355,40 +438,156 @@ func (s *service) dispatchPendingJob(ctx context.Context, sessionID string) (err
 				return nil
 			}
 		}
-		// TODO: 选择 Runner 并预占，保存固定 Job 后改为 dispatching。
-	case JobStatusDispatching:
-		// TODO: 复用固定 Job 和执行租约进行幂等投递，成功后改为 dispatched。
-	case JobStatusDispatched:
-		// TODO: 进入共同收尾，同步业务状态并确认移出待调度集合。
-	case JobStatusFailed, JobStatusCancelled:
-		// TODO: 进入共同收尾，清理未发布的预占并同步业务状态，确认后移出待调度集合。
+		runners, err := s.store.ListRunners(ctx)
+		if err != nil {
+			return err
+		}
+		var selected *Runner
+		for i := range runners {
+			runner := &runners[i]
+			if job.RunnerID != "" && runner.ID != job.RunnerID {
+				continue
+			}
+			if runner.Status != RunnerStatusOnline ||
+				!slices.Contains(runner.Engines, job.Engine) ||
+				(job.RunnerID == "" && runner.ActiveSessions >= runner.Capacity) {
+				continue
+			}
+			selected = runner
+			break
+		}
+		if selected == nil {
+			return errors.New("no available compatible runner")
+		}
+		lease, err = s.store.ReserveExecutionLease(ctx, job.TaskID, job.SessionID, selected.ID, selected.Capacity, 5*time.Minute)
+		if err != nil {
+			return err
+		}
+		job.RunnerID = lease.RunnerID
+		job.ExecutionToken = lease.ExecutionToken
+		job.ExecutionExpiresAt = lease.ExecutionExpiresAt
+		job.Status = JobStatusDispatching
+		// 固定消息持久化成功后才允许投递；保存结果不确定时保留租约供后续恢复。
+		saved, err := s.store.SaveJob(ctx, job, claimToken)
+		if err != nil {
+			return err
+		}
+		if !saved {
+			return nil
+		}
 	}
-	dispatchErr := s.dispatchJob(ctx, job)
-	if ctx.Err() != nil {
-		return ctx.Err()
+	if job.Status == JobStatusDispatching {
+		// 固定 Job 保存后更新 Session 绑定；重试时同样补写，成功后才投递。
+		if err := s.store.UpdateSessionRunner(ctx, job.SessionID, job.RunnerID); err != nil {
+			return err
+		}
+		dispatchErr := s.dispatchJob(ctx, job)
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+		result := *job
+		result.Status = JobStatusDispatched
+		if dispatchErr != nil {
+			if !errors.Is(dispatchErr, ErrExecutionLeaseExpired) && !errors.Is(dispatchErr, ErrDispatchConflict) {
+				return dispatchErr
+			}
+			// 确定失败先保存调度结果，再交给后面的业务同步和收尾；其他错误保留原阶段重试。
+			result.Status = JobStatusFailed
+			result.Error = dispatchErr.Error()
+		}
+		saved, err := s.store.SaveJob(ctx, &result, claimToken)
+		if err != nil {
+			return err
+		}
+		if !saved {
+			return errors.New("job dispatch confirmation rejected")
+		}
+		*job = result
 	}
-	// 分发后复查，已结束的 Session 不再安排重试。
-	session, err = s.store.GetSession(ctx, job.SessionID)
+	settled, err := s.syncSessionDispatch(ctx, job)
 	if err != nil {
-		return errors.Join(dispatchErr, err)
+		return err
 	}
-	if session.Status != SessionStatusRunning {
-		return s.handleSessionEnded(ctx, job, session)
+	if !settled {
+		return nil
 	}
-	if dispatchErr != nil {
-		return s.handleDispatchError(ctx, job, session, dispatchErr)
+	if job.Status == JobStatusDispatched || job.Status == JobStatusFailed || job.Status == JobStatusCancelled {
+		_, err = s.store.AcknowledgeJobDispatch(ctx, job.SessionID, claimToken)
+		return err
 	}
 	return nil
 }
 
-// handleSessionEnded 处理 Session 已结束后的取消排队或停止补偿。
-func (s *service) handleSessionEnded(ctx context.Context, job *Job, session *Session) error {
-	return errors.New("ended session handling is not implemented")
-}
-
-// handleDispatchError 处理调度异常，区分可重试错误与确定失败，必要时更新 Session。
-func (s *service) handleDispatchError(ctx context.Context, job *Job, session *Session, cause error) error {
-	return errors.New("dispatch error handling is not implemented")
+// syncSessionDispatch 统一复查最新 Session、同步调度摘要，并处理失败、取消排队及停止补偿。
+// 调度层须先分类异常并保存 Job 结果，本方法仅同步已形成的调度状态。
+// 返回 true 表示业务处理完成，允许调度收尾；false 表示仍需补偿，保留待调度记录。
+func (s *service) syncSessionDispatch(ctx context.Context, job *Job) (bool, error) {
+	session, err := s.store.UpdateSessionDispatch(ctx, job.SessionID, &SessionDispatch{
+		MessageID: job.MessageID,
+		Status:    job.Status,
+		QueuedAt:  job.QueuedAt,
+		Deadline:  job.Deadline,
+		Error:     job.Error,
+	})
+	if err != nil {
+		return false, err
+	}
+	if session == nil {
+		return false, errors.New("session not found")
+	}
+	if session.Status == SessionStatusRunning {
+		return true, nil
+	}
+	// queued 尚未形成固定执行消息；没有执行 token 的失败或取消也只可能留下未发布的预占。
+	unpublished := job.Status == JobStatusQueued ||
+		((job.Status == JobStatusFailed || job.Status == JobStatusCancelled) && job.ExecutionToken == "")
+	if job.Status == JobStatusQueued {
+		cancelled := *job
+		cancelled.Status = JobStatusCancelled
+		saved, err := s.store.SaveJob(ctx, &cancelled, job.ClaimToken)
+		if err != nil {
+			return false, err
+		}
+		if !saved {
+			return false, nil
+		}
+		*job = cancelled
+		s.wakeScheduler()
+	}
+	if !unpublished && session.Status == SessionStatusCompleted {
+		return true, nil
+	}
+	lease, err := s.store.GetExecutionLease(ctx, job.SessionID)
+	if err != nil {
+		return false, err
+	}
+	if lease == nil {
+		return true, nil
+	}
+	if unpublished {
+		// 明确尚未发布的预占可以直接释放；token 已变化时保留记录，交给后续扫描复查。
+		released, err := s.store.ReleaseExecutionLease(ctx, job.SessionID, lease.ExecutionToken)
+		if err != nil {
+			return false, err
+		}
+		if released {
+			s.wakeScheduler()
+		}
+		return released, nil
+	}
+	// 已进入投递阶段时按当前租约发送停止命令，重试复用命令 ID，不提前释放执行容量。
+	if err := s.store.PublishCommand(ctx, &RunnerCommand{
+		ID:             "stop:" + lease.ExecutionToken,
+		Type:           RunnerCommandTypeStop,
+		RunnerID:       lease.RunnerID,
+		TaskID:         lease.TaskID,
+		SessionID:      lease.SessionID,
+		ExecutionToken: lease.ExecutionToken,
+		ExpiresAt:      lease.ExecutionExpiresAt,
+	}); err != nil {
+		return false, err
+	}
+	return false, nil
 }
 
 // startJobClaimRenewal 在读取 Job 前确认调度锁并启动续约，失去锁时取消返回的 Context。
@@ -451,38 +650,5 @@ func (s *service) startJobClaimRenewal(ctx context.Context, sessionID, claimToke
 }
 
 func (s *service) dispatchJob(ctx context.Context, job *Job) error {
-	if job.RunnerID == "" {
-		runners, err := s.store.ListRunners(ctx)
-		if err != nil {
-			return err
-		}
-		for _, runner := range runners {
-			if runner.Status != RunnerStatusOnline ||
-				!slices.Contains(runner.Engines, job.Engine) ||
-				runner.ActiveSessions >= runner.Capacity {
-				continue
-			}
-			job.RunnerID = runner.ID
-			break
-		}
-		if job.RunnerID == "" {
-			return errors.New("no available compatible runner")
-		}
-	}
-	reserved, err := s.store.ReserveExecution(ctx, job.SessionID, job.ClaimToken, job.RunnerID, 5*time.Minute)
-	if err != nil {
-		return err
-	}
-	*job = *reserved
-	if err := s.store.PublishJob(ctx, job); err != nil {
-		return err
-	}
-	completed, err := s.store.CompleteJobDispatch(ctx, job.SessionID, job.ClaimToken)
-	if err != nil {
-		return err
-	}
-	if !completed {
-		return errors.New("job dispatch confirmation rejected")
-	}
-	return nil
+	return s.store.PublishJob(ctx, job)
 }

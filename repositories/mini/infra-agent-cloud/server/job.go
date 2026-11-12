@@ -1,6 +1,9 @@
 package server
 
-import "time"
+import (
+	"errors"
+	"time"
+)
 
 type JobStatus string
 
@@ -10,6 +13,13 @@ const (
 	JobStatusDispatched  JobStatus = "dispatched"
 	JobStatusFailed      JobStatus = "failed"
 	JobStatusCancelled   JobStatus = "cancelled"
+)
+
+var (
+	// ErrExecutionLeaseExpired 表示未发布消息携带的执行租约已到期，不能继续投递。
+	ErrExecutionLeaseExpired = errors.New("job execution lease expired")
+	// ErrDispatchConflict 表示同一 Runner、Session 的发布标记已对应另一条消息。
+	ErrDispatchConflict = errors.New("job dispatch conflict")
 )
 
 type Job struct {

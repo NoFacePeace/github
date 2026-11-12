@@ -25,6 +25,8 @@ type Runner struct {
 	// ActiveSessions 是当前占用的并发名额，包含已预留但尚未启动的执行。
 	// 选择节点后仍需原子预留容量，不能仅凭此字段判断就直接投递。
 	ActiveSessions int
+	// ExpiresAt 是本次心跳的到期时间，每次上报时刷新。
+	ExpiresAt time.Time
 }
 
 type RunnerCommandType string
