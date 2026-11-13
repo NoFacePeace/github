@@ -4,3 +4,5 @@
 
 - [无重复字符的最长子串](LongestSubstringWithoutRepeatingCharacters.md)
 - [有效的括号](ValidParentheses.md)
+- [最长回文子串](LongestPalindromicSubstring.md)
+- [字母异位词分组](GroupAnagrams.md)

@@ -2,6 +2,7 @@
 
 - [链表](linked-list/LinkedList.md)
 - [栈](stack/Stack.md)
+- [队列](queue/Queue.md)
 - [跳表](linked-list/Skiplist.md)
 - [B+ 树](BPlusTree.md)
 - [哈希表](hash-table/HashTable.md)

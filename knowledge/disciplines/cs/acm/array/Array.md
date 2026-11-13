@@ -12,6 +12,9 @@
 - [合并区间](MergeIntervals.md)
 - [最长递增子序列](LongestIncreasingSubsequence.md)
 - [全排列](Permutations.md)
+- [最长连续序列](LongestConsecutiveSequence.md)
+- [和为 K 的子数组](SubarraySumEqualsK.md)
+- [滑动窗口最大值](SlidingWindowMaximum.md)
 - [数位和排序需要的最小交换次数](MinimumSwapsToSortByDigitSum.md)：通过置换环分解计算最少交换次数。
 - [统计封闭岛屿的数目](NumberOfClosedIslands.md)
 - [岛屿数量](NumberOfIslands.md)

@@ -10,5 +10,6 @@
 - [动态规划](dp/DP.md)
 - [贪心](greedy/Greedy.md)：通过具有正确性保证的局部最优选择构造全局最优解。
 - [双指针](two-pointers/TwoPointers.md)：通过两个位置的协同移动减少重复遍历。
+- [前缀和](prefix-sum/PrefixSum.md)：预处理累加结果，通过前缀和之差计算区间和。
 - [淘汰](eviction/Eviction.md)：资源容量不足时，按一定规则选择移除的数据。
 - [算法思想](thinking/Thinking.md)：设计算法与转化问题的通用方法。
