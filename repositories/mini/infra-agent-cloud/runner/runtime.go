@@ -29,7 +29,7 @@ func NewRuntime(engine executor.Executor) Runtime {
 //
 // cgroup 归属须在引擎及其子进程运行前生效，不能等进程启动后再补加限制。
 func (r *runtime) Run(ctx context.Context, job *Job, emit func(executor.Event) error) (result *executor.Result, err error) {
-	request, err := r.prepareWorkspace(ctx, job)
+	spec, err := r.prepareWorkspace(ctx, job)
 	if err != nil {
 		return nil, err
 	}
@@ -38,10 +38,10 @@ func (r *runtime) Run(ctx context.Context, job *Job, emit func(executor.Event) e
 		defer cancel()
 		err = errors.Join(err, r.cleanupWorkspace(cleanupCtx, job))
 	}()
-	return r.executor.Run(ctx, request, emit)
+	return r.executor.Run(ctx, spec, emit)
 }
 
-func (r *runtime) prepareWorkspace(ctx context.Context, job *Job) (*executor.Request, error) {
+func (r *runtime) prepareWorkspace(ctx context.Context, job *Job) (*executor.ExecutionSpec, error) {
 	// TODO: 准备或恢复任务目录，将 Job 映射为引擎输入；部分失败时回收已创建的临时资源。
 	return nil, errors.New("workspace preparation is not implemented")
 }
