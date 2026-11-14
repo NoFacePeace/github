@@ -22,6 +22,7 @@ AIP 不仅是设计指导，也是管理和追踪这些指导的机制。其他�
 | 方法概述 | [AIP-130](https://google.aip.dev/130) |
 | 标准方法 | [Get](https://google.aip.dev/131)、[List](https://google.aip.dev/132)、[Create](https://google.aip.dev/133)、[Update](https://google.aip.dev/134)、[Delete](https://google.aip.dev/135) |
 | 自定义方法 | [AIP-136](https://google.aip.dev/136) |
+| [分页](Pagination.md) | [AIP-158](https://google.aip.dev/158) |
 | 向后兼容 | [AIP-180](https://google.aip.dev/180) |
 | 版本管理 | [AIP-185](https://google.aip.dev/185) |
 | 命名约定 | [AIP-190](https://google.aip.dev/190) |
