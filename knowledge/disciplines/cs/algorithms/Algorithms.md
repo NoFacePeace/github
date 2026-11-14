@@ -6,6 +6,7 @@
 - [排序](sorting/Sorting.md)
 - [选择](selection/Selection.md)：查找第 k 小或第 k 大等指定排名的元素，无须完整排序。
 - [搜索](search/Search.md)
+- [拓扑排序](topological-sort/TopologicalSort.md)：按照有向图中的依赖关系安排节点顺序。
 - [检索](retrieval/Retrieval.md)
 - [动态规划](dp/DP.md)
 - [贪心](greedy/Greedy.md)：通过具有正确性保证的局部最优选择构造全局最优解。
