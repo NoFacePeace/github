@@ -41,7 +41,7 @@ func (r *runtime) Run(ctx context.Context, job *Job, emit func(executor.Event) e
 	return r.executor.Run(ctx, spec, emit)
 }
 
-func (r *runtime) prepareWorkspace(ctx context.Context, job *Job) (*executor.ExecutionSpec, error) {
+func (r *runtime) prepareWorkspace(ctx context.Context, job *Job) (*executor.Spec, error) {
 	// TODO: 准备或恢复任务目录，将 Job 映射为引擎输入；部分失败时回收已创建的临时资源。
 	return nil, errors.New("workspace preparation is not implemented")
 }
