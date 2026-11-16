@@ -4,4 +4,5 @@
 
 ## 1. 网络与事件流
 
-- [EventSource](EventSource.md)：通过 HTTP 接收 SSE 事件流，支持事件解析和自动重连。
+- [EventSource](eventsource/EventSource.md)：通过 HTTP 接收 SSE 事件流，支持事件解析和自动重连。
+- [Fetch API](fetch/Fetch.md)：发起 HTTP 请求，读取完整响应或逐步消费响应流。

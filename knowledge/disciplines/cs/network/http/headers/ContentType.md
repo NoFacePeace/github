@@ -17,6 +17,8 @@ Content-Type: text/html; charset=utf-8
 | 媒体类型 | 内容 |
 | --- | --- |
 | application/json | JSON 数据 |
+| application/x-ndjson | 每行一个 JSON 值的记录流 |
+| text/event-stream | SSE 文本事件流 |
 | text/plain | 纯文本 |
 | text/html | HTML 文档 |
 | application/x-www-form-urlencoded | URL 编码的表单数据 |

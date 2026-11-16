@@ -45,6 +45,7 @@ Content-Type: application/json
 | --- | --- |
 | [Content-Type](ContentType.md) | 说明报文内容的媒体类型 |
 | [Content-Length](ContentLength.md) | 说明报文内容的字节长度；HEAD 等场景有特殊规则 |
+| [Transfer-Encoding](TransferEncoding.md) | HTTP/1.1 报文体的传输编码，常见取值为 chunked |
 | [Cache-Control](CacheControl.md) | 指定请求或响应的缓存指令 |
 | [Date](Date.md) | 表示报文生成的日期和时间，常见于响应 |
 | [Connection](Connection.md) | 控制 HTTP/1.x 当前连接的使用，如 `close` |

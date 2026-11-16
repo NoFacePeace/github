@@ -8,6 +8,8 @@ WebSocket 是支持客户端与服务端通过持久连接交换消息的双向�
 
 地址通常以 `ws://` 或 `wss://` 开头，后者使用 TLS 加密。浏览器提供原生 WebSocket API。
 
+WebSocket 既是协议名称，也是浏览器中相应 API 的名称。浏览器 fetch 不能建立 WebSocket 连接，普通 HTTP 请求和流式读取接口也不能直接替代 WebSocket 的握手与帧处理。部分 HTTP 客户端库额外提供 WebSocket 接口，是否支持需要检查具体实现。
+
 ## 2. 浏览器使用
 
 ```javascript

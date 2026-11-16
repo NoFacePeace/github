@@ -23,7 +23,7 @@ SSE 连接负责服务端到客户端的推送。客户端仍可通过独立的 
 
 ## 2. 浏览器使用
 
-浏览器通过 [EventSource API](browser/api/EventSource.md) 接收 SSE，接口用法与限制见对应文档。
+浏览器通过 [EventSource API](browser/api/eventsource/EventSource.md) 接收 SSE，接口用法与限制见对应文档。
 
 ```javascript
 const source = new EventSource("/events");
@@ -56,7 +56,15 @@ SSE 适合服务端持续推送文字事件；[WebSocket](WebSocket.md) 适合�
 
 部署 SSE 时还需处理反向代理缓冲、空闲超时和慢客户端，避免事件被延迟发送或连接长期占用资源。
 
-## 5. 参考资料
+## 5. 与 NDJSON 的选择
+
+[NDJSON](NDJSON.md) 用换行分隔 JSON 记录；SSE 用空行结束事件，并定义事件类型、标识和重连间隔等字段。两者都能通过普通 HTTP 客户端流式读取，不限于浏览器。
+
+持续传输 JSON 记录、日志或批量数据时，NDJSON 更直接。模型流式接口和网页事件推送中常见 SSE；希望使用浏览器原生事件处理和自动重连时，EventSource 更方便，但具体选型仍取决于接口约定。
+
+NDJSON 也可以携带 id 并实现重连补发。若两者都由应用自行处理解析、重连和恢复，可以实现类似能力；差别主要是消息格式、标准字段和客户端支持。
+
+## 6. 参考资料
 
 - [HTML 标准：Server-sent events](https://html.spec.whatwg.org/dev/server-sent-events.html)
 - [MDN：使用服务器发送事件](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events)

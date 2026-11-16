@@ -1,6 +1,6 @@
 # EventSource
 
-EventSource 是浏览器提供的 Web API，用于建立 HTTP GET 连接并接收 [SSE](../../SSE.md) 事件流。它封装了事件解析、连接状态和自动重连，无需额外安装客户端库。
+EventSource 是浏览器提供的 Web API，用于建立 HTTP GET 连接并接收 [SSE](../../../SSE.md) 事件流。它封装了事件解析、连接状态和[自动重连](AutoReconnect.md)，无需额外安装客户端库。
 
 ## 1. 基本使用
 

@@ -19,7 +19,7 @@ Content-Length: 16
 
 ## 2. HTTP/1.1 中的边界
 
-报文体位于首部后的空行之后，其长度或结束位置由报文分帧规则确定。常见方式包括 `Content-Length` 指定字节长度，以及 `Transfer-Encoding: chunked` 使用分块编码。部分响应通过关闭连接标记结束。
+报文体位于首部后的空行之后，其长度或结束位置由报文分帧规则确定。常见方式包括 `Content-Length` 指定字节长度，以及 [Transfer-Encoding: chunked](../headers/TransferEncoding.md) 使用分块编码。部分响应通过关闭连接标记结束。
 
 请求体不能通过关闭连接标记结束。HEAD 请求的响应以及 1xx、204、304 响应不包含报文体。
 
