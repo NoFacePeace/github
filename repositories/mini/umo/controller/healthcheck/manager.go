@@ -25,6 +25,8 @@ type Manager interface {
 
 // Config 表示管理器的运行配置，字段随具体功能按需补充。
 type Config struct {
+	// K8sClient 用于读写 Kubernetes 资源。
+	K8sClient client.Client
 	// CheckInterval 表示检查间隔，为零时默认一分钟，不能为负数。
 	CheckInterval time.Duration
 	// Policies 定义异常状态的处理策略。
@@ -68,6 +70,7 @@ func NewManager(checkers []Checker, cfg Config) (Manager, error) {
 		cfg.CheckInterval = time.Minute
 	}
 	return &manager{
+		k8sClient:           cfg.K8sClient,
 		checkers:            slices.Clone(checkers),
 		config:              cfg,
 		webhookClient:       defaultWebhookClient,
