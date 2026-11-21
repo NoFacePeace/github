@@ -8,19 +8,33 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 
 	"umo/apiserver"
+	"umo/apiserver/watch"
 )
 
 func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop()
+
+	var store watch.Store
+	broadcaster := watch.NewEventBroadcaster()
+	var wg sync.WaitGroup
+	defer func() {
+		stop()
+		wg.Wait()
+	}()
+	if store != nil {
+		wg.Go(func() {
+			watch.RunPoller(ctx, store, broadcaster)
+		})
+	}
 
 	server := &http.Server{
 		Addr:        ":8080",
-		Handler:     apiserver.NewRouter(),
+		Handler:     apiserver.NewRouter(store, broadcaster),
 		BaseContext: func(net.Listener) context.Context { return ctx },
 	}
 	serverErr := make(chan error, 1)
