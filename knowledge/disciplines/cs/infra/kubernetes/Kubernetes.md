@@ -23,3 +23,19 @@ Kubernetes 可以运行 Docker 构建的兼容镜像，但不要求安装 Docker
 ## 4. Service
 
 - [Service](service/Service.md)：Pod 的稳定访问入口、后端选择与服务发现。
+
+## 5. 资源与对象
+
+- [资源与对象](resource/Resource.md)：Kubernetes API 对象的结构、元数据、标签和注解。
+
+## 6. Pod
+
+- [Pod](pod/Pod.md)：Kubernetes 的部署单元、容器配置和 Downward API。
+
+## 7. 持久存储
+
+- [持久存储](storage/Storage.md)：PV、PVC、Pod 挂载与动态供给。
+
+## 8. 准入控制
+
+- [准入控制](admission/Admission.md)：API Server 在保存资源前如何变更和验证请求对象。
