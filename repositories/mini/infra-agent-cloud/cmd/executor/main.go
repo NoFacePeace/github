@@ -23,14 +23,17 @@ const (
 
 // main 是独立 Executor 程序的入口。
 func main() {
-	if err := run(); err != nil {
+	code, err := run()
+	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+	}
+	if code != 0 {
+		os.Exit(code)
 	}
 }
 
 // run 在返回前执行输入通道和信号监听的清理，再由 main 设置退出码。
-func run() error {
+func run() (int, error) {
 	// TODO: 按以下顺序接入程序入口流程：
 	//  1. 解析 -command 参数：run 执行任务，preflight 检查执行环境，version 输出程序版本。
 	command := flag.String("command", "", "Command to execute: run, preflight, version")
@@ -39,21 +42,21 @@ func run() error {
 	switch *command {
 	case commandRun:
 	case commandPreflight:
-		return nil
+		return 0, nil
 	case commandVersion:
-		return nil
+		return 0, nil
 	default:
-		return nil
+		return 0, nil
 	}
 
 	// 2. run 读取 --manifest 指定的 JSON 执行清单，校验协议版本和执行参数。
 	data, err := os.ReadFile(*manifest)
 	if err != nil {
-		return fmt.Errorf("failed to read execution manifest: %w", err)
+		return 1, fmt.Errorf("failed to read execution manifest: %w", err)
 	}
 	var spec executor.Spec
 	if err := json.Unmarshal(data, &spec); err != nil {
-		return fmt.Errorf("failed to parse execution manifest: %w", err)
+		return 1, fmt.Errorf("failed to parse execution manifest: %w", err)
 	}
 	// TODO: 补齐执行规格字段后校验协议版本和执行参数。
 
@@ -64,7 +67,7 @@ func run() error {
 	// 4. 按模式读取敏感配置，steer 模式首帧返回后继续通过命令流读取后续输入。
 	input, err := openInput(os.Stdin)
 	if err != nil {
-		return err
+		return 1, err
 	}
 	defer input.Close()
 	executionCtx := ctx
@@ -74,19 +77,19 @@ func run() error {
 	case "", executor.SteerPromptModeLegacy:
 		secrets, err = executor.ReadSecrets(ctx, input)
 		if err != nil {
-			return fmt.Errorf("failed to read execution secrets: %w", err)
+			return 1, fmt.Errorf("failed to read execution secrets: %w", err)
 		}
 	case executor.SteerPromptModeSteer:
 		control, err := executor.OpenControlInput(ctx, input, spec.ExecutionID)
 		if err != nil {
-			return fmt.Errorf("failed to open control input: %w", err)
+			return 1, fmt.Errorf("failed to open control input: %w", err)
 		}
 		defer control.Close()
 		secrets = control.Secrets
 		commands = control.Commands
 		executionCtx = control.Context
 	default:
-		return fmt.Errorf("unsupported steer prompt mode")
+		return 1, fmt.Errorf("unsupported steer prompt mode")
 	}
 	// TODO: 校验普通模式下敏感配置的协议版本和执行归属。
 
@@ -96,16 +99,18 @@ func run() error {
 		return encoder.Encode(event)
 	}
 	// 6. 调用执行入口，传入执行参数、Context、敏感配置、事件回调和可选控制消息通道。
-	_, err = executor.Run(executionCtx, &spec, secrets, commands, emit)
-	if cause := context.Cause(executionCtx); cause != nil {
-		return fmt.Errorf("execution failed: %w", cause)
-	}
+	result, err := executor.Run(executionCtx, &spec, secrets, commands, emit)
+	// 7. 返回退出码，实际退出前会关闭控制输入并释放信号监听。
 	if err != nil {
-		return fmt.Errorf("execution failed: %w", err)
+		code := 1
+		if ctx.Err() == context.Canceled {
+			code = 130
+		} else if result.ExitCode != nil && *result.ExitCode > 0 {
+			code = *result.ExitCode
+		}
+		return code, fmt.Errorf("execution failed: %w", err)
 	}
-
-	// 7. 执行结束后关闭控制消息读取通道，释放信号监听，并以执行结果设置进程退出码。
-	return nil
+	return 0, nil
 }
 
 // openInput 将继承的阻塞输入描述符复制为可轮询文件，使 Close 能解除正在等待的 Read。
