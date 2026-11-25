@@ -1,69 +1,26 @@
 package executor
 
 import (
+	"bufio"
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os/exec"
-	"sync"
-	"time"
+	"strings"
+	"syscall"
 )
-
-// Engine 提供公共执行流程所需的引擎专属信息。
-type Engine interface {
-	// WriteConfig 写入本轮所需的引擎配置和认证文件。
-	WriteConfig(spec *Spec, secrets *Secrets) error
-	// BuildCommand 生成启动参数，供公共执行流程启动进程。
-	BuildCommand(spec *Spec, secrets *Secrets) (EngineCommand, error)
-	// ParseOutput 收集一行引擎标准输出中的结果信息。
-	ParseOutput(line string)
-	// ParseResult 在输出读完后填充解析结果，并报告协议或执行错误。
-	ParseResult(result *Result) error
-}
-
-// EngineCommand 描述引擎的启动命令，Env 保存需要覆盖的环境变量。
-type EngineCommand struct {
-	Executable string
-	Args       []string
-	Dir        string
-	Env        []string
-}
 
 // Run 是公共执行入口，commands 为可选的执行中输入，普通模式传 nil。
 func Run(ctx context.Context, spec *Spec, secrets *Secrets, commands <-chan SteerCommand, emit func(Event) error) (*Result, error) {
-	runCtx, cancel := context.WithCancelCause(ctx)
-	defer cancel(nil)
-
-	var mu sync.Mutex
-	var seq int64
-	var emitErr error
-	publish := func(kind EventType, payload map[string]any) error {
-		mu.Lock()
-		defer mu.Unlock()
-		if emitErr != nil {
-			return emitErr
-		}
-		seq++
-		if err := emit(Event{
-			SchemaVersion: spec.SchemaVersion,
-			ExecutionID:   spec.ExecutionID,
-			Seq:           seq,
-			Timestamp:     time.Now().UTC(),
-			Type:          kind,
-			Payload:       payload,
-		}); err != nil {
-			emitErr = fmt.Errorf("emit %s event: %w", kind, err)
-			cancel(emitErr)
-		}
-		return emitErr
+	publisher := eventPublisher{
+		schemaVersion: spec.SchemaVersion,
+		executionID:   spec.ExecutionID,
+		writeEvent:    emit,
 	}
-
-	result, runErr := runEngine(runCtx, spec, secrets, publish)
+	result, runErr := runEngine(ctx, spec, secrets, publisher.publish)
 	if result == nil {
 		result = &Result{}
-	}
-	if emitErr != nil {
-		return result, emitErr
 	}
 	kind := EventTypeCompleted
 	if errors.Is(ctx.Err(), context.Canceled) {
@@ -73,9 +30,9 @@ func Run(ctx context.Context, spec *Spec, secrets *Secrets, commands <-chan Stee
 		kind = EventTypeFailed
 		result.Error = runErr.Error()
 	}
-	// 取消后仍发送终态。若输出回调已失败，则由前面的检查直接返回。
-	if err := publish(kind, map[string]any{"result": result}); err != nil {
-		return result, errors.Join(runErr, err)
+	// 取消后仍尝试写出终态。若先前写入已失败，发布器会返回首次错误。
+	if err := publisher.publish(kind, map[string]any{"result": result}); err != nil {
+		return result, err
 	}
 	return result, runErr
 }
@@ -91,6 +48,9 @@ func runEngine(ctx context.Context, spec *Spec, secrets *Secrets, publish func(E
 	default:
 		return nil, fmt.Errorf("unsupported engine: %q", spec.Engine)
 	}
+	if err := publish(EventTypeStarted, nil); err != nil {
+		return nil, err
+	}
 
 	command, err := engine.BuildCommand(spec, secrets)
 	if err != nil {
@@ -105,11 +65,100 @@ func runEngine(ctx context.Context, spec *Spec, secrets *Secrets, publish func(E
 		return nil, fmt.Errorf("prepare %s config: %w", spec.Engine, err)
 	}
 
-	return runEngineProcess(ctx, engine, command, publish)
+	return runEngineProcess(ctx, engine, command, spec, publish)
 }
 
-// Executor 封装具体引擎调用，不依赖 Server 或 Runner 的业务模型。
-type Executor interface {
-	// Run 按执行规格运行引擎并通过 emit 输出事件；取消后须等待进程退出再返回。
-	Run(ctx context.Context, spec *Spec, emit func(Event) error) (*Result, error)
+func runEngineProcess(ctx context.Context, engine Engine, command EngineCommand, spec *Spec, publish func(EventType, map[string]any) error) (*Result, error) {
+	cmd := exec.CommandContext(ctx, command.Executable, command.Args...)
+	cmd.Dir = command.Dir
+	cmd.Env = append(cmd.Environ(), command.Env...)
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		return nil, fmt.Errorf("create engine stdout pipe: %w", err)
+	}
+	defer stdout.Close()
+	stderr, err := cmd.StderrPipe()
+	if err != nil {
+		if writer, ok := cmd.Stdout.(io.Closer); ok {
+			_ = writer.Close()
+		}
+		return nil, fmt.Errorf("create engine stderr pipe: %w", err)
+	}
+	defer stderr.Close()
+
+	var stdoutLog strings.Builder
+	var sessionID string
+	outputErrors := make(chan error, 2)
+	stream := func(pipe io.ReadCloser, kind EventType) {
+		err := readEngineOutput(pipe, func(data string) error {
+			if err := context.Cause(ctx); err != nil {
+				return err
+			}
+			if kind == EventTypeStdout {
+				stdoutLog.WriteString(data)
+				if id := engine.ParseSessionID(data); id != "" {
+					sessionID = id
+				}
+			}
+			return publish(kind, map[string]any{"data": data})
+		})
+		_ = pipe.Close()
+		if err != nil {
+			err = fmt.Errorf("read engine %s: %w", kind, err)
+		}
+		outputErrors <- err
+	}
+	if err := cmd.Start(); err != nil {
+		if cause := context.Cause(ctx); cause != nil {
+			return nil, cause
+		}
+		return nil, fmt.Errorf("start engine process: %w", err)
+	}
+	go stream(stdout, EventTypeStdout)
+	go stream(stderr, EventTypeStderr)
+	// Wait 会关闭输出管道，须等两路读取结束后再调用。
+	outputErr := errors.Join(<-outputErrors, <-outputErrors)
+	waitErr := cmd.Wait()
+
+	result := &Result{}
+	if state := cmd.ProcessState; state != nil {
+		if status, ok := state.Sys().(syscall.WaitStatus); ok && status.Signaled() {
+			result.ExitSignal = status.Signal().String()
+		} else {
+			code := state.ExitCode()
+			result.ExitCode = &code
+		}
+	}
+
+	cause := context.Cause(ctx)
+	parsed, parseErr := engine.ParseResult(stdoutLog.String(), spec)
+	result.ExecutorSessionID = sessionID
+	result.Text = parsed.Text
+	result.Usage = parsed.Usage
+	if cause != nil {
+		return result, cause
+	}
+	if waitErr != nil {
+		waitErr = fmt.Errorf("wait for engine process: %w", waitErr)
+	}
+	return result, errors.Join(waitErr, outputErr, parseErr)
+}
+
+// readEngineOutput 逐行转发输出，保留换行符及最后一行的内容。
+func readEngineOutput(input io.Reader, emit func(string) error) error {
+	reader := bufio.NewReader(input)
+	for {
+		line, err := reader.ReadString('\n')
+		if line != "" {
+			if emitErr := emit(line); emitErr != nil {
+				return emitErr
+			}
+		}
+		if errors.Is(err, io.EOF) {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+	}
 }

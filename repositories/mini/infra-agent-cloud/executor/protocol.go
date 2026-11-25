@@ -1,7 +1,5 @@
 package executor
 
-import "time"
-
 // SteerPromptMode 指定 Executor 的输入模式。
 type SteerPromptMode string
 
@@ -104,38 +102,4 @@ type Usage struct {
 	ReasoningOutputTokens *int64 `json:"reasoningOutputTokens,omitempty"`
 	// TotalTokens 是引擎报告的总 Token 数，未提供时不自行假定计算规则。
 	TotalTokens *int64 `json:"totalTokens,omitempty"`
-}
-
-// EventType 表示 Executor 进程事件类型。
-type EventType string
-
-const (
-	// EventTypeStarted 表示本次执行开始。
-	EventTypeStarted EventType = "started"
-	// EventTypeStdout 携带引擎标准输出。
-	EventTypeStdout EventType = "stdout"
-	// EventTypeStderr 携带引擎标准错误输出。
-	EventTypeStderr EventType = "stderr"
-	// EventTypeCompleted 表示执行成功结束。
-	EventTypeCompleted EventType = "completed"
-	// EventTypeFailed 表示执行失败。
-	EventTypeFailed EventType = "failed"
-	// EventTypeStopped 表示执行已停止。
-	EventTypeStopped EventType = "stopped"
-)
-
-// Event 是 Executor 通过 stdout JSONL 回传的统一进程事件。
-type Event struct {
-	// SchemaVersion 标识进程事件协议版本。
-	SchemaVersion string `json:"schemaVersion"`
-	// ExecutionID 标识事件所属的执行。
-	ExecutionID string `json:"executionId"`
-	// Seq 是本次执行内从 1 开始递增的事件序号。
-	Seq int64 `json:"seq"`
-	// Timestamp 记录事件产生时间。
-	Timestamp time.Time `json:"timestamp"`
-	// Type 指定事件类型。
-	Type EventType `json:"type"`
-	// Payload 保存输出、结果或错误等具体事件内容。
-	Payload map[string]any `json:"payload,omitempty"`
 }

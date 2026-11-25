@@ -1,0 +1,81 @@
+package executor
+
+// Engine 定义 Executor 使用的引擎适配器接口。
+type Engine interface {
+	Name() string
+	WriteConfig(spec *Spec, secrets *Secrets) error
+	BuildCommand(spec *Spec, secrets *Secrets) (EngineCommand, error)
+
+	// ParseSessionID 提取引擎会话标识，当前行没有会话标识时返回空字符串。
+	ParseSessionID(line string) string
+	// ParseMCPStatus 提取 MCP 服务和工具状态，没有状态时返回 nil。
+	ParseMCPStatus(line string) *EngineMCPStatus
+	// ParseProgress 提取实时进度，没有进度时返回 nil。
+	ParseProgress(line string) *EngineProgress
+	// ParseChannelOutput 提取当前行可展示的进度或回答。
+	ParseChannelOutput(line string) []EngineChannelOutput
+	// ParseResult 在进程退出后解析完整的原始标准输出。
+	ParseResult(log string, spec *Spec) (EngineResult, error)
+}
+
+// EngineLogFilter 可选地处理引擎标准输出的日志副本，返回 nil 时跳过该行。
+type EngineLogFilter interface {
+	FilterLogLine(line string) *string
+}
+
+// EngineErrorLogFilter 可选地处理引擎标准错误的日志副本，返回 nil 时跳过该行。
+type EngineErrorLogFilter interface {
+	FilterErrorLine(line string) *string
+}
+
+// EngineCommand 描述引擎的启动命令，Env 保存需要覆盖的环境变量。
+type EngineCommand struct {
+	Executable string
+	Args       []string
+	Dir        string
+	Env        []string
+}
+
+// EngineProgress 表示一条进度，Replace 表示替换上一条进度。
+type EngineProgress struct {
+	Text    string
+	Replace bool
+}
+
+// EngineChannelOutputKind 区分面向用户展示的进度和回答。
+type EngineChannelOutputKind string
+
+const (
+	EngineChannelOutputProgress EngineChannelOutputKind = "progress"
+	EngineChannelOutputAnswer   EngineChannelOutputKind = "answer"
+)
+
+// EngineChannelOutput 表示一条可展示的引擎输出。
+type EngineChannelOutput struct {
+	EngineProgress
+	Kind EngineChannelOutputKind
+}
+
+// EngineMCPStatus 描述引擎报告的 MCP 服务连接状态和工具列表。
+type EngineMCPStatus struct {
+	SessionID     string
+	Healthy       bool
+	Servers       []EngineMCPServerStatus
+	FailedServers []string
+	Tools         []string
+}
+
+// EngineMCPServerStatus 描述单个 MCP 服务的状态。
+type EngineMCPServerStatus struct {
+	Name   string
+	Status string
+}
+
+// EngineResult 保存从引擎输出解析出的终态信息。
+type EngineResult struct {
+	Text          *string
+	Usage         *Usage
+	CompactCount  *int
+	Cost          *float64
+	CostEstimated *bool
+}

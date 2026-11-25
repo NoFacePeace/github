@@ -1,7 +1,6 @@
 package executor
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -10,18 +9,14 @@ import (
 	"strings"
 )
 
-type Codex struct {
-	sessionID     string
-	text          *string
-	usage         *Usage
-	turnCompleted bool
-	turnFailure   string
-	lastError     string
-	parseErr      error
-}
+type Codex struct{}
 
 func NewCodex() *Codex {
 	return &Codex{}
+}
+
+func (c *Codex) Name() string {
+	return "codex"
 }
 
 // WriteConfig 将 Codex 配置和可选的订阅认证写入本轮指定的配置目录。
@@ -93,95 +88,116 @@ func (c *Codex) BuildCommand(spec *Spec, secrets *Secrets) (EngineCommand, error
 		env = append(env, "OPENAI_API_KEY="+secrets.ProviderAPIKey)
 	}
 	return EngineCommand{
-		Executable: "codex",
+		Executable: c.Name(),
 		Args:       args,
 		Dir:        spec.Paths.Workspace,
 		Env:        env,
 	}, nil
 }
 
-// ParseOutput 逐行收集 Codex JSONL 中的会话、回复和用量。
-func (c *Codex) ParseOutput(line string) {
-	if strings.TrimSpace(line) == "" {
-		return
-	}
+// ParseSessionID 从 Codex 的会话启动事件提取续接标识。
+func (c *Codex) ParseSessionID(line string) string {
 	var event struct {
 		Type     string `json:"type"`
 		ThreadID string `json:"thread_id"`
-		Item     struct {
-			Type       string  `json:"type"`
-			Text       *string `json:"text"`
-			OutputText *string `json:"output_text"`
-		} `json:"item"`
-		Usage *struct {
-			InputTokens           *int64 `json:"input_tokens"`
-			CachedInputTokens     *int64 `json:"cached_input_tokens"`
-			OutputTokens          *int64 `json:"output_tokens"`
-			ReasoningOutputTokens *int64 `json:"reasoning_output_tokens"`
-			TotalTokens           *int64 `json:"total_tokens"`
-		} `json:"usage"`
-		Message string `json:"message"`
-		Error   struct {
-			Message string `json:"message"`
-		} `json:"error"`
 	}
-	if err := json.Unmarshal([]byte(line), &event); err != nil || event.Type == "" {
-		c.parseErr = errors.New("invalid codex output event")
-		return
+	if err := json.Unmarshal([]byte(line), &event); err != nil || event.Type != "thread.started" {
+		return ""
 	}
-	switch event.Type {
-	case "thread.started":
-		c.sessionID = event.ThreadID
-	case "item.completed":
-		if event.Item.Type == "agent_message" {
-			if event.Item.OutputText != nil {
-				c.text = event.Item.OutputText
-			} else if event.Item.Text != nil {
-				c.text = event.Item.Text
-			}
-		}
-	case "turn.completed":
-		c.turnCompleted = true
-		if usage := event.Usage; usage != nil {
-			c.usage = &Usage{
-				InputTokens:           usage.InputTokens,
-				CachedInputTokens:     usage.CachedInputTokens,
-				OutputTokens:          usage.OutputTokens,
-				ReasoningOutputTokens: usage.ReasoningOutputTokens,
-				TotalTokens:           usage.TotalTokens,
-			}
-		}
-	case "turn.failed":
-		c.turnFailure = event.Error.Message
-		if c.turnFailure == "" {
-			c.turnFailure = "codex turn failed"
-		}
-	case "error":
-		c.lastError = event.Message
-		if c.lastError == "" {
-			c.lastError = event.Error.Message
-		}
-	}
+	return event.ThreadID
 }
 
-// ParseResult 填充已收到的结果，验证 Codex 是否报告了执行终态。
-func (c *Codex) ParseResult(result *Result) error {
-	result.ExecutorSessionID = c.sessionID
-	result.Text = c.text
-	result.Usage = c.usage
-	if c.parseErr != nil {
-		return c.parseErr
+func (c *Codex) ParseMCPStatus(line string) *EngineMCPStatus {
+	return nil
+}
+
+func (c *Codex) ParseProgress(line string) *EngineProgress {
+	return nil
+}
+
+func (c *Codex) ParseChannelOutput(line string) []EngineChannelOutput {
+	return nil
+}
+
+type codexOutputEvent struct {
+	Type string `json:"type"`
+	Item struct {
+		Type       string  `json:"type"`
+		Text       *string `json:"text"`
+		OutputText *string `json:"output_text"`
+	} `json:"item"`
+	Usage *struct {
+		InputTokens           *int64 `json:"input_tokens"`
+		CachedInputTokens     *int64 `json:"cached_input_tokens"`
+		OutputTokens          *int64 `json:"output_tokens"`
+		ReasoningOutputTokens *int64 `json:"reasoning_output_tokens"`
+		TotalTokens           *int64 `json:"total_tokens"`
+	} `json:"usage"`
+	Message string `json:"message"`
+	Error   struct {
+		Message string `json:"message"`
+	} `json:"error"`
+}
+
+// ParseResult 从整轮 Codex JSONL 解析回复、用量，并检查引擎终态。
+func (c *Codex) ParseResult(log string, _ *Spec) (EngineResult, error) {
+	var result EngineResult
+	var turnCompleted, invalidOutput bool
+	var turnFailure, lastError string
+	for line := range strings.Lines(log) {
+		if strings.TrimSpace(line) == "" {
+			continue
+		}
+		var event codexOutputEvent
+		if err := json.Unmarshal([]byte(line), &event); err != nil || event.Type == "" {
+			invalidOutput = true
+			continue
+		}
+		switch event.Type {
+		case "item.completed":
+			if event.Item.Type == "agent_message" {
+				if event.Item.OutputText != nil {
+					result.Text = event.Item.OutputText
+				} else if event.Item.Text != nil {
+					result.Text = event.Item.Text
+				}
+			}
+		case "turn.completed":
+			turnCompleted = true
+			if usage := event.Usage; usage != nil {
+				result.Usage = &Usage{
+					InputTokens:           usage.InputTokens,
+					CachedInputTokens:     usage.CachedInputTokens,
+					OutputTokens:          usage.OutputTokens,
+					ReasoningOutputTokens: usage.ReasoningOutputTokens,
+					TotalTokens:           usage.TotalTokens,
+				}
+			}
+		case "turn.failed":
+			turnFailure = event.Error.Message
+			if turnFailure == "" {
+				turnFailure = "codex turn failed"
+			}
+		case "error":
+			lastError = event.Message
+			if lastError == "" {
+				lastError = event.Error.Message
+			}
+		}
 	}
-	if c.turnFailure != "" {
-		return errors.New(c.turnFailure)
+	if invalidOutput {
+		return result, errors.New("invalid codex output event")
 	}
-	if c.turnCompleted {
-		return nil
+	if turnFailure != "" {
+		return result, errors.New(turnFailure)
 	}
-	if c.lastError != "" {
-		return errors.New(c.lastError)
+	if turnCompleted {
+		return result, nil
 	}
-	return errors.New("codex output ended without a terminal turn event")
+	if lastError != "" {
+		return result, errors.New(lastError)
+	}
+	return result, errors.New("codex output ended without a terminal turn event")
 }
 
 // writeCodexFile 原子替换文件，新文件仅允许当前用户读写。
@@ -196,9 +212,4 @@ func writeCodexFile(dir, name, content string) error {
 		return err
 	}
 	return os.Rename(file.Name(), filepath.Join(dir, name))
-}
-
-func (c *Codex) Run(ctx context.Context, spec *Spec, emit func(Event) error) (*Result, error) {
-	// TODO: 启动 Codex、解析流式输出，并在取消时终止进程。
-	return nil, errors.New("codex execution is not implemented")
 }
