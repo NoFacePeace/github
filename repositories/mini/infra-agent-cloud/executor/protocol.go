@@ -84,6 +84,8 @@ type Result struct {
 	Text *string `json:"text,omitempty"`
 	// ExecutorSessionID 是引擎侧会话标识，供后续执行恢复上下文。
 	ExecutorSessionID string `json:"executorSessionId,omitempty"`
+	// MCP 是引擎最后一次报告的 MCP 状态。
+	MCP *EngineMCPStatus `json:"mcp,omitempty"`
 	// Usage 是引擎报告的 Token 用量，nil 表示未提供用量信息。
 	Usage *Usage `json:"usage,omitempty"`
 	// Error 保存执行失败原因，成功时为空。

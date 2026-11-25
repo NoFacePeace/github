@@ -119,6 +119,22 @@ func (c *Codex) ParseChannelOutput(line string) []EngineChannelOutput {
 	return nil
 }
 
+// FilterLogLine 跳过 Codex 的流式文本增量。
+func (c *Codex) FilterLogLine(line string) *string {
+	if strings.Contains(line, `"response.output_text.delta"`) {
+		return nil
+	}
+	return &line
+}
+
+// FilterErrorLine 跳过 Codex 等待标准输入的提示。
+func (c *Codex) FilterErrorLine(line string) *string {
+	if strings.TrimSpace(line) == "Reading additional input from stdin..." {
+		return nil
+	}
+	return &line
+}
+
 type codexOutputEvent struct {
 	Type string `json:"type"`
 	Item struct {

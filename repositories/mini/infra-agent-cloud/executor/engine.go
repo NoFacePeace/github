@@ -58,17 +58,17 @@ type EngineChannelOutput struct {
 
 // EngineMCPStatus 描述引擎报告的 MCP 服务连接状态和工具列表。
 type EngineMCPStatus struct {
-	SessionID     string
-	Healthy       bool
-	Servers       []EngineMCPServerStatus
-	FailedServers []string
-	Tools         []string
+	SessionID     string                  `json:"sessionId,omitempty"`
+	Healthy       bool                    `json:"healthy"`
+	Servers       []EngineMCPServerStatus `json:"servers"`
+	FailedServers []string                `json:"failedServers"`
+	Tools         []string                `json:"tools"`
 }
 
 // EngineMCPServerStatus 描述单个 MCP 服务的状态。
 type EngineMCPServerStatus struct {
-	Name   string
-	Status string
+	Name   string `json:"name"`
+	Status string `json:"status"`
 }
 
 // EngineResult 保存从引擎输出解析出的终态信息。

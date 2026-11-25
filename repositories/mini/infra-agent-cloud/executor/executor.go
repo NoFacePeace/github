@@ -68,7 +68,17 @@ func runEngine(ctx context.Context, spec *Spec, secrets *Secrets, publish func(E
 	return runEngineProcess(ctx, engine, command, spec, publish)
 }
 
-func runEngineProcess(ctx context.Context, engine Engine, command EngineCommand, spec *Spec, publish func(EventType, map[string]any) error) (*Result, error) {
+func runEngineProcess(ctx context.Context, engine Engine, command EngineCommand, spec *Spec, publish func(EventType, map[string]any) error) (result *Result, runErr error) {
+	sessionLog, err := openSessionLog(spec)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if err := sessionLog.close(); err != nil {
+			runErr = errors.Join(runErr, fmt.Errorf("close session log: %w", err))
+		}
+	}()
+
 	cmd := exec.CommandContext(ctx, command.Executable, command.Args...)
 	cmd.Dir = command.Dir
 	cmd.Env = append(cmd.Environ(), command.Env...)
@@ -88,8 +98,9 @@ func runEngineProcess(ctx context.Context, engine Engine, command EngineCommand,
 
 	var stdoutLog strings.Builder
 	var sessionID string
+	var mcpStatus *EngineMCPStatus
 	outputErrors := make(chan error, 2)
-	stream := func(pipe io.ReadCloser, kind EventType) {
+	stream := func(pipe io.ReadCloser, kind EventType, filter func(string) *string) {
 		err := readEngineOutput(pipe, func(data string) error {
 			if err := context.Cause(ctx); err != nil {
 				return err
@@ -100,7 +111,38 @@ func runEngineProcess(ctx context.Context, engine Engine, command EngineCommand,
 					sessionID = id
 				}
 			}
-			return publish(kind, map[string]any{"data": data})
+			logLine := &data
+			if filter != nil {
+				logLine = filter(data)
+			}
+			if err := sessionLog.append(logLine); err != nil {
+				return err
+			}
+			payload := map[string]any{"data": data}
+			if logLine == nil {
+				payload["logData"] = ""
+			} else if *logLine != data {
+				payload["logData"] = *logLine
+			}
+			if err := publish(kind, payload); err != nil {
+				return err
+			}
+			if kind != EventTypeStdout {
+				return nil
+			}
+			if status := engine.ParseMCPStatus(data); status != nil {
+				mcpStatus = status
+			}
+			for _, output := range engine.ParseChannelOutput(data) {
+				payload := map[string]any{"kind": output.Kind, "text": output.Text}
+				if output.Replace {
+					payload["replace"] = true
+				}
+				if err := publish(EventTypeChannelOutput, payload); err != nil {
+					return err
+				}
+			}
+			return nil
 		})
 		_ = pipe.Close()
 		if err != nil {
@@ -114,13 +156,20 @@ func runEngineProcess(ctx context.Context, engine Engine, command EngineCommand,
 		}
 		return nil, fmt.Errorf("start engine process: %w", err)
 	}
-	go stream(stdout, EventTypeStdout)
-	go stream(stderr, EventTypeStderr)
+	var stdoutFilter, stderrFilter func(string) *string
+	if filter, ok := engine.(EngineLogFilter); ok {
+		stdoutFilter = filter.FilterLogLine
+	}
+	if filter, ok := engine.(EngineErrorLogFilter); ok {
+		stderrFilter = filter.FilterErrorLine
+	}
+	go stream(stdout, EventTypeStdout, stdoutFilter)
+	go stream(stderr, EventTypeStderr, stderrFilter)
 	// Wait 会关闭输出管道，须等两路读取结束后再调用。
 	outputErr := errors.Join(<-outputErrors, <-outputErrors)
 	waitErr := cmd.Wait()
 
-	result := &Result{}
+	result = &Result{}
 	if state := cmd.ProcessState; state != nil {
 		if status, ok := state.Sys().(syscall.WaitStatus); ok && status.Signaled() {
 			result.ExitSignal = status.Signal().String()
@@ -133,6 +182,7 @@ func runEngineProcess(ctx context.Context, engine Engine, command EngineCommand,
 	cause := context.Cause(ctx)
 	parsed, parseErr := engine.ParseResult(stdoutLog.String(), spec)
 	result.ExecutorSessionID = sessionID
+	result.MCP = mcpStatus
 	result.Text = parsed.Text
 	result.Usage = parsed.Usage
 	if cause != nil {
