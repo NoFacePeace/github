@@ -11,6 +11,7 @@ type Engine interface {
 	WriteConfig(spec *Spec, secrets *Secrets) error
 	BuildCommand(spec *Spec, secrets *Secrets) (EngineCommand, error)
 	// StartSteer 接管引擎的原始 stdout，初始化交互协议并发送首条提示词。
+	// 轮次结束时，由适配器结束待回复的请求，并在引擎需要 EOF 时关闭 stdin。
 	StartSteer(ctx context.Context, spec *Spec, stdin io.WriteCloser, stdout io.ReadCloser) (SteerSession, error)
 
 	// ParseSessionID 提取引擎会话标识，当前行没有会话标识时返回空字符串。

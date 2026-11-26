@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
 	"strings"
 	"syscall"
@@ -80,6 +81,9 @@ func runEngineProcess(ctx context.Context, engine Engine, command EngineCommand,
 	}()
 
 	cmd := exec.CommandContext(ctx, command.Executable, command.Args...)
+	cmd.Cancel = func() error {
+		return cmd.Process.Signal(os.Interrupt)
+	}
 	cmd.Dir = command.Dir
 	cmd.Env = append(cmd.Environ(), command.Env...)
 	stdout, err := cmd.StdoutPipe()
@@ -115,9 +119,6 @@ func runEngineProcess(ctx context.Context, engine Engine, command EngineCommand,
 	outputErrors := make(chan error, 2)
 	stream := func(pipe io.ReadCloser, kind EventType, filter func(string) *string) {
 		err := readEngineOutput(pipe, func(data string) error {
-			if err := context.Cause(ctx); err != nil {
-				return err
-			}
 			if kind == EventTypeStdout {
 				stdoutLog.WriteString(data)
 				if id := engine.ParseSessionID(data); id != "" {
@@ -192,7 +193,9 @@ func runEngineProcess(ctx context.Context, engine Engine, command EngineCommand,
 		}
 		if err != nil {
 			cancel()
-			_ = cmd.Process.Kill()
+			if context.Cause(ctx) == nil {
+				_ = cmd.Process.Kill()
+			}
 			_ = stdin.Close()
 			_ = stdout.Close()
 			if session.Stdout != nil {

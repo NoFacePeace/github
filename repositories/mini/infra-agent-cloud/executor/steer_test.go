@@ -2,8 +2,11 @@ package executor
 
 import (
 	"context"
+	"fmt"
+	"io"
 	"reflect"
 	"testing"
+	"time"
 )
 
 func TestConsumeSteerCommandsReusesReceipt(t *testing.T) {
@@ -46,5 +49,47 @@ func TestConsumeSteerCommandsReusesReceipt(t *testing.T) {
 	}
 	if !reflect.DeepEqual(receipts, want) {
 		t.Fatalf("steer receipts = %v, want %v", receipts, want)
+	}
+}
+
+type eofSteerEngine struct{ Codex }
+
+func (*eofSteerEngine) StartSteer(_ context.Context, spec *Spec, stdin io.WriteCloser, stdout io.ReadCloser) (SteerSession, error) {
+	if _, err := fmt.Fprintln(stdin, spec.Prompt); err != nil {
+		return SteerSession{}, err
+	}
+	output, writer := io.Pipe()
+	go func() {
+		err := readEngineOutput(stdout, func(line string) error {
+			if line == "{\"type\":\"turn.completed\"}\n" {
+				if err := stdin.Close(); err != nil {
+					return err
+				}
+			}
+			_, err := io.WriteString(writer, line)
+			return err
+		})
+		_ = writer.CloseWithError(err)
+	}()
+	return SteerSession{
+		Stdout: output,
+		Steer: func(context.Context, SteerCommand) (map[string]any, error) {
+			return nil, nil
+		},
+	}, nil
+}
+
+func TestRunEngineProcessAllowsSteerToCloseInput(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	command := EngineCommand{Executable: "/bin/sh", Args: []string{"-c", `
+IFS= read -r initial && [ "$initial" = "initial" ] || exit 1
+printf '%s\n' '{"type":"turn.completed"}'
+if IFS= read -r leftover; then exit 2; fi
+`}}
+	spec := &Spec{SessionID: "test", SteerPromptMode: SteerPromptModeSteer, Prompt: "initial", Paths: Paths{Session: t.TempDir()}}
+	result, err := runEngineProcess(ctx, &eofSteerEngine{}, command, spec, nil, func(EventType, map[string]any) error { return nil })
+	if err != nil || result.ExitCode == nil || *result.ExitCode != 0 {
+		t.Fatalf("runEngineProcess() = (%+v, %v)", result, err)
 	}
 }
