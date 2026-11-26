@@ -4,4 +4,5 @@
 - [Tools](tools/Tools.md)
 - [Life](life/Life.md)：生活知识。
 - [Ideas](ideas/Ideas.md)：想法与创意。
+- [Works](works/Works.md)：小说、漫画等作品的设定笔记。
 - [收藏](bookmarks/Bookmarks.md)：值得保留的网站、文章和开源项目。
