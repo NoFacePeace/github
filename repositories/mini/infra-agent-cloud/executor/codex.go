@@ -1,9 +1,11 @@
 package executor
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -17,6 +19,11 @@ func NewCodex() *Codex {
 
 func (c *Codex) Name() string {
 	return "codex"
+}
+
+func (c *Codex) StartSteer(_ context.Context, _ *Spec, _ io.WriteCloser, _ io.ReadCloser) (SteerSession, error) {
+	// TODO: 初始化 Codex App Server 协议并发送首条提示词。
+	return SteerSession{}, errors.New("codex steer is not implemented")
 }
 
 // WriteConfig 将 Codex 配置和可选的订阅认证写入本轮指定的配置目录。

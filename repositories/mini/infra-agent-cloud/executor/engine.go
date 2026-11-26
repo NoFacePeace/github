@@ -1,10 +1,17 @@
 package executor
 
+import (
+	"context"
+	"io"
+)
+
 // Engine 定义 Executor 使用的引擎适配器接口。
 type Engine interface {
 	Name() string
 	WriteConfig(spec *Spec, secrets *Secrets) error
 	BuildCommand(spec *Spec, secrets *Secrets) (EngineCommand, error)
+	// StartSteer 接管引擎的原始 stdout，初始化交互协议并发送首条提示词。
+	StartSteer(ctx context.Context, spec *Spec, stdin io.WriteCloser, stdout io.ReadCloser) (SteerSession, error)
 
 	// ParseSessionID 提取引擎会话标识，当前行没有会话标识时返回空字符串。
 	ParseSessionID(line string) string

@@ -18,7 +18,7 @@ func Run(ctx context.Context, spec *Spec, secrets *Secrets, commands <-chan Stee
 		executionID:   spec.ExecutionID,
 		writeEvent:    emit,
 	}
-	result, runErr := runEngine(ctx, spec, secrets, publisher.publish)
+	result, runErr := runEngine(ctx, spec, secrets, commands, publisher.publish)
 	if result == nil {
 		result = &Result{}
 	}
@@ -37,7 +37,7 @@ func Run(ctx context.Context, spec *Spec, secrets *Secrets, commands <-chan Stee
 	return result, runErr
 }
 
-func runEngine(ctx context.Context, spec *Spec, secrets *Secrets, publish func(EventType, map[string]any) error) (*Result, error) {
+func runEngine(ctx context.Context, spec *Spec, secrets *Secrets, commands <-chan SteerCommand, publish func(EventType, map[string]any) error) (*Result, error) {
 	if err := context.Cause(ctx); err != nil {
 		return nil, err
 	}
@@ -65,10 +65,10 @@ func runEngine(ctx context.Context, spec *Spec, secrets *Secrets, publish func(E
 		return nil, fmt.Errorf("prepare %s config: %w", spec.Engine, err)
 	}
 
-	return runEngineProcess(ctx, engine, command, spec, publish)
+	return runEngineProcess(ctx, engine, command, spec, commands, publish)
 }
 
-func runEngineProcess(ctx context.Context, engine Engine, command EngineCommand, spec *Spec, publish func(EventType, map[string]any) error) (result *Result, runErr error) {
+func runEngineProcess(ctx context.Context, engine Engine, command EngineCommand, spec *Spec, commands <-chan SteerCommand, publish func(EventType, map[string]any) error) (result *Result, runErr error) {
 	sessionLog, err := openSessionLog(spec)
 	if err != nil {
 		return nil, err
@@ -95,6 +95,19 @@ func runEngineProcess(ctx context.Context, engine Engine, command EngineCommand,
 		return nil, fmt.Errorf("create engine stderr pipe: %w", err)
 	}
 	defer stderr.Close()
+	var stdin io.WriteCloser
+	if spec.SteerPromptMode == SteerPromptModeSteer {
+		stdin, err = cmd.StdinPipe()
+		if err != nil {
+			for _, output := range []io.Writer{cmd.Stdout, cmd.Stderr} {
+				if writer, ok := output.(io.Closer); ok {
+					_ = writer.Close()
+				}
+			}
+			return nil, fmt.Errorf("create engine stdin pipe: %w", err)
+		}
+		defer stdin.Close()
+	}
 
 	var stdoutLog strings.Builder
 	var sessionID string
@@ -163,11 +176,53 @@ func runEngineProcess(ctx context.Context, engine Engine, command EngineCommand,
 	if filter, ok := engine.(EngineErrorLogFilter); ok {
 		stderrFilter = filter.FilterErrorLine
 	}
-	go stream(stdout, EventTypeStdout, stdoutFilter)
 	go stream(stderr, EventTypeStderr, stderrFilter)
+	var stopSteer context.CancelFunc
+	var commandErrors chan error
+	if spec.SteerPromptMode == SteerPromptModeSteer {
+		steerCtx, cancel := context.WithCancel(ctx)
+		stopSteer = cancel
+		defer cancel()
+		session, err := engine.StartSteer(steerCtx, spec, stdin, stdout)
+		if err == nil && (session.Stdout == nil || session.Steer == nil) {
+			err = errors.New("engine returned an incomplete steer session")
+		}
+		if err == nil {
+			err = publish(EventTypeExecutorReady, map[string]any{"steerPromptMode": SteerPromptModeSteer})
+		}
+		if err != nil {
+			cancel()
+			_ = cmd.Process.Kill()
+			_ = stdin.Close()
+			_ = stdout.Close()
+			if session.Stdout != nil {
+				_ = session.Stdout.Close()
+			}
+			<-outputErrors
+			_ = cmd.Wait()
+			return nil, fmt.Errorf("start engine steer: %w", err)
+		}
+		stdout = session.Stdout
+		commandErrors = make(chan error, 1)
+		go func() {
+			err := consumeSteerCommands(steerCtx, commands, session.Steer, publish)
+			if err != nil {
+				_ = cmd.Process.Kill()
+			}
+			commandErrors <- err
+		}()
+	}
+	go stream(stdout, EventTypeStdout, stdoutFilter)
 	// Wait 会关闭输出管道，须等两路读取结束后再调用。
 	outputErr := errors.Join(<-outputErrors, <-outputErrors)
+	if stopSteer != nil {
+		stopSteer()
+	}
 	waitErr := cmd.Wait()
+	var commandErr error
+	if commandErrors != nil {
+		commandErr = <-commandErrors
+	}
 
 	result = &Result{}
 	if state := cmd.ProcessState; state != nil {
@@ -191,7 +246,7 @@ func runEngineProcess(ctx context.Context, engine Engine, command EngineCommand,
 	if waitErr != nil {
 		waitErr = fmt.Errorf("wait for engine process: %w", waitErr)
 	}
-	return result, errors.Join(waitErr, outputErr, parseErr)
+	return result, errors.Join(waitErr, outputErr, commandErr, parseErr)
 }
 
 // readEngineOutput 逐行转发输出，保留换行符及最后一行的内容。
