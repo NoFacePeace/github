@@ -48,18 +48,23 @@ type ExecutionHandle struct {
 
 // Runtime 管理 Executor 进程及其隔离资源。
 type Runtime interface {
+	ProcessRuntime
 	Mode() RuntimeMode
 	// Preflight 检查运行环境和可用引擎。
 	Preflight(ctx context.Context) (RuntimePreflightResult, error)
 	// Recover 在节点启动时清理上次遗留的进程和隔离资源。
 	Recover(ctx context.Context) error
+	// ReadCodexAuthJSON 读取本轮的 Codex 认证文件，文件不存在时返回空字符串。
+	ReadCodexAuthJSON(ctx context.Context, handle *ExecutionHandle) (string, error)
+}
+
+// ProcessRuntime 管理 Runner 消费一条 Job 期间的进程生命周期。
+type ProcessRuntime interface {
 	// Start 启动 Executor 并返回本轮句柄，secrets 可为 nil。
 	// 使用隔离环境时，须在 Executor 运行前完成 cgroup 归属。
 	Start(ctx context.Context, spec *executor.Spec, secrets *executor.Secrets) (*ExecutionHandle, error)
 	// Stop 请求 Executor 停止，并等待进程退出。
 	Stop(ctx context.Context, handle *ExecutionHandle) error
-	// ReadCodexAuthJSON 读取本轮的 Codex 认证文件，文件不存在时返回空字符串。
-	ReadCodexAuthJSON(ctx context.Context, handle *ExecutionHandle) (string, error)
 	// Destroy 清理本轮临时文件和隔离资源。
 	Destroy(ctx context.Context, handle *ExecutionHandle) error
 }

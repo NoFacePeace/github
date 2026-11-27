@@ -2,6 +2,7 @@ package runner
 
 import (
 	"context"
+	"time"
 
 	"infra-agent-cloud/executor"
 )
@@ -13,9 +14,9 @@ type Store interface {
 	// ClaimJob 从当前 Runner 的执行通道领取任务，无任务时返回 nil, nil。
 	// 此处领取的是 Server 已分配的执行消息，不是 Server 的待调度队列。
 	ClaimJob(ctx context.Context) (*Job, error)
-	// AckJob 在终态已可靠回传后确认消费；重复确认须幂等。
+	// AckJob 在启动流程处理成功后确认消费；重复确认须幂等。
 	AckJob(ctx context.Context, job *Job) error
-	// NackJob 在处理或事件回传失败时保留消息供恢复，不能因此重复启动已执行的任务。
+	// NackJob 在启动流程未能完成时保留消息供恢复，不能因此重复启动已执行的任务。
 	NackJob(ctx context.Context, job *Job, reason string) error
 	// ClaimCommand 领取当前节点的控制命令，无命令时返回 nil, nil。
 	ClaimCommand(ctx context.Context) (*Command, error)
@@ -38,9 +39,15 @@ const (
 	CommandTypeStop CommandType = "stop"
 )
 
-// Command 是 Runner 接收的控制消息，目标执行 token、命令 ID 和有效期后续补充。
+// Command 对应 Server 投递给指定 Runner 的控制消息。
 type Command struct {
-	Type CommandType
+	ID             string
+	Type           CommandType
+	RunnerID       string
+	TaskID         string
+	SessionID      string
+	ExecutionToken string
+	ExpiresAt      time.Time
 }
 
 type EventType string

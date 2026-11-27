@@ -27,6 +27,8 @@ type BwrapRuntime struct {
 	StopGracePeriod time.Duration
 }
 
+var _ ProcessRuntime = (*BwrapRuntime)(nil)
+
 const (
 	bwrapTaskRoot     = "/task"
 	bwrapExecutorPath = "/opt/executor"
@@ -90,6 +92,14 @@ func (r *BwrapRuntime) Start(ctx context.Context, spec *executor.Spec, secrets *
 	}
 	handle.bwrapArtifacts = artifacts
 	return handle, nil
+}
+
+// Destroy 在 Executor 退出后清理本轮临时资源，保留任务目录。
+func (r *BwrapRuntime) Destroy(ctx context.Context, handle *ExecutionHandle) error {
+	if _, err := handle.WaitForExit(ctx); err != nil {
+		return err
+	}
+	return handle.bwrapArtifacts.remove()
 }
 
 type bwrapArtifacts struct {
