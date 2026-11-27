@@ -2,49 +2,64 @@ package runner
 
 import (
 	"context"
-	"errors"
+	"io"
+
 	"infra-agent-cloud/executor"
-	"time"
 )
 
-// Runtime 承载任务的执行环境，负责工作区准备、执行及资源清理。
+// RuntimeMode 表示 Runtime 的执行模式。
+type RuntimeMode string
+
+const RuntimeModeBwrap RuntimeMode = "bwrap"
+
+// RuntimePreflightResult 记录执行环境检查的结果。
+type RuntimePreflightResult struct {
+	Mode               RuntimeMode
+	BwrapVersion       string
+	RootlessKitVersion string
+	Slirp4netnsVersion string
+	TaskCgroupRoot     string
+	ExecutorVersion    string
+	AvailableEngines   []string
+	EngineVersions     map[string]string
+}
+
+// ExecutionHandle 表示一次已启动的 Executor 执行。
+type ExecutionHandle struct {
+	ExecutionID          string
+	PID                  int
+	InterruptPID         int
+	InterruptProcessOnly bool
+	Stdout               io.Reader
+	Stderr               io.Reader
+
+	// SendInput 仅在本轮保留控制输入管道时可用，调用方提供包含换行符的完整命令帧。
+	SendInput func(ctx context.Context, input string) error
+	// Wait 等待进程退出及调用方读完或关闭两路输出，返回退出码。
+	Wait func(ctx context.Context) (int, error)
+	// WaitForExit 等待进程退出，返回退出码。
+	WaitForExit func(ctx context.Context) (int, error)
+	// FailureReason 可选地读取隔离环境记录的失败原因。
+	FailureReason func(ctx context.Context) (string, error)
+
+	bwrapArtifacts bwrapArtifacts
+	exited         <-chan struct{}
+}
+
+// Runtime 管理 Executor 进程及其隔离资源。
 type Runtime interface {
-	// Run 执行本轮任务，ctx 取消时须停止执行并完成资源清理后返回。
-	Run(ctx context.Context, job *Job, emit func(executor.Event) error) (*executor.Result, error)
-}
-
-type runtime struct{}
-
-func NewRuntime() Runtime {
-	return &runtime{}
-}
-
-// Run 编排本轮执行流程：
-//  1. 准备或恢复任务工作区。
-//  2. 创建 cgroup 并配置资源限额，准备隔离环境（待接入）。
-//  3. 调用 Executor，在上述环境内启动引擎并回传输出；Context 取消时停止并等待进程退出。
-//  4. 清理残留进程、cgroup 和隔离资源（待接入），再清理本轮工作区临时资源，保留任务文件和会话。
-//
-// cgroup 归属须在引擎及其子进程运行前生效，不能等进程启动后再补加限制。
-func (r *runtime) Run(ctx context.Context, job *Job, emit func(executor.Event) error) (result *executor.Result, err error) {
-	if _, err := r.prepareWorkspace(ctx, job); err != nil {
-		return nil, err
-	}
-	defer func() {
-		cleanupCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
-		defer cancel()
-		err = errors.Join(err, r.cleanupWorkspace(cleanupCtx, job))
-	}()
-	// TODO: 启动独立的 Executor 进程并转发执行事件。
-	return nil, errors.New("executor process launch is not implemented")
-}
-
-func (r *runtime) prepareWorkspace(ctx context.Context, job *Job) (*executor.Spec, error) {
-	// TODO: 准备或恢复任务目录，将 Job 映射为引擎输入；部分失败时回收已创建的临时资源。
-	return nil, errors.New("workspace preparation is not implemented")
-}
-
-func (r *runtime) cleanupWorkspace(ctx context.Context, job *Job) error {
-	// TODO: 清理本轮临时资源，保留任务工作区及继续执行所需的会话文件。
-	return errors.New("workspace cleanup is not implemented")
+	Mode() RuntimeMode
+	// Preflight 检查运行环境和可用引擎。
+	Preflight(ctx context.Context) (RuntimePreflightResult, error)
+	// Recover 在节点启动时清理上次遗留的进程和隔离资源。
+	Recover(ctx context.Context) error
+	// Start 启动 Executor 并返回本轮句柄，secrets 可为 nil。
+	// 使用隔离环境时，须在 Executor 运行前完成 cgroup 归属。
+	Start(ctx context.Context, spec *executor.Spec, secrets *executor.Secrets) (*ExecutionHandle, error)
+	// Stop 请求 Executor 停止，并等待进程退出。
+	Stop(ctx context.Context, handle *ExecutionHandle) error
+	// ReadCodexAuthJSON 读取本轮的 Codex 认证文件，文件不存在时返回空字符串。
+	ReadCodexAuthJSON(ctx context.Context, handle *ExecutionHandle) (string, error)
+	// Destroy 清理本轮临时文件和隔离资源。
+	Destroy(ctx context.Context, handle *ExecutionHandle) error
 }

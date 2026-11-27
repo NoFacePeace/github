@@ -3,7 +3,6 @@ package runner
 import (
 	"context"
 	"errors"
-	"infra-agent-cloud/executor"
 	"log/slog"
 	"runtime/debug"
 	"sync"
@@ -14,6 +13,7 @@ import (
 type Runner struct {
 	heartbeat Heartbeat
 	client    Client
+	store     Store
 	runtime   Runtime
 	activeMu  sync.Mutex
 	active    map[string]*activeExecution
@@ -26,14 +26,14 @@ type activeExecution struct {
 	done   chan struct{}
 }
 
-func NewRunner(heartbeat Heartbeat, client Client, runtime Runtime) *Runner {
+func NewRunner(heartbeat Heartbeat, client Client, store Store, runtime Runtime) *Runner {
 	heartbeat.Engines = append([]string(nil), heartbeat.Engines...)
-	return &Runner{heartbeat: heartbeat, client: client, runtime: runtime, active: make(map[string]*activeExecution)}
+	return &Runner{heartbeat: heartbeat, client: client, store: store, runtime: runtime, active: make(map[string]*activeExecution)}
 }
 
 // Run 启动 Runner，使用 ctx 控制服务生命周期。
 func (r *Runner) Run(ctx context.Context) error {
-	if err := r.client.PublishHeartbeat(ctx, r.heartbeat); err != nil {
+	if err := r.store.PublishHeartbeat(ctx, r.heartbeat); err != nil {
 		return err
 	}
 	runCtx, cancel := context.WithCancel(ctx)
@@ -84,7 +84,7 @@ func (r *Runner) Run(ctx context.Context) error {
 			}
 			return errors.New("command consumer exited unexpectedly")
 		case <-ticker.C:
-			if err := r.client.PublishHeartbeat(ctx, r.heartbeat); err != nil {
+			if err := r.store.PublishHeartbeat(ctx, r.heartbeat); err != nil {
 				if ctx.Err() != nil {
 					return nil
 				}
@@ -96,7 +96,7 @@ func (r *Runner) Run(ctx context.Context) error {
 
 func (r *Runner) consumeJobs(ctx context.Context) {
 	for ctx.Err() == nil {
-		job, err := r.client.ClaimJob(ctx)
+		job, err := r.store.ClaimJob(ctx)
 		if ctx.Err() != nil {
 			return
 		}
@@ -107,10 +107,10 @@ func (r *Runner) consumeJobs(ctx context.Context) {
 			ackCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
 			if handleErr != nil {
 				slog.Error("Failed to handle runner job", "error", handleErr)
-				if err := r.client.NackJob(ackCtx, job, handleErr.Error()); err != nil {
+				if err := r.store.NackJob(ackCtx, job, handleErr.Error()); err != nil {
 					slog.Error("Failed to retain runner job for recovery", "error", err)
 				}
-			} else if err := r.client.AckJob(ackCtx, job); err != nil {
+			} else if err := r.store.AckJob(ackCtx, job); err != nil {
 				slog.Error("Failed to acknowledge runner job", "error", err)
 			}
 			cancel()
@@ -126,7 +126,7 @@ func (r *Runner) consumeJobs(ctx context.Context) {
 
 func (r *Runner) consumeCommands(ctx context.Context) {
 	for ctx.Err() == nil {
-		command, err := r.client.ClaimCommand(ctx)
+		command, err := r.store.ClaimCommand(ctx)
 		if ctx.Err() != nil {
 			return
 		}
@@ -135,10 +135,10 @@ func (r *Runner) consumeCommands(ctx context.Context) {
 		} else if command != nil {
 			if err := r.handleCommand(ctx, command); err != nil {
 				slog.Error("Failed to handle runner command", "error", err)
-				if nackErr := r.client.NackCommand(ctx, command, err.Error()); nackErr != nil {
+				if nackErr := r.store.NackCommand(ctx, command, err.Error()); nackErr != nil {
 					slog.Error("Failed to retain runner command for recovery", "error", nackErr)
 				}
-			} else if err := r.client.AckCommand(ctx, command); err != nil {
+			} else if err := r.store.AckCommand(ctx, command); err != nil {
 				slog.Error("Failed to acknowledge runner command", "error", err)
 			}
 		}
@@ -176,24 +176,18 @@ func (r *Runner) handleJob(ctx context.Context, job *Job) error {
 
 func (r *Runner) runExecution(ctx context.Context, job *Job) error {
 	// started 当前表示进入执行准备，进程就绪事件的准确边界后续补充。
-	if err := r.client.PublishEvent(ctx, job, Event{Type: EventTypeStarted}); err != nil {
+	if err := r.store.PublishEvent(ctx, job, Event{Type: EventTypeStarted}); err != nil {
 		return err
 	}
-	result, err := r.runtime.Run(ctx, job, func(output executor.Event) error {
-		return r.client.PublishEvent(ctx, job, Event{Type: EventTypeOutput, Output: &output})
-	})
-	event := Event{Type: EventTypeCompleted, Result: result}
-	if err != nil {
-		event.Type = EventTypeFailed
-		event.Error = err.Error()
-	}
+	// TODO: 从 Job 准备执行规格和凭证，再调用 Runtime.Start 并消费句柄输出。
+	event := Event{Type: EventTypeFailed, Error: "executor process launch is not implemented"}
 	if ctx.Err() != nil {
 		event.Type = EventTypeStopped
 	}
 	// 取消后仍尝试回传终态，成功回传后才允许确认消费。
 	finalCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
 	defer cancel()
-	return r.client.PublishEvent(finalCtx, job, event)
+	return r.store.PublishEvent(finalCtx, job, event)
 }
 
 func (r *Runner) registerExecution(job *Job, cancel context.CancelFunc) (func(), error) {
