@@ -58,7 +58,7 @@ func TestRunnerExecutionFlow(t *testing.T) {
 			acknowledged := make(chan struct{})
 			store := &executionTestStore{
 				jobs: []*Job{job}, record: record, cancel: cancel, failFinal: tc.failFinal,
-				onAck: func(*Job) { close(acknowledged) }, onTerminal: cancel,
+				onAck: func(string) { close(acknowledged) }, onTerminal: cancel,
 			}
 			client := &executionTestClient{record: record, reject: tc.reject}
 			process := &executionTestRuntime{
@@ -131,8 +131,8 @@ func TestRunnerStartsNextJobBeforeFirstExecutionExits(t *testing.T) {
 	}
 	store := &executionTestStore{
 		jobs: []*Job{first, first, second}, record: record, cancel: cancel,
-		onAck: func(job *Job) {
-			if job == second {
+		onAck: func(entryID string) {
+			if entryID == "entry-"+second.MessageID {
 				close(release)
 			}
 		},
@@ -225,7 +225,7 @@ type executionTestStore struct {
 	record     func(string)
 	cancel     context.CancelFunc
 	failFinal  bool
-	onAck      func(*Job)
+	onAck      func(string)
 	onTerminal func()
 }
 
@@ -234,14 +234,14 @@ func (s *executionTestStore) PublishHeartbeat(context.Context, Heartbeat) error 
 	return nil
 }
 
-func (s *executionTestStore) ClaimJob(context.Context) (*Job, error) {
+func (s *executionTestStore) ClaimJob(context.Context) (*Job, string, error) {
 	if len(s.jobs) == 0 {
-		return nil, nil
+		return nil, "", nil
 	}
 	s.record("claim")
 	job := s.jobs[0]
 	s.jobs = s.jobs[1:]
-	return job, nil
+	return job, "entry-" + job.MessageID, nil
 }
 
 func (s *executionTestStore) ClaimCommand(context.Context) (*Command, error) {
@@ -260,15 +260,15 @@ func (s *executionTestStore) PublishEvent(_ context.Context, _ *Job, event Event
 	return nil
 }
 
-func (s *executionTestStore) AckJob(_ context.Context, job *Job) error {
+func (s *executionTestStore) AckJob(_ context.Context, entryID string) error {
 	s.record("ack")
 	if s.onAck != nil {
-		s.onAck(job)
+		s.onAck(entryID)
 	}
 	return nil
 }
 
-func (s *executionTestStore) NackJob(context.Context, *Job, string) error {
+func (s *executionTestStore) NackJob(context.Context, string, string) error {
 	s.record("nack")
 	s.cancel()
 	return nil

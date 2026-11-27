@@ -11,13 +11,13 @@ import (
 type Store interface {
 	// PublishHeartbeat 上报节点信息并刷新在线有效期，首次上报同时完成注册。
 	PublishHeartbeat(ctx context.Context, heartbeat Heartbeat) error
-	// ClaimJob 从当前 Runner 的执行通道领取任务，无任务时返回 nil, nil。
+	// ClaimJob 从当前 Runner 的执行通道返回任务和 Redis 消息 ID，无任务时返回 nil, "", nil。
 	// 此处领取的是 Server 已分配的执行消息，不是 Server 的待调度队列。
-	ClaimJob(ctx context.Context) (*Job, error)
+	ClaimJob(ctx context.Context) (job *Job, entryID string, err error)
 	// AckJob 在启动流程处理成功后确认消费；重复确认须幂等。
-	AckJob(ctx context.Context, job *Job) error
+	AckJob(ctx context.Context, entryID string) error
 	// NackJob 在启动流程未能完成时保留消息供恢复，不能因此重复启动已执行的任务。
-	NackJob(ctx context.Context, job *Job, reason string) error
+	NackJob(ctx context.Context, entryID, reason string) error
 	// ClaimCommand 领取当前节点的控制命令，无命令时返回 nil, nil。
 	ClaimCommand(ctx context.Context) (*Command, error)
 	AckCommand(ctx context.Context, command *Command) error

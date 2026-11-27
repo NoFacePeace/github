@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/url"
 	"strconv"
 	"time"
 
@@ -139,8 +140,7 @@ const (
 	runnerHeartbeatKeyPrefix   = "infra-agent-cloud:{dispatch}:heartbeat:"
 	runnerHeartbeatIndexKey    = "infra-agent-cloud:{dispatch}:heartbeat:index"
 	runnerMaintenanceKeyPrefix = "infra-agent-cloud:{dispatch}:maintenance:"
-	runnerJobsKeyPrefix        = "infra-agent-cloud:{dispatch}:jobs:"
-	jobPublishedKeyPrefix      = "infra-agent-cloud:{dispatch}:published:"
+	runnerJobsKeyPrefix        = "infra-agent-cloud:runner:jobs:"
 	runnerJobsMaxLen           = 10000
 	jobRetentionSeconds        = 24 * 60 * 60
 )
@@ -488,8 +488,11 @@ func (s *store) PublishJob(ctx context.Context, job *Job) error {
 	if err != nil {
 		return fmt.Errorf("marshal execution message: %w", err)
 	}
+	// 转义 Runner ID，避免其中的花括号改变 Stream 的分槽规则。
+	stream := runnerJobsKeyPrefix + url.PathEscape(job.RunnerID)
+	published := "{" + stream + "}:published:" + job.SessionID
 	result, err := publishJobScript.Run(ctx, s.redis,
-		[]string{runnerJobsKeyPrefix + job.RunnerID, jobPublishedKeyPrefix + job.RunnerID + ":" + job.SessionID},
+		[]string{stream, published},
 		job.MessageID, job.ExecutionExpiresAt.UnixMilli(), string(data), runnerJobsMaxLen,
 	).Int64()
 	if err != nil {

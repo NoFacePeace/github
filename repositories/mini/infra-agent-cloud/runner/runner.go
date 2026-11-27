@@ -100,7 +100,7 @@ func (r *Runner) Run(ctx context.Context) error {
 
 func (r *Runner) consumeJobs(ctx context.Context) {
 	for ctx.Err() == nil {
-		job, err := r.store.ClaimJob(ctx)
+		job, entryID, err := r.store.ClaimJob(ctx)
 		if ctx.Err() != nil {
 			return
 		}
@@ -111,11 +111,11 @@ func (r *Runner) consumeJobs(ctx context.Context) {
 			ackCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
 			if handleErr != nil {
 				slog.Error("Failed to handle runner job", "error", handleErr)
-				if err := r.store.NackJob(ackCtx, job, handleErr.Error()); err != nil {
+				if err := r.store.NackJob(ackCtx, entryID, handleErr.Error()); err != nil {
 					slog.Error("Failed to retain runner job for recovery", "error", err)
 				}
 			} else {
-				err := r.store.AckJob(ackCtx, job)
+				err := r.store.AckJob(ackCtx, entryID)
 				cancel()
 				if err == nil {
 					continue
