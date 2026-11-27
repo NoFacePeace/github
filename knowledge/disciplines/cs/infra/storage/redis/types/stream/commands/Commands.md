@@ -18,7 +18,8 @@ Stream 命令用于追加消息、按 ID 读取、管理消费者组、确认消
 | [XREADGROUP](XReadGroup.md) | 读取组内新消息或当前消费者的待确认消息。 |
 | [XACK](XAck.md) | 确认处理完成，移除组内待确认记录。 |
 | [XPENDING](XPending.md) | 查询消费者组的待确认消息。 |
-| [XCLAIM](XClaim.md)、`XAUTOCLAIM` | 接管满足空闲时间条件的待确认消息。 |
+| [XCLAIM](XClaim.md) | 按消息 ID 接管满足空闲时间条件的待确认消息。 |
+| [XAUTOCLAIM](XAutoClaim.md) | 扫描待确认列表并自动接管满足空闲时间条件的消息。 |
 | `XDEL` | 删除指定 ID 的消息。 |
 | `XTRIM` | 按长度或最小 ID 裁剪消息。 |
 | `XINFO` | 查看 Stream、消费者组和消费者信息。 |
