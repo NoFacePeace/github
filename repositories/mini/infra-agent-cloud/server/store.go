@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"time"
 
-	"infra-agent-cloud/internal/protocol"
+	"infra-agent-cloud/protocol"
 
 	"github.com/redis/go-redis/v9"
 )

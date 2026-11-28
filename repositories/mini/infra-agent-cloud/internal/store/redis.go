@@ -9,7 +9,7 @@ import (
 	"net/url"
 	"time"
 
-	"infra-agent-cloud/internal/protocol"
+	"infra-agent-cloud/protocol"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -18,6 +18,8 @@ import (
 const (
 	// Runner 专属 Job Stream 的 key 前缀，完整示例为 infra-agent-cloud:runner:jobs:runner-1。
 	runnerJobsKeyPrefix = "infra-agent-cloud:runner:jobs:"
+	// Runner 向 Server 回传执行事件的共享 Stream。
+	runnerEventsKey = "infra-agent-cloud:runner:events"
 )
 
 // Redis 消费者组常量。
@@ -41,7 +43,6 @@ var (
 //   - PublishHeartbeat：刷新当前 Runner 的心跳和在线索引。
 //   - RemoveHeartbeat：清理当前 Runner 的心跳和在线索引。
 //   - GetMaintenance：读取当前 Runner 的维护状态。
-//   - PublishEvent：回传执行事件并更新事件流的积压字节数。
 //   - GetWorkspaceCleanupResult：查询工作区清理命令的结果。
 //   - CompleteWorkspaceCleanup：保存工作区清理命令的结果。
 type Redis struct {
@@ -61,6 +62,8 @@ func NewRedis(client *redis.Client, runnerID string) Redis {
 }
 
 // ensureGroup 确保指定 Stream 的消费者组存在。
+//
+//   - Stream key 由调用方传入，Job Stream 示例：infra-agent-cloud:runner:jobs:runner-1
 func (r *Redis) ensureGroup(ctx context.Context, stream, group string) error {
 	err := r.client.Do(ctx, "XGROUP", "CREATE", stream, group, "0", "MKSTREAM").Err()
 	if redis.HasErrorPrefix(err, "BUSYGROUP ") {
@@ -70,6 +73,11 @@ func (r *Redis) ensureGroup(ctx context.Context, stream, group string) error {
 }
 
 // PublishJob 幂等地将执行消息投递到目标 Runner 的 Job Stream。
+//
+//   - Job Stream：infra-agent-cloud:runner:jobs:runner-1
+//   - 投递去重标记：{infra-agent-cloud:runner:jobs:runner-1}:published:session-1
+//
+// 去重标记以完整的 Stream key 作为 hash tag，确保两个 key 同槽。
 func (r *Redis) PublishJob(ctx context.Context, job *protocol.Job) error {
 	const publishJobScript = `
 local streamKey = KEYS[1]
@@ -127,6 +135,8 @@ return 1
 }
 
 // ClaimJob 从当前 Runner 的执行通道领取任务并返回 Redis 消息 ID。
+//
+//   - Job Stream：infra-agent-cloud:runner:jobs:runner-1
 func (r *Redis) ClaimJob(ctx context.Context) (*protocol.Job, string, error) {
 	claimArgs := []any{"XAUTOCLAIM", r.jobStreamKey, r.jobGroup, r.jobConsumer, 30000, "0-0", "COUNT", 1}
 	reply, err := r.client.Do(ctx, claimArgs...).Result()
@@ -214,6 +224,19 @@ func (r *Redis) ClaimJob(ctx context.Context) (*protocol.Job, string, error) {
 }
 
 // AckJob 确认当前 Runner 的 Job Stream 消息。
+//
+//   - Job Stream：infra-agent-cloud:runner:jobs:runner-1
 func (r *Redis) AckJob(ctx context.Context, entryID string) error {
 	return r.client.Do(ctx, "XACK", r.jobStreamKey, r.jobGroup, entryID).Err()
+}
+
+// PublishEvent 将 Runner 的执行事件写入 Redis 事件流。
+//
+//   - Event Stream：infra-agent-cloud:runner:events
+func (r *Redis) PublishEvent(ctx context.Context, event *protocol.Event) error {
+	payload, err := json.Marshal(event)
+	if err != nil {
+		return fmt.Errorf("marshal runner event: %w", err)
+	}
+	return r.client.Do(ctx, "XADD", runnerEventsKey, "*", "payload", string(payload)).Err()
 }
