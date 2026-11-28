@@ -1,4 +1,4 @@
-package runner
+package bwrap
 
 import (
 	"context"
@@ -13,9 +13,10 @@ import (
 	"syscall"
 
 	"infra-agent-cloud/executor"
+	"infra-agent-cloud/runner"
 )
 
-func startBwrapProcess(ctx context.Context, cmd *exec.Cmd, spec *executor.Spec, secrets *executor.Secrets, cgroup, childPIDFile string) (_ *ExecutionHandle, err error) {
+func startBwrapProcess(ctx context.Context, cmd *exec.Cmd, spec *executor.Spec, secrets *executor.Secrets, cgroup, childPIDFile string) (_ *runner.ExecutionHandle, _ <-chan struct{}, err error) {
 	input := executor.Secrets{}
 	if secrets != nil {
 		input = *secrets
@@ -24,22 +25,22 @@ func startBwrapProcess(ctx context.Context, cmd *exec.Cmd, spec *executor.Spec, 
 		input.ExecutionID = spec.ExecutionID
 	}
 	if input.ExecutionID != spec.ExecutionID {
-		return nil, errors.New("executor secrets have the wrong execution ID")
+		return nil, nil, errors.New("executor secrets have the wrong execution ID")
 	}
 	frame, err := json.Marshal(input)
 	if err != nil {
-		return nil, fmt.Errorf("encode executor secrets: %w", err)
+		return nil, nil, fmt.Errorf("encode executor secrets: %w", err)
 	}
 
 	stdout, stdoutWriter, err := openBwrapOutput()
 	if err != nil {
-		return nil, fmt.Errorf("open executor stdout: %w", err)
+		return nil, nil, fmt.Errorf("open executor stdout: %w", err)
 	}
 	defer stdoutWriter.Close()
 	stderr, stderrWriter, err := openBwrapOutput()
 	if err != nil {
 		_ = stdout.Close()
-		return nil, fmt.Errorf("open executor stderr: %w", err)
+		return nil, nil, fmt.Errorf("open executor stderr: %w", err)
 	}
 	defer stderrWriter.Close()
 	defer func() {
@@ -50,15 +51,15 @@ func startBwrapProcess(ctx context.Context, cmd *exec.Cmd, spec *executor.Spec, 
 	}()
 	cmd.Stdout, cmd.Stderr = stdoutWriter, stderrWriter
 	if err := ctx.Err(); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
-		return nil, fmt.Errorf("open executor stdin: %w", err)
+		return nil, nil, fmt.Errorf("open executor stdin: %w", err)
 	}
 	if err := cmd.Start(); err != nil {
 		_ = stdin.Close()
-		return nil, fmt.Errorf("start executor process: %w", err)
+		return nil, nil, fmt.Errorf("start executor process: %w", err)
 	}
 	_ = stdoutWriter.Close()
 	_ = stderrWriter.Close()
@@ -125,7 +126,7 @@ func startBwrapProcess(ctx context.Context, cmd *exec.Cmd, spec *executor.Spec, 
 			killErr = errors.Join(killErr, killBwrapCgroup(cgroup))
 		}
 		<-exited
-		return nil, errors.Join(err, killErr)
+		return nil, nil, errors.Join(err, killErr)
 	}
 
 	waitForExit := func(ctx context.Context) (int, error) {
@@ -136,11 +137,10 @@ func startBwrapProcess(ctx context.Context, cmd *exec.Cmd, spec *executor.Spec, 
 			return exitCode, waitErr
 		}
 	}
-	handle := &ExecutionHandle{
+	handle := &runner.ExecutionHandle{
 		ExecutionID:  spec.ExecutionID,
 		PID:          cmd.Process.Pid,
 		InterruptPID: interruptPID,
-		exited:       exited,
 		Stdout:       stdout,
 		Stderr:       stderr,
 		WaitForExit:  waitForExit,
@@ -162,7 +162,7 @@ func startBwrapProcess(ctx context.Context, cmd *exec.Cmd, spec *executor.Spec, 
 	if steer {
 		handle.SendInput = sendInput
 	}
-	return handle, nil
+	return handle, exited, nil
 }
 
 type bwrapOutput struct {

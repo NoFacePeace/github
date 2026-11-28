@@ -1,4 +1,4 @@
-package runner
+package bwrap
 
 import (
 	"context"
@@ -12,6 +12,8 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"infra-agent-cloud/runner"
 )
 
 func readBwrapChildPID(ctx context.Context, filename string, exited <-chan struct{}) (int, error) {
@@ -50,21 +52,23 @@ func readBwrapChildPID(ctx context.Context, filename string, exited <-chan struc
 }
 
 // Stop 请求沙箱内的执行进程停止，宽限期后通过 cgroup 终止剩余进程。
-func (r *BwrapRuntime) Stop(ctx context.Context, handle *ExecutionHandle) error {
+func (r *BwrapRuntime) Stop(ctx context.Context, handle *runner.ExecutionHandle) error {
 	if err := context.Cause(ctx); err != nil {
 		return err
 	}
-	if handle.bwrapArtifacts.cgroup == "" || handle.WaitForExit == nil {
+	state, ok := r.executions.Load(handle)
+	if !ok || handle.WaitForExit == nil {
 		return errors.New("invalid bwrap execution handle")
 	}
+	execution := state.(bwrapExecution)
 	select {
-	case <-handle.exited:
+	case <-execution.exited:
 		_, err := handle.WaitForExit(ctx)
 		return err
 	default:
 	}
 
-	interruptErr := interruptBwrapProcess(handle)
+	interruptErr := interruptBwrapProcess(handle, execution.artifacts.cgroup)
 	if interruptErr == nil {
 		grace := r.StopGracePeriod
 		if grace <= 0 {
@@ -81,16 +85,15 @@ func (r *BwrapRuntime) Stop(ctx context.Context, handle *ExecutionHandle) error 
 	if err := context.Cause(ctx); err != nil {
 		return errors.Join(interruptErr, err)
 	}
-	if err := killBwrapCgroup(handle.bwrapArtifacts.cgroup); err != nil {
+	if err := killBwrapCgroup(execution.artifacts.cgroup); err != nil {
 		return errors.Join(interruptErr, fmt.Errorf("kill execution cgroup: %w", err))
 	}
 	_, err := handle.WaitForExit(ctx)
 	return err
 }
 
-func interruptBwrapProcess(handle *ExecutionHandle) error {
+func interruptBwrapProcess(handle *runner.ExecutionHandle, dir string) error {
 	pid := handle.InterruptPID
-	dir := handle.bwrapArtifacts.cgroup
 	if pid <= 1 || dir == "" {
 		return errors.New("missing bwrap process identity")
 	}
