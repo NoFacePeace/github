@@ -5,9 +5,11 @@ import (
 	"errors"
 	"log/slog"
 	"time"
+
+	"infra-agent-cloud/protocol"
 )
 
-func (r *Runner) startExecutionRenewal(ctx context.Context, job *Job, stopExecution context.CancelFunc) (func(), error) {
+func (r *Runner) startExecutionRenewal(ctx context.Context, job *protocol.Job, stopExecution context.CancelFunc) (func(), error) {
 	expiresAt, err := r.renewExecution(ctx, job, job.LeaseExpiresAt)
 	if err != nil {
 		return nil, err
@@ -58,7 +60,7 @@ func (r *Runner) startExecutionRenewal(ctx context.Context, job *Job, stopExecut
 	}, nil
 }
 
-func (r *Runner) renewExecution(ctx context.Context, job *Job, expiresAt time.Time) (time.Time, error) {
+func (r *Runner) renewExecution(ctx context.Context, job *protocol.Job, expiresAt time.Time) (time.Time, error) {
 	if !time.Now().Before(expiresAt) {
 		return time.Time{}, ErrExecutionLeaseRejected
 	}

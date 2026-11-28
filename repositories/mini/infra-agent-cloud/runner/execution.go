@@ -12,9 +12,11 @@ import (
 	"time"
 
 	"infra-agent-cloud/executor"
+	"infra-agent-cloud/protocol"
+	"infra-agent-cloud/runtime"
 )
 
-func (r *Runner) startExecution(ctx context.Context, job *Job) (func() error, error) {
+func (r *Runner) startExecution(ctx context.Context, job *protocol.Job) (func() error, error) {
 	spec := &executor.Spec{
 		SchemaVersion:   "1",
 		ExecutionID:     job.MessageID,
@@ -49,11 +51,11 @@ func (r *Runner) startExecution(ctx context.Context, job *Job) (func() error, er
 	return nil, r.publishTerminal(ctx, job, event)
 }
 
-func (r *Runner) publishJobFailure(ctx context.Context, job *Job, cause error) error {
+func (r *Runner) publishJobFailure(ctx context.Context, job *protocol.Job, cause error) error {
 	return r.publishTerminal(ctx, job, Event{Type: EventTypeFailed, Error: cause.Error()})
 }
 
-func (r *Runner) publishTerminal(ctx context.Context, job *Job, event Event) error {
+func (r *Runner) publishTerminal(ctx context.Context, job *protocol.Job, event Event) error {
 	finalCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
 	defer cancel()
 	return r.store.PublishEvent(finalCtx, job, event)
@@ -65,7 +67,7 @@ type executionOutput struct {
 	publishErr error
 }
 
-func (r *Runner) consumeExecution(ctx context.Context, job *Job, spec *executor.Spec, handle *ExecutionHandle) (Event, error) {
+func (r *Runner) consumeExecution(ctx context.Context, job *protocol.Job, spec *executor.Spec, handle *runtime.Execution) (Event, error) {
 	waitCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	stdout := make(chan executionOutput, 1)
@@ -142,7 +144,7 @@ func (r *Runner) consumeExecution(ctx context.Context, job *Job, spec *executor.
 	return output.terminal, nil
 }
 
-func (r *Runner) readExecutionEvents(ctx context.Context, job *Job, spec *executor.Spec, stream io.Reader) (output executionOutput) {
+func (r *Runner) readExecutionEvents(ctx context.Context, job *protocol.Job, spec *executor.Spec, stream io.Reader) (output executionOutput) {
 	reader := bufio.NewReader(stream)
 	for seq := int64(1); ; seq++ {
 		line, err := reader.ReadBytes('\n')
@@ -190,7 +192,7 @@ func (r *Runner) readExecutionEvents(ctx context.Context, job *Job, spec *execut
 	}
 }
 
-func closeExecutionOutput(handle *ExecutionHandle) {
+func closeExecutionOutput(handle *runtime.Execution) {
 	for _, stream := range []io.Reader{handle.Stdout, handle.Stderr} {
 		if closer, ok := stream.(io.Closer); ok {
 			_ = closer.Close()

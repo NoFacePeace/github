@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"infra-agent-cloud/executor"
-	"infra-agent-cloud/runner"
+	"infra-agent-cloud/runtime"
 )
 
 // BwrapRuntime 在 Bubblewrap 沙箱中运行 Executor。
@@ -31,7 +31,7 @@ type BwrapRuntime struct {
 	executions sync.Map // 从执行句柄映射到本轮的沙箱状态。
 }
 
-var _ runner.ProcessRuntime = (*BwrapRuntime)(nil)
+var _ runtime.Runtime = (*BwrapRuntime)(nil)
 
 const (
 	bwrapTaskRoot     = "/task"
@@ -55,7 +55,7 @@ type bwrapExecutionPaths struct {
 //  4. 启动包装进程，先加入 cgroup，再由 Bubblewrap 在沙箱内启动 Executor。
 //  5. 通过 stdin 传递凭证。普通模式写完后关闭 stdin，steer 模式保留输入管道。
 //  6. 返回执行句柄供调用方读取输出和等待退出。启动失败时清理由本轮创建的资源。
-func (r *BwrapRuntime) Start(ctx context.Context, spec *executor.Spec, secrets *executor.Secrets) (_ *runner.ExecutionHandle, err error) {
+func (r *BwrapRuntime) Start(ctx context.Context, spec *executor.Spec, secrets *executor.Secrets) (_ *runtime.Execution, err error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
@@ -98,8 +98,13 @@ func (r *BwrapRuntime) Start(ctx context.Context, spec *executor.Spec, secrets *
 	return handle, nil
 }
 
+// Recover 预留 Runner 重启后的沙箱清理入口。
+func (r *BwrapRuntime) Recover(ctx context.Context) error {
+	return errors.New("bwrap recovery is not implemented")
+}
+
 // Destroy 在 Executor 退出后清理本轮临时资源，保留任务目录。
-func (r *BwrapRuntime) Destroy(ctx context.Context, handle *runner.ExecutionHandle) error {
+func (r *BwrapRuntime) Destroy(ctx context.Context, handle *runtime.Execution) error {
 	state, ok := r.executions.Load(handle)
 	if !ok {
 		return nil

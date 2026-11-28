@@ -13,7 +13,7 @@ import (
 	"syscall"
 	"time"
 
-	"infra-agent-cloud/runner"
+	"infra-agent-cloud/runtime"
 )
 
 func readBwrapChildPID(ctx context.Context, filename string, exited <-chan struct{}) (int, error) {
@@ -52,7 +52,7 @@ func readBwrapChildPID(ctx context.Context, filename string, exited <-chan struc
 }
 
 // Stop 请求沙箱内的执行进程停止，宽限期后通过 cgroup 终止剩余进程。
-func (r *BwrapRuntime) Stop(ctx context.Context, handle *runner.ExecutionHandle) error {
+func (r *BwrapRuntime) Stop(ctx context.Context, handle *runtime.Execution) error {
 	if err := context.Cause(ctx); err != nil {
 		return err
 	}
@@ -92,7 +92,7 @@ func (r *BwrapRuntime) Stop(ctx context.Context, handle *runner.ExecutionHandle)
 	return err
 }
 
-func interruptBwrapProcess(handle *runner.ExecutionHandle, dir string) error {
+func interruptBwrapProcess(handle *runtime.Execution, dir string) error {
 	pid := handle.InterruptPID
 	if pid <= 1 || dir == "" {
 		return errors.New("missing bwrap process identity")

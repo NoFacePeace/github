@@ -140,7 +140,7 @@ const (
 	executionLeaseKeyPrefix    = "infra-agent-cloud:{dispatch}:lease:"
 	runnerCapacityKeyPrefix    = "infra-agent-cloud:{dispatch}:capacity:"
 	runnerHeartbeatKeyPrefix   = "infra-agent-cloud:{dispatch}:heartbeat:"
-	runnerHeartbeatIndexKey    = "infra-agent-cloud:{dispatch}:heartbeat:index"
+	runnerHeartbeatsKey        = "infra-agent-cloud:{dispatch}:heartbeats"
 	runnerMaintenanceKeyPrefix = "infra-agent-cloud:{dispatch}:maintenance:"
 	runnerJobsKeyPrefix        = "infra-agent-cloud:runner:jobs:"
 	runnerJobsMaxLen           = 10000
@@ -431,11 +431,11 @@ func (s *store) ReserveExecutionLease(ctx context.Context, taskID, sessionID, ru
 func (s *store) ListRunners(ctx context.Context) ([]Runner, error) {
 	now := time.Now()
 	score := strconv.FormatInt(now.UnixMilli(), 10)
-	if err := s.redis.ZRemRangeByScore(ctx, runnerHeartbeatIndexKey, "-inf", score).Err(); err != nil {
+	if err := s.redis.ZRemRangeByScore(ctx, runnerHeartbeatsKey, "-inf", score).Err(); err != nil {
 		return nil, fmt.Errorf("clean expired runner heartbeats: %w", err)
 	}
 	ids, err := s.redis.ZRangeArgs(ctx, redis.ZRangeArgs{
-		Key:     runnerHeartbeatIndexKey,
+		Key:     runnerHeartbeatsKey,
 		Start:   score,
 		Stop:    "+inf",
 		ByScore: true,

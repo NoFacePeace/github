@@ -13,10 +13,10 @@ import (
 	"syscall"
 
 	"infra-agent-cloud/executor"
-	"infra-agent-cloud/runner"
+	"infra-agent-cloud/runtime"
 )
 
-func startBwrapProcess(ctx context.Context, cmd *exec.Cmd, spec *executor.Spec, secrets *executor.Secrets, cgroup, childPIDFile string) (_ *runner.ExecutionHandle, _ <-chan struct{}, err error) {
+func startBwrapProcess(ctx context.Context, cmd *exec.Cmd, spec *executor.Spec, secrets *executor.Secrets, cgroup, childPIDFile string) (_ *runtime.Execution, _ <-chan struct{}, err error) {
 	input := executor.Secrets{}
 	if secrets != nil {
 		input = *secrets
@@ -137,7 +137,7 @@ func startBwrapProcess(ctx context.Context, cmd *exec.Cmd, spec *executor.Spec, 
 			return exitCode, waitErr
 		}
 	}
-	handle := &runner.ExecutionHandle{
+	handle := &runtime.Execution{
 		ExecutionID:  spec.ExecutionID,
 		PID:          cmd.Process.Pid,
 		InterruptPID: interruptPID,

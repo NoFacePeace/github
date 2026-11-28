@@ -2,34 +2,39 @@ package runner
 
 import (
 	"context"
+	"crypto/rand"
 	"errors"
 	"log/slog"
 	"runtime/debug"
 	"sync"
 	"time"
+
+	"infra-agent-cloud/protocol"
+	"infra-agent-cloud/runtime"
 )
 
 // Runner 负责接收任务和控制命令，管理执行生命周期并回传事件。
 type Runner struct {
-	heartbeat Heartbeat
+	heartbeat protocol.Heartbeat
 	client    Client
 	store     Store
-	runtime   ProcessRuntime
+	runtime   runtime.Runtime
 	activeMu  sync.Mutex
 	active    map[string]*activeExecution
 }
 
 // activeExecution 记录本轮执行的归属和取消入口，关闭 done 表示已完成收尾。
 type activeExecution struct {
-	job    *Job
+	job    *protocol.Job
 	cancel context.CancelFunc
 	done   chan struct{}
 }
 
-func NewRunner(heartbeat Heartbeat, client Client, store Store, runtime ProcessRuntime) *Runner {
+func NewRunner(heartbeat protocol.Heartbeat, client Client, store Store, executionRuntime runtime.Runtime) *Runner {
+	heartbeat.InstanceID = rand.Text()
 	heartbeat.Engines = append([]string(nil), heartbeat.Engines...)
 	heartbeat.Capacity = max(1, heartbeat.Capacity)
-	return &Runner{heartbeat: heartbeat, client: client, store: store, runtime: runtime, active: make(map[string]*activeExecution)}
+	return &Runner{heartbeat: heartbeat, client: client, store: store, runtime: executionRuntime, active: make(map[string]*activeExecution)}
 }
 
 // Run 启动 Runner，使用 ctx 控制服务生命周期。
@@ -159,7 +164,7 @@ func (r *Runner) handleCommand(ctx context.Context, command *Command) error {
 	return errors.New("unsupported runner command")
 }
 
-func (r *Runner) handleJob(ctx context.Context, job *Job) error {
+func (r *Runner) handleJob(ctx context.Context, job *protocol.Job) error {
 	if job.MessageID == "" || job.TaskID == "" || job.SessionID == "" ||
 		job.RunnerID == "" || job.RunnerID != r.heartbeat.RunnerID || job.LeaseID == "" {
 		return r.publishJobFailure(ctx, job, errors.New("invalid runner job identity"))
@@ -213,7 +218,7 @@ func (r *Runner) handleJob(ctx context.Context, job *Job) error {
 	return nil
 }
 
-func (r *Runner) registerExecution(job *Job, cancel context.CancelFunc) (func(), error) {
+func (r *Runner) registerExecution(job *protocol.Job, cancel context.CancelFunc) (func(), error) {
 	r.activeMu.Lock()
 	defer r.activeMu.Unlock()
 	if active := r.active[job.SessionID]; active != nil &&

@@ -20,6 +20,9 @@ const (
 	runnerJobsKeyPrefix = "infra-agent-cloud:runner:jobs:"
 	// Runner 向 Server 回传执行事件的共享 Stream。
 	runnerEventsKey = "infra-agent-cloud:runner:events"
+	// Runner 的心跳记录和在线索引与 Server 调度读取使用同一组 key。
+	runnerHeartbeatKeyPrefix = "infra-agent-cloud:{dispatch}:heartbeat:"
+	runnerHeartbeatsKey      = "infra-agent-cloud:{dispatch}:heartbeats"
 )
 
 // Redis 消费者组常量。
@@ -40,7 +43,6 @@ var (
 // Redis 封装 Runner 执行链路的 Redis 操作。待实现的方法如下。
 //
 //   - ConsumeCommands：消费发给当前 Runner 的控制命令。
-//   - PublishHeartbeat：刷新当前 Runner 的心跳和在线索引。
 //   - RemoveHeartbeat：清理当前 Runner 的心跳和在线索引。
 //   - GetMaintenance：读取当前 Runner 的维护状态。
 //   - GetWorkspaceCleanupResult：查询工作区清理命令的结果。
@@ -239,4 +241,55 @@ func (r *Redis) PublishEvent(ctx context.Context, event *protocol.Event) error {
 		return fmt.Errorf("marshal runner event: %w", err)
 	}
 	return r.client.Do(ctx, "XADD", runnerEventsKey, "*", "payload", string(payload)).Err()
+}
+
+// PublishHeartbeat 上报 Runner 的心跳并刷新在线有效期。
+//
+//   - 心跳记录：infra-agent-cloud:{dispatch}:heartbeat:runner-1
+//   - 在线索引：infra-agent-cloud:{dispatch}:heartbeats
+func (r *Redis) PublishHeartbeat(ctx context.Context, heartbeat protocol.Heartbeat) error {
+	const heartbeatTTL = 30 * time.Second
+	const publishHeartbeatScript = `
+local heartbeatKey = KEYS[1]
+local indexKey = KEYS[2]
+local instanceId = ARGV[1]
+local payload = ARGV[2]
+local ttlSeconds = ARGV[3]
+local expiresAtMs = ARGV[4]
+local runnerId = ARGV[5]
+
+-- 同一个 Runner ID 在上一实例的心跳过期前只能由该实例刷新。
+local current = redis.call('GET', heartbeatKey)
+if current then
+  local ok, heartbeat = pcall(cjson.decode, current)
+  if not ok or type(heartbeat) ~= 'table' or heartbeat.InstanceID ~= instanceId then
+    return 0
+  end
+end
+
+redis.call('SET', heartbeatKey, payload, 'EX', ttlSeconds)
+redis.call('ZADD', indexKey, expiresAtMs, runnerId)
+return 1
+`
+
+	heartbeatKey := runnerHeartbeatKeyPrefix + heartbeat.RunnerID
+	if heartbeat.Status == "" {
+		heartbeat.Status = "online"
+	}
+	heartbeat.ExpiresAt = time.Now().Add(heartbeatTTL)
+	payload, err := json.Marshal(heartbeat)
+	if err != nil {
+		return fmt.Errorf("marshal runner heartbeat: %w", err)
+	}
+	result, err := r.client.Do(ctx, "EVAL", publishHeartbeatScript, 2,
+		heartbeatKey, runnerHeartbeatsKey,
+		heartbeat.InstanceID, string(payload), int64(heartbeatTTL/time.Second),
+		heartbeat.ExpiresAt.UnixMilli(), heartbeat.RunnerID).Int64()
+	if err != nil {
+		return fmt.Errorf("publish runner heartbeat: %w", err)
+	}
+	if result == 0 {
+		return fmt.Errorf("runner heartbeat is owned by another instance: %s", heartbeat.RunnerID)
+	}
+	return nil
 }
