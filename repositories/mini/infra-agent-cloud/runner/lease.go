@@ -8,7 +8,7 @@ import (
 )
 
 func (r *Runner) startExecutionRenewal(ctx context.Context, job *Job, stopExecution context.CancelFunc) (func(), error) {
-	expiresAt, err := r.renewExecution(ctx, job, job.ExecutionExpiresAt)
+	expiresAt, err := r.renewExecution(ctx, job, job.LeaseExpiresAt)
 	if err != nil {
 		return nil, err
 	}

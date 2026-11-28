@@ -16,12 +16,13 @@ import (
 
 func TestRunnerExecutionFlow(t *testing.T) {
 	for _, tc := range []struct {
-		name      string
-		final     string
-		exitCode  int
-		reject    bool
-		failFinal bool
-		want      []string
+		name        string
+		final       string
+		exitCode    int
+		reject      bool
+		failFinal   bool
+		failFailure bool
+		want        []string
 	}{
 		{
 			name:  "completed",
@@ -42,7 +43,13 @@ func TestRunnerExecutionFlow(t *testing.T) {
 		{
 			name:   "lease rejected",
 			reject: true,
-			want:   []string{"heartbeat", "claim", "renew", "nack"},
+			want:   []string{"heartbeat", "claim", "renew", "failed", "ack"},
+		},
+		{
+			name:        "lease rejection event delivery failed",
+			reject:      true,
+			failFailure: true,
+			want:        []string{"heartbeat", "claim", "renew", "failed", "ack"},
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -52,13 +59,23 @@ func TestRunnerExecutionFlow(t *testing.T) {
 			record := func(call string) { calls = append(calls, call) }
 			job := &Job{
 				MessageID: "execution", TaskID: "task", SessionID: "session", RunnerID: "runner",
-				ExecutionToken: "lease", ExecutionExpiresAt: time.Now().Add(time.Minute),
+				LeaseID: "lease", LeaseExpiresAt: time.Now().Add(time.Minute),
 				Engine: "codex", Prompt: "hello", ExecutorSessionID: "previous",
 			}
 			acknowledged := make(chan struct{})
 			store := &executionTestStore{
-				jobs: []*Job{job}, record: record, cancel: cancel, failFinal: tc.failFinal,
-				onAck: func(string) { close(acknowledged) }, onTerminal: cancel,
+				jobs: []*Job{job}, record: record, failFinal: tc.failFinal, failFailure: tc.failFailure,
+				onAck: func(string) {
+					close(acknowledged)
+					if tc.reject {
+						cancel()
+					}
+				},
+				onTerminal: func() {
+					if !tc.reject {
+						cancel()
+					}
+				},
 			}
 			client := &executionTestClient{record: record, reject: tc.reject}
 			process := &executionTestRuntime{
@@ -109,11 +126,11 @@ func TestRunnerStartsNextJobBeforeFirstExecutionExits(t *testing.T) {
 	release := make(chan struct{})
 	first := &Job{
 		MessageID: "first", TaskID: "task1", SessionID: "session1", RunnerID: "runner",
-		ExecutionToken: "lease1", ExecutionExpiresAt: time.Now().Add(time.Minute),
+		LeaseID: "lease1", LeaseExpiresAt: time.Now().Add(time.Minute),
 	}
 	second := &Job{
 		MessageID: "second", TaskID: "task2", SessionID: "session2", RunnerID: "runner",
-		ExecutionToken: "lease2", ExecutionExpiresAt: first.ExecutionExpiresAt,
+		LeaseID: "lease2", LeaseExpiresAt: first.LeaseExpiresAt,
 	}
 	var mu sync.Mutex
 	var calls []string
@@ -130,7 +147,7 @@ func TestRunnerStartsNextJobBeforeFirstExecutionExits(t *testing.T) {
 		}
 	}
 	store := &executionTestStore{
-		jobs: []*Job{first, first, second}, record: record, cancel: cancel,
+		jobs: []*Job{first, first, second}, record: record,
 		onAck: func(entryID string) {
 			if entryID == "entry-"+second.MessageID {
 				close(release)
@@ -177,7 +194,7 @@ func TestStopCommandWaitsForExecutionCleanup(t *testing.T) {
 	record := func(call string) { calls = append(calls, call) }
 	job := &Job{
 		MessageID: "execution", TaskID: "task", SessionID: "session", RunnerID: "runner",
-		ExecutionToken: "lease", ExecutionExpiresAt: time.Now().Add(time.Minute),
+		LeaseID: "lease", LeaseExpiresAt: time.Now().Add(time.Minute),
 	}
 	output, writer := io.Pipe()
 	exited := make(chan struct{})
@@ -209,7 +226,7 @@ func TestStopCommandWaitsForExecutionCleanup(t *testing.T) {
 	}
 	err := node.handleCommand(ctx, &Command{
 		Type: CommandTypeStop, RunnerID: job.RunnerID, TaskID: job.TaskID, SessionID: job.SessionID,
-		ExecutionToken: job.ExecutionToken, ExpiresAt: job.ExecutionExpiresAt,
+		ExecutionToken: job.LeaseID, ExpiresAt: job.LeaseExpiresAt,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -221,12 +238,12 @@ func TestStopCommandWaitsForExecutionCleanup(t *testing.T) {
 
 type executionTestStore struct {
 	Store
-	jobs       []*Job
-	record     func(string)
-	cancel     context.CancelFunc
-	failFinal  bool
-	onAck      func(string)
-	onTerminal func()
+	jobs        []*Job
+	record      func(string)
+	failFinal   bool
+	failFailure bool
+	onAck       func(string)
+	onTerminal  func()
 }
 
 func (s *executionTestStore) PublishHeartbeat(context.Context, Heartbeat) error {
@@ -257,6 +274,9 @@ func (s *executionTestStore) PublishEvent(_ context.Context, _ *Job, event Event
 		(s.failFinal || event.Result == nil || event.Result.Text == nil || *event.Result.Text != "done") {
 		return errors.New("event delivery failed")
 	}
+	if event.Type == EventTypeFailed && s.failFailure {
+		return errors.New("event delivery failed")
+	}
 	return nil
 }
 
@@ -265,12 +285,6 @@ func (s *executionTestStore) AckJob(_ context.Context, entryID string) error {
 	if s.onAck != nil {
 		s.onAck(entryID)
 	}
-	return nil
-}
-
-func (s *executionTestStore) NackJob(context.Context, string, string) error {
-	s.record("nack")
-	s.cancel()
 	return nil
 }
 

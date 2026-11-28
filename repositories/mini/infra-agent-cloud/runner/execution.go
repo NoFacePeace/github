@@ -27,7 +27,7 @@ func (r *Runner) startExecution(ctx context.Context, job *Job) (func() error, er
 	}
 	secrets, err := r.client.ClaimSecrets(ctx, job)
 	if err != nil && ctx.Err() == nil {
-		return nil, fmt.Errorf("claim execution secrets: %w", err)
+		return nil, r.publishJobFailure(ctx, job, fmt.Errorf("claim execution secrets: %w", err))
 	}
 
 	event := Event{Type: EventTypeStopped}
@@ -47,6 +47,10 @@ func (r *Runner) startExecution(ctx context.Context, job *Job) (func() error, er
 		}
 	}
 	return nil, r.publishTerminal(ctx, job, event)
+}
+
+func (r *Runner) publishJobFailure(ctx context.Context, job *Job, cause error) error {
+	return r.publishTerminal(ctx, job, Event{Type: EventTypeFailed, Error: cause.Error()})
 }
 
 func (r *Runner) publishTerminal(ctx context.Context, job *Job, event Event) error {

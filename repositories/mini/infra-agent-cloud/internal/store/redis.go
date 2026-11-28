@@ -9,7 +9,7 @@ import (
 	"net/url"
 	"time"
 
-	"infra-agent-cloud/runner"
+	"infra-agent-cloud/internal/protocol"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -24,6 +24,15 @@ const (
 const (
 	// Job 消费者组名称的前缀，完整示例为 runner-jobs-group:runner-1。
 	runnerJobsGroupPrefix = "runner-jobs-group:"
+)
+
+const runnerJobsMaxLen = 10000
+
+var (
+	// ErrLeaseExpired 表示尚未投递的 Job 携带的租约已过期。
+	ErrLeaseExpired = errors.New("job lease expired")
+	// ErrDispatchConflict 表示目标 Stream 上已为同一 Session 投递过另一条消息。
+	ErrDispatchConflict = errors.New("job dispatch conflict")
 )
 
 // Redis 封装 Runner 执行链路的 Redis 操作。待实现的方法如下。
@@ -60,8 +69,65 @@ func (r *Redis) ensureGroup(ctx context.Context, stream, group string) error {
 	return err
 }
 
+// PublishJob 幂等地将执行消息投递到目标 Runner 的 Job Stream。
+func (r *Redis) PublishJob(ctx context.Context, job *protocol.Job) error {
+	const publishJobScript = `
+local streamKey = KEYS[1]
+local publishedKey = KEYS[2]
+local messageId = ARGV[1]
+local leaseExpiresAtMs = tonumber(ARGV[2])
+local payload = ARGV[3]
+local maxStreamLength = ARGV[4]
+local minMarkerTtlMs = 24 * 60 * 60 * 1000
+
+-- 先查去重，让已经投递的消息在租约过期后重试时仍返回成功。
+local publishedId = redis.call('GET', publishedKey)
+if publishedId == messageId then
+  return 0
+end
+if publishedId then
+  return -2
+end
+
+-- 首次写入前按 Redis 自己的时钟检查租约。
+local now = redis.call('TIME')
+local nowMs = tonumber(now[1]) * 1000 + math.floor(tonumber(now[2]) / 1000)
+local remainingMs = leaseExpiresAtMs - nowMs
+if remainingMs <= 0 then
+  return -1
+end
+
+-- 去重标记至少保留 24 小时，同时覆盖租约剩余时间。
+redis.call('XADD', streamKey, 'MAXLEN', '~', maxStreamLength, '*', 'payload', payload)
+redis.call('SET', publishedKey, messageId, 'PX', math.max(minMarkerTtlMs, remainingMs))
+return 1
+`
+
+	payload, err := json.Marshal(job)
+	if err != nil {
+		return fmt.Errorf("marshal execution message: %w", err)
+	}
+	stream := runnerJobsKeyPrefix + url.PathEscape(job.RunnerID)
+	published := "{" + stream + "}:published:" + job.SessionID
+	result, err := r.client.Do(ctx, "EVAL", publishJobScript, 2, stream, published,
+		job.MessageID, job.LeaseExpiresAt.UnixMilli(), string(payload), runnerJobsMaxLen).Int64()
+	if err != nil {
+		return fmt.Errorf("publish job: %w", err)
+	}
+	switch result {
+	case 0, 1:
+		return nil
+	case -1:
+		return ErrLeaseExpired
+	case -2:
+		return ErrDispatchConflict
+	default:
+		return fmt.Errorf("unexpected job publish result: %d", result)
+	}
+}
+
 // ClaimJob 从当前 Runner 的执行通道领取任务并返回 Redis 消息 ID。
-func (r *Redis) ClaimJob(ctx context.Context) (*runner.Job, string, error) {
+func (r *Redis) ClaimJob(ctx context.Context) (*protocol.Job, string, error) {
 	claimArgs := []any{"XAUTOCLAIM", r.jobStreamKey, r.jobGroup, r.jobConsumer, 30000, "0-0", "COUNT", 1}
 	reply, err := r.client.Do(ctx, claimArgs...).Result()
 	if redis.HasErrorPrefix(err, "NOGROUP ") {
@@ -138,11 +204,16 @@ func (r *Redis) ClaimJob(ctx context.Context) (*runner.Job, string, error) {
 		if !ok {
 			break
 		}
-		var job runner.Job
+		var job protocol.Job
 		if err := json.Unmarshal([]byte(payload), &job); err != nil {
 			return nil, "", fmt.Errorf("decode job stream entry %q: %w", entryID, err)
 		}
 		return &job, entryID, nil
 	}
 	return nil, "", fmt.Errorf("job stream entry %q is missing a string payload", entryID)
+}
+
+// AckJob 确认当前 Runner 的 Job Stream 消息。
+func (r *Redis) AckJob(ctx context.Context, entryID string) error {
+	return r.client.Do(ctx, "XACK", r.jobStreamKey, r.jobGroup, entryID).Err()
 }

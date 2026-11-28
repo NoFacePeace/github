@@ -10,6 +10,8 @@ import (
 	"strconv"
 	"time"
 
+	"infra-agent-cloud/internal/protocol"
+
 	"github.com/redis/go-redis/v9"
 )
 
@@ -471,19 +473,19 @@ func (s *store) ListRunners(ctx context.Context) ([]Runner, error) {
 
 // PublishJob 幂等写入指定 Runner 的执行通道，不发送调度锁等 Server 内部控制字段。
 func (s *store) PublishJob(ctx context.Context, job *Job) error {
-	data, err := json.Marshal(map[string]any{
-		"MessageID":          job.MessageID,
-		"TaskID":             job.TaskID,
-		"SessionID":          job.SessionID,
-		"RunnerID":           job.RunnerID,
-		"ExecutorSessionID":  job.ExecutorSessionID,
-		"Prompt":             job.Prompt,
-		"AgentVersionID":     job.AgentVersionID,
-		"Engine":             job.Engine,
-		"Model":              job.Model,
-		"SystemPrompt":       job.SystemPrompt,
-		"ExecutionToken":     job.ExecutionToken,
-		"ExecutionExpiresAt": job.ExecutionExpiresAt,
+	data, err := json.Marshal(protocol.Job{
+		MessageID:         job.MessageID,
+		TaskID:            job.TaskID,
+		SessionID:         job.SessionID,
+		RunnerID:          job.RunnerID,
+		ExecutorSessionID: job.ExecutorSessionID,
+		Prompt:            job.Prompt,
+		AgentVersionID:    job.AgentVersionID,
+		Engine:            job.Engine,
+		Model:             job.Model,
+		SystemPrompt:      job.SystemPrompt,
+		LeaseID:           job.ExecutionToken,
+		LeaseExpiresAt:    job.ExecutionExpiresAt,
 	})
 	if err != nil {
 		return fmt.Errorf("marshal execution message: %w", err)

@@ -99,36 +99,26 @@ func (r *Runner) Run(ctx context.Context) error {
 }
 
 func (r *Runner) consumeJobs(ctx context.Context) {
-	for ctx.Err() == nil {
-		job, entryID, err := r.store.ClaimJob(ctx)
-		if ctx.Err() != nil {
-			return
-		}
-		if err != nil {
-			slog.Error("Failed to claim runner job", "error", err)
-		} else if job != nil {
-			handleErr := r.handleJob(ctx, job)
-			ackCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
-			if handleErr != nil {
-				slog.Error("Failed to handle runner job", "error", handleErr)
-				if err := r.store.NackJob(ackCtx, entryID, handleErr.Error()); err != nil {
-					slog.Error("Failed to retain runner job for recovery", "error", err)
-				}
-			} else {
-				err := r.store.AckJob(ackCtx, entryID)
-				cancel()
-				if err == nil {
-					continue
-				}
-				slog.Error("Failed to acknowledge runner job", "error", err)
-			}
-			cancel()
-		}
-		// 暂停轮询，避免空队列或持续错误导致忙循环。
+	for {
 		select {
 		case <-ctx.Done():
 			return
-		case <-time.After(time.Second):
+		default:
+		}
+
+		job, entryID, err := r.store.ClaimJob(ctx)
+		if err != nil {
+			slog.Error("Failed to claim runner job", "error", err)
+			continue
+		}
+		if job == nil {
+			continue
+		}
+		if err := r.handleJob(ctx, job); err != nil {
+			slog.Error("Failed to handle runner job", "error", err)
+		}
+		if err := r.store.AckJob(ctx, entryID); err != nil {
+			slog.Error("Failed to acknowledge runner job", "error", err)
 		}
 	}
 }
@@ -171,14 +161,18 @@ func (r *Runner) handleCommand(ctx context.Context, command *Command) error {
 
 func (r *Runner) handleJob(ctx context.Context, job *Job) error {
 	if job.MessageID == "" || job.TaskID == "" || job.SessionID == "" ||
-		job.RunnerID == "" || job.RunnerID != r.heartbeat.RunnerID || job.ExecutionToken == "" {
-		return errors.New("invalid runner job identity")
+		job.RunnerID == "" || job.RunnerID != r.heartbeat.RunnerID || job.LeaseID == "" {
+		return r.publishJobFailure(ctx, job, errors.New("invalid runner job identity"))
 	}
 	executionCtx, cancel := context.WithCancel(ctx)
 	unregister, err := r.registerExecution(job, cancel)
-	if err != nil || unregister == nil {
+	if err != nil {
 		cancel()
-		return err
+		return r.publishJobFailure(ctx, job, err)
+	}
+	if unregister == nil {
+		cancel()
+		return nil
 	}
 	background := false
 	var stopRenewal func()
@@ -196,7 +190,7 @@ func (r *Runner) handleJob(ctx context.Context, job *Job) error {
 	}()
 	stopRenewal, err = r.startExecutionRenewal(executionCtx, job, cancel)
 	if err != nil {
-		return err
+		return r.publishJobFailure(executionCtx, job, err)
 	}
 	complete, err := r.startExecution(executionCtx, job)
 	if err != nil || complete == nil {
@@ -224,7 +218,7 @@ func (r *Runner) registerExecution(job *Job, cancel context.CancelFunc) (func(),
 	defer r.activeMu.Unlock()
 	if active := r.active[job.SessionID]; active != nil &&
 		active.job.MessageID == job.MessageID && active.job.TaskID == job.TaskID &&
-		active.job.ExecutionToken == job.ExecutionToken {
+		active.job.LeaseID == job.LeaseID {
 		// 重投沿用已经启动的执行，消费循环可以再次确认同一条消息。
 		return nil, nil
 	}
@@ -250,7 +244,7 @@ func (r *Runner) stopExecution(ctx context.Context, command *Command) error {
 	r.activeMu.Lock()
 	active := r.active[command.SessionID]
 	r.activeMu.Unlock()
-	if active == nil || active.job.TaskID != command.TaskID || active.job.ExecutionToken != command.ExecutionToken {
+	if active == nil || active.job.TaskID != command.TaskID || active.job.LeaseID != command.ExecutionToken {
 		return nil
 	}
 	active.cancel()
