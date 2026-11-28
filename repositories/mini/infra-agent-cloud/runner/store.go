@@ -11,7 +11,7 @@ import (
 // Store 封装 Runner 的 Redis 心跳、消息消费和事件回传。
 type Store interface {
 	// PublishHeartbeat 上报节点信息并刷新在线有效期，首次上报同时完成注册。
-	PublishHeartbeat(ctx context.Context, heartbeat protocol.Heartbeat) error
+	PublishHeartbeat(ctx context.Context, heartbeat protocol.Heartbeat, ttl time.Duration) error
 	// ClaimJob 从当前 Runner 的执行通道返回任务和 Redis 消息 ID，无任务时返回 nil, "", nil。
 	// 此处领取的是 Server 已分配的执行消息，不是 Server 的待调度队列。
 	ClaimJob(ctx context.Context) (job *protocol.Job, entryID string, err error)

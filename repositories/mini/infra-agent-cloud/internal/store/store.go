@@ -1,5 +1,7 @@
 package store
 
+import "infra-agent-cloud/internal/store/redis"
+
 type Store struct {
-	Redis
+	redis.Redis
 }

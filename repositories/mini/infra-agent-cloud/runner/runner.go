@@ -15,6 +15,7 @@ import (
 
 // Runner 负责接收任务和控制命令，管理执行生命周期并回传事件。
 type Runner struct {
+	config    Config
 	heartbeat protocol.Heartbeat
 	client    Client
 	store     Store
@@ -30,44 +31,49 @@ type activeExecution struct {
 	done   chan struct{}
 }
 
-func NewRunner(heartbeat protocol.Heartbeat, client Client, store Store, executionRuntime runtime.Runtime) *Runner {
-	heartbeat.InstanceID = rand.Text()
-	heartbeat.Engines = append([]string(nil), heartbeat.Engines...)
-	heartbeat.Capacity = max(1, heartbeat.Capacity)
-	return &Runner{heartbeat: heartbeat, client: client, store: store, runtime: executionRuntime, active: make(map[string]*activeExecution)}
+// New 根据配置创建 Runner。
+func New(cfg Config, client Client, store Store, executionRuntime runtime.Runtime) *Runner {
+	defaultHeartbeat := DefaultConfig().Heartbeat
+	if cfg.Heartbeat.Interval <= 0 {
+		cfg.Heartbeat.Interval = defaultHeartbeat.Interval
+	}
+	if cfg.Heartbeat.TTL <= 0 {
+		cfg.Heartbeat.TTL = defaultHeartbeat.TTL
+	}
+	cfg.Engines = append([]string(nil), cfg.Engines...)
+	cfg.Capacity = max(1, cfg.Capacity)
+	heartbeat := protocol.Heartbeat{
+		RunnerID:   cfg.RunnerID,
+		InstanceID: rand.Text(),
+		Engines:    cfg.Engines,
+		Capacity:   cfg.Capacity,
+	}
+	return &Runner{
+		config:    cfg,
+		heartbeat: heartbeat,
+		client:    client,
+		store:     store,
+		runtime:   executionRuntime,
+		active:    make(map[string]*activeExecution),
+	}
 }
 
 // Run 启动 Runner，使用 ctx 控制服务生命周期。
 func (r *Runner) Run(ctx context.Context) error {
-	if r.store == nil || r.client == nil || r.runtime == nil {
-		return errors.New("runner requires a store, client and execution runtime")
-	}
-	if err := r.store.PublishHeartbeat(ctx, r.heartbeat); err != nil {
+	if err := r.store.PublishHeartbeat(ctx, r.heartbeat, r.config.Heartbeat.TTL); err != nil {
 		return err
 	}
-	runCtx, cancel := context.WithCancel(ctx)
 	jobsDone := make(chan struct{})
 	go func() {
 		defer close(jobsDone)
-		defer func() {
-			if recovered := recover(); recovered != nil {
-				slog.Error("Job consumer panicked", "panic", recovered, "stack", string(debug.Stack()))
-			}
-		}()
-		r.consumeJobs(runCtx)
+		r.consumeJobs(ctx)
 	}()
 	commandsDone := make(chan struct{})
 	go func() {
 		defer close(commandsDone)
-		defer func() {
-			if recovered := recover(); recovered != nil {
-				slog.Error("Command consumer panicked", "panic", recovered, "stack", string(debug.Stack()))
-			}
-		}()
-		r.consumeCommands(runCtx)
+		r.consumeCommands(ctx)
 	}()
 	defer func() {
-		cancel()
 		<-jobsDone
 		shutdownCtx, stop := context.WithTimeout(context.WithoutCancel(ctx), 20*time.Second)
 		defer stop()
@@ -76,24 +82,14 @@ func (r *Runner) Run(ctx context.Context) error {
 		}
 		<-commandsDone
 	}()
-	ticker := time.NewTicker(10 * time.Second)
+	ticker := time.NewTicker(r.config.Heartbeat.Interval)
 	defer ticker.Stop()
 	for {
 		select {
 		case <-ctx.Done():
 			return nil
-		case <-jobsDone:
-			if ctx.Err() != nil {
-				return nil
-			}
-			return errors.New("job consumer exited unexpectedly")
-		case <-commandsDone:
-			if ctx.Err() != nil {
-				return nil
-			}
-			return errors.New("command consumer exited unexpectedly")
 		case <-ticker.C:
-			if err := r.store.PublishHeartbeat(ctx, r.heartbeat); err != nil {
+			if err := r.store.PublishHeartbeat(ctx, r.heartbeat, r.config.Heartbeat.TTL); err != nil {
 				if ctx.Err() != nil {
 					return nil
 				}

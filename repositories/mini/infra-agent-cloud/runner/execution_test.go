@@ -97,7 +97,7 @@ func TestRunnerExecutionFlow(t *testing.T) {
 				},
 			}
 
-			node := NewRunner(protocol.Heartbeat{RunnerID: job.RunnerID, Capacity: 1}, client, store, process)
+			node := New(Config{RunnerID: job.RunnerID, Capacity: 1}, client, store, process)
 			if err := node.Run(ctx); err != nil {
 				t.Fatal(err)
 			}
@@ -175,7 +175,7 @@ func TestRunnerStartsNextJobBeforeFirstExecutionExits(t *testing.T) {
 		},
 		stop: func(context.Context) error { return nil },
 	}
-	node := NewRunner(protocol.Heartbeat{RunnerID: "runner", Capacity: 2}, &executionTestClient{record: record}, store, process)
+	node := New(Config{RunnerID: "runner", Capacity: 2}, &executionTestClient{record: record}, store, process)
 	if err := node.Run(ctx); err != nil {
 		t.Fatal(err)
 	}
@@ -222,7 +222,7 @@ func TestStopCommandWaitsForExecutionCleanup(t *testing.T) {
 		},
 	}
 	t.Cleanup(func() { _ = output.Close(); _ = writer.Close() })
-	node := NewRunner(protocol.Heartbeat{RunnerID: job.RunnerID}, &executionTestClient{record: record}, &executionTestStore{record: record}, process)
+	node := New(Config{RunnerID: job.RunnerID}, &executionTestClient{record: record}, &executionTestStore{record: record}, process)
 	if err := node.handleJob(ctx, job); err != nil {
 		t.Fatal(err)
 	}
@@ -248,7 +248,7 @@ type executionTestStore struct {
 	onTerminal  func()
 }
 
-func (s *executionTestStore) PublishHeartbeat(context.Context, protocol.Heartbeat) error {
+func (s *executionTestStore) PublishHeartbeat(context.Context, protocol.Heartbeat, time.Duration) error {
 	s.record("heartbeat")
 	return nil
 }

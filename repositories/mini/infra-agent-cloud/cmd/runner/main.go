@@ -7,7 +7,6 @@ import (
 	"os/signal"
 	"syscall"
 
-	"infra-agent-cloud/protocol"
 	"infra-agent-cloud/runner"
 )
 
@@ -16,7 +15,7 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 
 	// TODO: 读取 Runner 配置并注入 Client、Store 和 Runtime 的具体实现。
-	node := runner.NewRunner(protocol.Heartbeat{}, nil, nil, nil)
+	node := runner.New(runner.DefaultConfig(), nil, nil, nil)
 	err := node.Run(ctx)
 	stop()
 	if err != nil {

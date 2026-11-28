@@ -1,8 +1,7 @@
-package store
+package redis
 
 import (
 	"context"
-	"crypto/rand"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -18,11 +17,6 @@ import (
 const (
 	// Runner 专属 Job Stream 的 key 前缀，完整示例为 infra-agent-cloud:runner:jobs:runner-1。
 	runnerJobsKeyPrefix = "infra-agent-cloud:runner:jobs:"
-	// Runner 向 Server 回传执行事件的共享 Stream。
-	runnerEventsKey = "infra-agent-cloud:runner:events"
-	// Runner 的心跳记录和在线索引与 Server 调度读取使用同一组 key。
-	runnerHeartbeatKeyPrefix = "infra-agent-cloud:{dispatch}:heartbeat:"
-	runnerHeartbeatsKey      = "infra-agent-cloud:{dispatch}:heartbeats"
 )
 
 // Redis 消费者组常量。
@@ -39,40 +33,6 @@ var (
 	// ErrDispatchConflict 表示目标 Stream 上已为同一 Session 投递过另一条消息。
 	ErrDispatchConflict = errors.New("job dispatch conflict")
 )
-
-// Redis 封装 Runner 执行链路的 Redis 操作。待实现的方法如下。
-//
-//   - ConsumeCommands：消费发给当前 Runner 的控制命令。
-//   - RemoveHeartbeat：清理当前 Runner 的心跳和在线索引。
-//   - GetMaintenance：读取当前 Runner 的维护状态。
-//   - GetWorkspaceCleanupResult：查询工作区清理命令的结果。
-//   - CompleteWorkspaceCleanup：保存工作区清理命令的结果。
-type Redis struct {
-	client       *redis.Client
-	jobStreamKey string
-	jobGroup     string
-	jobConsumer  string
-}
-
-func NewRedis(client *redis.Client, runnerID string) Redis {
-	return Redis{
-		client:       client,
-		jobStreamKey: runnerJobsKeyPrefix + url.PathEscape(runnerID),
-		jobGroup:     runnerJobsGroupPrefix + runnerID,
-		jobConsumer:  runnerID + "-" + rand.Text(),
-	}
-}
-
-// ensureGroup 确保指定 Stream 的消费者组存在。
-//
-//   - Stream key 由调用方传入，Job Stream 示例：infra-agent-cloud:runner:jobs:runner-1
-func (r *Redis) ensureGroup(ctx context.Context, stream, group string) error {
-	err := r.client.Do(ctx, "XGROUP", "CREATE", stream, group, "0", "MKSTREAM").Err()
-	if redis.HasErrorPrefix(err, "BUSYGROUP ") {
-		return nil
-	}
-	return err
-}
 
 // PublishJob 幂等地将执行消息投递到目标 Runner 的 Job Stream。
 //
@@ -134,6 +94,17 @@ return 1
 	default:
 		return fmt.Errorf("unexpected job publish result: %d", result)
 	}
+}
+
+// ensureGroup 确保指定 Stream 的消费者组存在。
+//
+//   - Stream key 由调用方传入，Job Stream 示例：infra-agent-cloud:runner:jobs:runner-1
+func (r *Redis) ensureGroup(ctx context.Context, stream, group string) error {
+	err := r.client.Do(ctx, "XGROUP", "CREATE", stream, group, "0", "MKSTREAM").Err()
+	if redis.HasErrorPrefix(err, "BUSYGROUP ") {
+		return nil
+	}
+	return err
 }
 
 // ClaimJob 从当前 Runner 的执行通道领取任务并返回 Redis 消息 ID。
@@ -230,66 +201,4 @@ func (r *Redis) ClaimJob(ctx context.Context) (*protocol.Job, string, error) {
 //   - Job Stream：infra-agent-cloud:runner:jobs:runner-1
 func (r *Redis) AckJob(ctx context.Context, entryID string) error {
 	return r.client.Do(ctx, "XACK", r.jobStreamKey, r.jobGroup, entryID).Err()
-}
-
-// PublishEvent 将 Runner 的执行事件写入 Redis 事件流。
-//
-//   - Event Stream：infra-agent-cloud:runner:events
-func (r *Redis) PublishEvent(ctx context.Context, event *protocol.Event) error {
-	payload, err := json.Marshal(event)
-	if err != nil {
-		return fmt.Errorf("marshal runner event: %w", err)
-	}
-	return r.client.Do(ctx, "XADD", runnerEventsKey, "*", "payload", string(payload)).Err()
-}
-
-// PublishHeartbeat 上报 Runner 的心跳并刷新在线有效期。
-//
-//   - 心跳记录：infra-agent-cloud:{dispatch}:heartbeat:runner-1
-//   - 在线索引：infra-agent-cloud:{dispatch}:heartbeats
-func (r *Redis) PublishHeartbeat(ctx context.Context, heartbeat protocol.Heartbeat) error {
-	const heartbeatTTL = 30 * time.Second
-	const publishHeartbeatScript = `
-local heartbeatKey = KEYS[1]
-local indexKey = KEYS[2]
-local instanceId = ARGV[1]
-local payload = ARGV[2]
-local ttlSeconds = ARGV[3]
-local expiresAtMs = ARGV[4]
-local runnerId = ARGV[5]
-
--- 同一个 Runner ID 在上一实例的心跳过期前只能由该实例刷新。
-local current = redis.call('GET', heartbeatKey)
-if current then
-  local ok, heartbeat = pcall(cjson.decode, current)
-  if not ok or type(heartbeat) ~= 'table' or heartbeat.InstanceID ~= instanceId then
-    return 0
-  end
-end
-
-redis.call('SET', heartbeatKey, payload, 'EX', ttlSeconds)
-redis.call('ZADD', indexKey, expiresAtMs, runnerId)
-return 1
-`
-
-	heartbeatKey := runnerHeartbeatKeyPrefix + heartbeat.RunnerID
-	if heartbeat.Status == "" {
-		heartbeat.Status = "online"
-	}
-	heartbeat.ExpiresAt = time.Now().Add(heartbeatTTL)
-	payload, err := json.Marshal(heartbeat)
-	if err != nil {
-		return fmt.Errorf("marshal runner heartbeat: %w", err)
-	}
-	result, err := r.client.Do(ctx, "EVAL", publishHeartbeatScript, 2,
-		heartbeatKey, runnerHeartbeatsKey,
-		heartbeat.InstanceID, string(payload), int64(heartbeatTTL/time.Second),
-		heartbeat.ExpiresAt.UnixMilli(), heartbeat.RunnerID).Int64()
-	if err != nil {
-		return fmt.Errorf("publish runner heartbeat: %w", err)
-	}
-	if result == 0 {
-		return fmt.Errorf("runner heartbeat is owned by another instance: %s", heartbeat.RunnerID)
-	}
-	return nil
 }
